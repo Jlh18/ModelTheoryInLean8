@@ -1,0 +1,9 @@
+* Things to moan about
+- In defining Ax-Grothendieck formula I need sums indexed by
+  n-variable monomials of degree at most d,
+  this is hard since
+  + If defined as a set I would have no access to the finiteness
+  + If defined as a finset I can't take the sum because
+    bounded_ring_term not a commutative monoid
+  + so have to make a list consisting of the data of
+    {f : fin n → ℕ | Sum f i = d}
