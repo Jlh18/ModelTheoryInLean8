@@ -485,9 +485,10 @@ def big_mul {A : Type u} [has_mul A] [has_one A] : Π {n : ℕ}, (fin n → A) �
 | nat.zero := 1
 | (nat.succ n) := λ as, (big_mul (λ k : fin n, as k)) * as n
 
+lemma dvector.nil_append {A} {n} (f : dvector A n) : dvector.append dvector.nil f = f :=
+by simp
 
 namespace fol
-
 
 -- repeated and
 def bd_big_and {L : Language} {d : ℕ} :
@@ -495,32 +496,59 @@ def bd_big_and {L : Language} {d : ℕ} :
 | nat.zero fs := bd_not bd_falsum
 | (nat.succ n) fs := bd_and (bd_big_and n (λ i, fs i)) (fs n)
 
+lemma realize_bounded_formula_bd_alls'_aux {L} {n} : Π {k} {f : bounded_formula L (n + k)}
+  {S : Structure L} (v : dvector S n),
+  (realize_bounded_formula v (bd_alls' k n f) dvector.nil)
+  →
+  (∀ xs : dvector S k, realize_bounded_formula (dvector.append xs v) f dvector.nil)
+| nat.zero  f S v hf (dvector.nil) :=
+by simpa using hf
+| (nat.succ n) f S v hf (dvector.cons x xs) :=
+begin
+  simp only [bd_alls'] at hf,
+  have hf' := realize_bounded_formula_bd_alls'_aux v hf xs,
+  simp only [realize_bounded_formula] at hf',
+  simpa using hf' x,
+end
 
-
-end fol
+lemma realize_bounded_formula_bd_alls' {L} {n} {k} {f : bounded_formula L (n + k)}
+  {S : Structure L} (v : dvector S n) :
+  (realize_bounded_formula v (bd_alls' k n f) dvector.nil)
+  ↔
+  (∀ xs : dvector S k, realize_bounded_formula (dvector.append xs v) f dvector.nil) :=
+begin
+  split, {apply realize_bounded_formula_bd_alls'_aux},
+  intro hf,
+  induction k with k hk,
+  {simpa using hf dvector.nil},
+  {
+    simp only [bd_alls'],
+    apply hk,
+    simp only [realize_bounded_formula],
+    intros xs x,
+    apply hf (dvector.cons x xs),
+  }
+end
 
 namespace nat
 
 
 variables {A : Type u}
 
--- sum indexed by 0 ≤ i < n
 def sum [has_add A] [has_zero A] : Π (n : ℕ) (as : ℕ → A), A
-| zero as := 0
-| (succ n) as := sum n as + as n
+| nat.zero := λ as, 0
+| (nat.succ n) := λ as, sum n as + as n
 
 def prod [has_mul A] [has_one A] : Π (n : ℕ) (as : ℕ → A), A
-| zero as := 1
-| (succ n) as := prod n as * as n
+| nat.zero := λ as, 1
+| (nat.succ n) := λ as, prod n as * as n
 
 @[simp] def natlist : Π (n : ℕ) (as : ℕ → list A), list A
-| zero as := []
-| (succ n) as := list.append (as n) (natlist n as)
+| nat.zero := λ as, []
+| (nat.succ n) := λ as, list.append (as n) (natlist n as)
 
 end nat
 
-
-namespace fol
 
 /-- copy of bd_alls with ∃'s instead--/
 @[simp] def bd_exs' {L : Language} : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
@@ -570,6 +598,3 @@ begin
 end
 
 end fin
-
-
-#check mv_polynomial.coeff

@@ -1,0 +1,7 @@
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {section}{\numberline {2}Model Theory Background}{1}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Languages}{1}{subsection.2.1}%
+\contentsline {section}{\numberline {3}Model Theory of Algebraically Closed Fields}{2}{section.3}%
+\contentsline {section}{\numberline {4}The Lefschetz Principle}{2}{section.4}%
+\contentsline {section}{\numberline {5}Reducing to Locally Finite Fields}{2}{section.5}%
+\contentsline {section}{\numberline {6}Proving of the Locally Finite Case}{2}{section.6}%

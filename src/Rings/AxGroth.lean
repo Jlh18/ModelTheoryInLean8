@@ -169,12 +169,6 @@ def poly_map {K : Type} [comm_semiring K] {n : ℕ} :
   poly_map_data K n → (fin n → K) → (fin n → K) :=
 λ ps as k, mv_polynomial.eval as (ps k)
 
-namespace inj_formula
-
-----------------
-
-end inj_formula
-
 lemma realize_Ax_Groth_formula {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K) (n d : ℕ) : struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d := sorry
 
@@ -240,17 +234,88 @@ end
 
 end semiring
 
+-- -- move to ToMathlib
+-- def bd_pis {A : Type u} : Π (n : ℕ) (P : (fin n → A) → Prop), Prop
+-- | nat.zero P := P fin_zero_elim
+-- | (nat.succ n) P := Π (a : A), bd_pis n $ λ as, P $ fin.cons a as
+
+-- lemma realize_bounded_formula_bd_big_and' {L} {S : Structure L} {n m : ℕ}
+--   {v : dvector S n} (f : fin m.succ → bounded_formula L n) :
+--   realize_bounded_formula v (bd_big_and m.succ f) dvector.nil
+--   ↔
+--   (realize_bounded_formula v (bd_big_and m (λ k, f k)) dvector.nil
+--   ∧
+--   realize_bounded_formula v (f m) dvector.nil) :=
+-- begin
+--   simp only [bd_big_and, realize_bounded_formula_and],
+-- end
+
+@[simp] lemma realize_bounded_formula_bd_big_and {L} {S : Structure L} {n : ℕ}
+  {v : dvector S n} : Π {m : ℕ} (f : fin m → bounded_formula L n),
+  realize_bounded_formula v (bd_big_and m f) dvector.nil
+  ↔
+  (Π k : fin m, realize_bounded_formula v (f k) dvector.nil)
+| nat.zero f :=
+begin
+  simp only [bd_big_and, realize_bounded_formula_not,
+    realize_bounded_formula, true_iff, not_false_iff],
+  exact fin_zero_elim,
+end
+| (nat.succ m) f :=
+begin
+  simp only [bd_big_and, realize_bounded_formula_and],
+  split,
+  {
+    intros hf k,
+    rw realize_bounded_formula_bd_big_and at hf,
+    cases fin.lt_or_eq_fin k with hk,
+    -- by_cases hk : (k : ℕ) < m,
+    {
+      have h :=  hf.1 ⟨ k , _ ⟩,
+      {simpa using h},
+      {
+        rw fin.lt_coe_iff_val_lt,
+        exact hk,
+        exact lt_add_one m,
+      },
+    },
+    {rw h, exact hf.2}
+  },
+  {
+    intro hf,
+    split,
+    {
+      rw realize_bounded_formula_bd_big_and,
+      intro k,
+      apply hf k,
+    },
+    {exact hf m}
+  },
+end
+
 lemma Ax_Groth_inj_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K)
-  (n d : ℕ)
+  {n d : ℕ}
   (ps : poly_map_data K n.succ)
   (hdeg : ∀ (i : fin n.succ), (ps i).total_degree < d)
-  (hInj : function.injective (poly_map ps))
+  (hinj : function.injective (poly_map ps))
   (xs0 : dvector (struc_to_ring_struc.Structure K)
     (n.succ * n_var_monomials_of_deg_lt_length n d))
   : realize_bounded_formula xs0 (inj_formula n d) dvector.nil :=
 begin
-  sorry,
+  simp only [inj_formula],
+  rw realize_bounded_formula_bd_alls',
+  intro xs,
+  rw realize_bounded_formula_bd_alls',
+  intro ys,
+  simp only [realize_bounded_formula_imp],
+  intro hImage,
+  rw realize_bounded_formula_bd_big_and,
+  rw realize_bounded_formula_bd_big_and at hImage,
+  intro k,
+  have himage : (poly_map ps (λ i, dvector.nth xs i i.2)) = poly_map ps (λ i, dvector.nth ys i i.2),
+  {sorry},
+  {sorry},
 end
 
 lemma Ax_Groth_aux {K : Type} [field K] [is_alg_closed K]
@@ -269,7 +334,7 @@ begin
   have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
     xs0 (inj_formula n d) dvector.nil,
   {
-    sorry
+    apply Ax_Groth_inj_aux h0 ps hdeg hinj,
   },
   -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
   have hSurj := hAG xs0 hInj,
