@@ -71,32 +71,44 @@ end field_to
 
 namespace models_theory_of_fields_to_is_field
 
-  variables {M : Structure ring_signature} [h : fact (M ⊨ field_theory)]
+  variables {M : Structure ring_signature} (h : M ⊨ field_theory)
   -- M inherits instances of 0 1 - + * from Rings.ModelTo
 
   include h
 
-  instance ring_model : fact (M ⊨ ring_theory) :=
-  ⟨ begin intros f hf, apply h.elim, apply ring_theory_sub_field_theory, exact hf end ⟩
+  lemma ring_model : M ⊨ ring_theory :=
+  begin
+    intros f hf,
+    apply h,
+    apply ring_theory_sub_field_theory,
+    exact hf
+  end
 
-  instance comm_ring : comm_ring M := models_ring_theory_to_comm_ring.comm_ring
+  instance comm_ring : comm_ring M :=
+  models_ring_theory_to_comm_ring.comm_ring (ring_model h)
 
-  instance ring : ring M := comm_ring.to_ring M
+  instance ring : ring M := @comm_ring.to_ring M (models_theory_of_fields_to_is_field.comm_ring h)
 
-  lemma zero_ne_one : (0 : M) ≠ 1 := by simpa using (h.elim non_triv_in_field_theory)
+  lemma zero_ne_one : (0 : M) ≠ 1 := by simpa using (h non_triv_in_field_theory)
 
   lemma mul_inv (a : M) (ha : a ≠ 0) : (∃ (b : M), a * b = 1) :=
-  let hmulinv := h.elim mul_inv_in_field_theory in by simpa using hmulinv a ha
+  let hmulinv := h mul_inv_in_field_theory in by simpa using hmulinv a ha
 
-  instance is_field : fact (is_field M) :=
-  ⟨⟨
-    ⟨ 0 , 1 , zero_ne_one ⟩,
-    models_ring_theory_to_comm_ring.mul_comm,
-    mul_inv
-  ⟩⟩
-
+  lemma is_field : @is_field M (models_theory_of_fields_to_is_field.ring h) :=
+  begin
+    split,
+    {exact ⟨ 0 , 1 , zero_ne_one h ⟩},
+    {exact (models_theory_of_fields_to_is_field.comm_ring h).mul_comm},
+    {exact mul_inv h},
+  end
+  -- ⟨
+  --   ⟨ 0 , 1 , zero_ne_one ⟩,
+  --   models_ring_theory_to_comm_ring.mul_comm,
+  --   mul_inv
+  -- ⟩
   noncomputable instance field : field M :=
-  is_field.to_field M models_theory_of_fields_to_is_field.is_field.elim
+  @is_field.to_field M (models_theory_of_fields_to_is_field.ring h)
+  (models_theory_of_fields_to_is_field.is_field h)
 
 end models_theory_of_fields_to_is_field
 

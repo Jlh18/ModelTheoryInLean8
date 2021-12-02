@@ -659,86 +659,87 @@ namespace models_ring_theory_to_comm_ring
   @[simp] lemma realize_mul {a b : M.carrier} :
     @Structure.fun_map _ M 2 ring_binaries.mul ([a , b]) = a * b := rfl
 
-  variable [h : fact (M ⊨ ring_signature.ring_theory)]
+  variable (h : M ⊨ ring_signature.ring_theory)
 
   include h
+
   lemma add_assoc (a b c : M) : (a + b) + c = a + (b + c) :=
   begin
-    have hAssoc := h.elim ring_signature.add_assoc_in_ring_theory,
+    have hAssoc := h ring_signature.add_assoc_in_ring_theory,
     have habc := hAssoc c b a,
     simpa using habc,
   end
 
   lemma add_comm (a b : M) : a + b = b + a :=
   begin
-    have hId := h.elim ring_signature.add_comm_in_ring_theory, have hab := hId b a, simpa using hab
+    have hId := h ring_signature.add_comm_in_ring_theory, have hab := hId b a, simpa using hab
   end
 
   lemma add_zero (a : M) : a + 0 = a :=
   begin
-    have hId := h.elim ring_signature.add_id_in_ring_theory, have ha := hId a, simpa using ha
+    have hId := h ring_signature.add_id_in_ring_theory, have ha := hId a, simpa using ha
   end
 
   lemma zero_add (a : M) : 0 + a = a :=
   begin
-    rw add_comm, apply add_zero,
+    rw add_comm h, apply add_zero h,
   end
 
   lemma left_neg (a : M) : - a + a = 0 :=
   begin
-    have hInv := h.elim ring_signature.add_inv_in_ring_theory, have ha := hInv a, simpa using ha
+    have hInv := h ring_signature.add_inv_in_ring_theory, have ha := hInv a, simpa using ha
   end
 
   lemma mul_assoc (a b c : M) : (a * b) * c = a * (b * c) :=
   begin
-    have hAssoc := h.elim ring_signature.mul_assoc_in_ring_theory, have habc := hAssoc c b a,
+    have hAssoc := h ring_signature.mul_assoc_in_ring_theory, have habc := hAssoc c b a,
     simpa using habc
   end
 
   lemma mul_comm (a b : M) : a * b = b * a :=
   begin
-    have hId := h.elim ring_signature.mul_comm_in_ring_theory, have hab := hId b a, simpa using hab
+    have hId := h ring_signature.mul_comm_in_ring_theory, have hab := hId b a, simpa using hab
   end
 
   lemma mul_one (a : M) : a * 1 = a :=
   begin
-    have hId := h.elim ring_signature.mul_id_in_ring_theory, have ha := hId a, simpa using ha
+    have hId := h ring_signature.mul_id_in_ring_theory, have ha := hId a, simpa using ha
   end
 
   lemma one_mul (a : M) : 1 * a = a :=
   begin
-    rw mul_comm, apply mul_one
+    rw mul_comm h, apply mul_one h
   end
 
   lemma add_mul (a b c : M) : (a + b) * c = a * c + b * c :=
   begin
-    have hAM := h.elim ring_signature.add_mul_in_ring_theory, have habc := hAM c b a, simpa using habc
+    have hAM := h ring_signature.add_mul_in_ring_theory, have habc := hAM c b a, simpa using habc
   end
 
   lemma mul_add (c a b : M) : c * (a + b) = c * a + c * b :=
   begin
-    rw (mul_comm c (a + b)), rw (mul_comm c a), rw (mul_comm c b),
-    exact add_mul a b c,
+    rw (mul_comm h c (a + b)), rw (mul_comm h c a), rw (mul_comm h c b),
+    exact add_mul h a b c,
   end
 
   instance comm_ring : comm_ring M :=
   {
     add            := add,
-    add_assoc      := add_assoc,
+    add_assoc      := add_assoc h,
     zero           := zero,
-    zero_add       := zero_add,
-    add_zero       := add_zero,
+    zero_add       := zero_add h,
+    add_zero       := add_zero h,
     neg            := neg,
-    add_left_neg   := left_neg,
-    add_comm       := add_comm,
+    add_left_neg   := left_neg h,
+    add_comm       := add_comm h,
     mul            := mul,
-    mul_assoc      := mul_assoc,
+    mul_assoc      := mul_assoc h,
     one            := one,
-    one_mul        := one_mul,
-    mul_one        := mul_one,
-    left_distrib   := mul_add,
-    right_distrib  := add_mul,
-    mul_comm       := mul_comm,
+    one_mul        := one_mul h,
+    mul_one        := mul_one h,
+    left_distrib   := mul_add h,
+    right_distrib  := add_mul h,
+    mul_comm       := mul_comm h,
   }
 
 end models_ring_theory_to_comm_ring

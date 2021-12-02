@@ -1,5 +1,7 @@
 import Rings.Rings
 import Rings.Fields
+import Rings.ToMathlib.list
+import Rings.ToMathlib.nat
 
 namespace AxGroth
 
@@ -29,8 +31,6 @@ nat.natlist d (λ d', n_var_monomials_of_deg n.succ d')
 -- counts all n-variable monomials of degree < d
 @[simp] def n_var_monomials_of_deg_lt_length (n d : ℕ) : ℕ :=
 list.length $ n_var_monomials_of_deg_lt n d
--- def n_var_monomials_of_deg_lt (n d : ℕ) : ℕ :=
--- finset.sum (finset.range d) (λ d', list.length $ n_var_monomials_of_deg n d')
 
 def finsupp_to_nat_of_fin_to_nat {n : ℕ} (p : fin n.succ → ℕ) : fin n.succ →₀ ℕ :=
 ⟨ {k ∈ finset.fin_range n.succ | p k ≠ 0 } , p ,
@@ -72,11 +72,11 @@ end list
 
 -- ∑ {f ∈ n_var_monomials_of_deg n.succ d} x₍ⱼ₊ₛ₎ ∏ {0 ≤ i < n} x₍ᵢ₊ₚ₎ᶠ⁽ⁱ⁾ in "context c.succ"
 -- where j is the index of f in n_var_monomials_of_deg n.succ d
-def poly_indexed_by_monos' (n d s p c : ℕ) :
+@[simp] def poly_indexed_by_monos (n d s p c : ℕ) :
   bounded_ring_term c.succ :=
 -- sum indexed by the n-variable monomials of degree < d
-list.sum
-(list.map
+list.sumr
+(list.mapr
   (λ f : (fin n.succ → ℕ),
     (x_ (list.index_of f (n_var_monomials_of_deg_lt n d) + s))
     *
@@ -85,14 +85,14 @@ list.sum
   (n_var_monomials_of_deg_lt n d)
 )
 
--- ∑ {f ∈ n_var_monomials_of_deg n.succ d} x₍ⱼ₊ₛ₎ ∏ {0 ≤ i < n} x₍ᵢ₊ₚ₎ᶠ⁽ⁱ⁾ in "context c"
--- where j is the index of f in n_var_monomials_of_deg n.succ d
-def poly_indexed_by_monos (n d s p c : ℕ) (h : 0 < c) :
-  bounded_ring_term c :=
-begin
-  rw ← nat.succ_pred_eq_of_pos h,
-  apply poly_indexed_by_monos' n d s p,
-end
+-- -- ∑ {f ∈ n_var_monomials_of_deg n.succ d} x₍ⱼ₊ₛ₎ ∏ {0 ≤ i < n} x₍ᵢ₊ₚ₎ᶠ⁽ⁱ⁾ in "context c"
+-- -- where j is the index of f in n_var_monomials_of_deg n.succ d
+-- @[simp] def poly_indexed_by_monos (n d s p c : ℕ) (h : 0 < c) :
+--   bounded_ring_term c :=
+-- begin
+--   rw ← nat.succ_pred_eq_of_pos h,
+--   apply poly_indexed_by_monos' n d s p,
+-- end
 
 
 -- NOTE s = 2 * n.succ
@@ -126,9 +126,9 @@ $
 (bd_big_and n.succ
 -- pⱼ xᵢ = pⱼ yᵢ
   (λ j,
-    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) 0 _ inj_formula_aux)
+    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) 0 _)
     ≃
-    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) (n.succ) _ inj_formula_aux)
+    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) (n.succ) _)
   )
 )
 -- then
@@ -152,7 +152,7 @@ $
 bd_big_and n.succ
 $
 -- zⱼ = pⱼ x₋
-λ j, x_ j ≃ poly_indexed_by_monos n.succ d (n.succ + n.succ + j * monom) 0 _ inj_formula_aux
+λ j, x_ j ≃ poly_indexed_by_monos n.succ d (n.succ + n.succ + j * monom) 0 _
 
 def Ax_Groth_formula (n d : ℕ) : sentence ring_signature :=
 -- quantify over (n.succ) many (n.succ-variable polynomials) called ps;
@@ -190,21 +190,17 @@ def dvector.of_list {A : Type} : Π (as : list A), dvector A (list.length as)
 
 section semiring
 
-variables {K : Type} [comm_semiring K] {n : ℕ}
+variables {A : Type} [comm_semiring A] {n : ℕ}
 
 -- takes a polynomial map (preferably of total deg < d) and gives list of coeffs of each polynomial
 @[simp] def poly_map_data.coeffs_list
-  {n : ℕ} (d : ℕ) (ps : poly_map_data K n.succ) : list K :=
+  {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) : list A :=
 list.join (list.of_fn (λ i : fin n.succ, coeffs_list_of_mv_polynomial d (ps i)))
 
-def poly_map_data.coeffs_dvector {n : ℕ} (d : ℕ) (ps : poly_map_data K n.succ) :
-  dvector K (poly_map_data.coeffs_list d ps).length :=
+/- Writes polynomial map into a dvector of its coefficients -/
+def poly_map_data.coeffs_dvector {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) :
+  dvector A (poly_map_data.coeffs_list d ps).length :=
 dvector.of_list (poly_map_data.coeffs_list d ps)
-
-open mv_polynomial
-
--- (X₀ + 1 , X₁ + 1)
--- def example_poly_map : poly_map_data ℤ 2 := λ k, X k + 1
 
 lemma list.map_length_of_fn_const {α} {m : ℕ} (f : fin n → list α)
   (h : ∀ i : fin n, (f i).length = m) :
@@ -219,18 +215,33 @@ begin
 end
 
 lemma coeffs_list_of_mv_polynomial_const {d : ℕ}
-  (ps : poly_map_data K n.succ) (i : fin n.succ) :
+  (ps : poly_map_data A n.succ) (i : fin n.succ) :
   (coeffs_list_of_mv_polynomial d (ps i)).length = n_var_monomials_of_deg_lt_length n d :=
 by simp
 
-lemma variable_bound_equal {K : Type} [comm_semiring K] : Π {n d : ℕ}
-  (ps : poly_map_data K n.succ),
+lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) :
   (n.succ * n_var_monomials_of_deg_lt_length n d) = (poly_map_data.coeffs_list d ps).length :=
 begin
-  intros n d ps,
   simp only [poly_map_data.coeffs_list, list.length_join],
   rw list.map_length_of_fn_const _ (coeffs_list_of_mv_polynomial_const ps),
 end
+
+/- Writes polynomial map into a dvector of its coefficients (with a better variable context) -/
+lemma poly_map_data.coeffs_dvector' {n : ℕ} (d : ℕ)
+  (ps : poly_map_data A n.succ) :
+  dvector A (n.succ * n_var_monomials_of_deg_lt_length n d) :=
+begin
+  have xs0 := poly_map_data.coeffs_dvector d ps,
+  rw ← variable_bound_equal d ps at xs0,
+  exact xs0,
+end
+
+open mv_polynomial
+
+-- (X₀ + 1 , X₁ + 1)
+-- def example_poly_map : poly_map_data ℤ 2 := λ k, X k + 1
+
+
 
 end semiring
 
@@ -293,30 +304,206 @@ begin
   },
 end
 
+-- #check list.sum
+
+@[simp] lemma realize_bounded_term_list_sumr
+  {A : Structure ring_signature} {c : ℕ} {xs : dvector A c} :
+  Π {l : list (bounded_ring_term c)},
+  realize_bounded_term xs (list.sumr l) dvector.nil
+  =
+  list.sumr (list.mapr (λ t, realize_bounded_term xs t dvector.nil) l)
+| list.nil := by simp
+| (list.cons t ts) :=
+begin
+  simp only [list.mapr, models_ring_theory_to_comm_ring.realize_add,
+    ring_signature.add, list.sumr, realize_bounded_term],
+  rw realize_bounded_term_list_sumr,
+end
+
+-- list.sumr
+-- (list.mapr
+--   (λ f : (fin n.succ → ℕ),
+--     (x_ (list.index_of f (n_var_monomials_of_deg_lt n d) + s))
+--     *
+--     (nat.prod n.succ $ λ i, (x_ (i + p)) ^ (f i) )
+--     )
+--   (n_var_monomials_of_deg_lt n d)
+-- )
+
+
+def realize_add_zero_hom {A : Type*} [comm_ring A]
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c):
+  add_zero_hom (bounded_ring_term c) A :=
+⟨ λ t, realize_bounded_term xs t dvector.nil ,
+  models_ring_theory_to_comm_ring.realize_zero ,
+  λ t s, models_ring_theory_to_comm_ring.realize_add ⟩
+
+lemma realize_sumr {A : Type*} [comm_ring A]
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c)
+  {ts : list (bounded_ring_term c)} :
+  realize_bounded_term xs (ts).sumr dvector.nil
+  =
+  (list.mapr (realize_add_zero_hom xs).to_fun ts).sumr :=
+begin
+  rw ← list.mapr_sumr (realize_add_zero_hom xs) ts,
+  refl,
+end
+
+lemma realize_nat_prod {A : Type*} [comm_ring A]
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c)
+  (ts : ℕ → bounded_ring_term c) : Π n,
+  realize_bounded_term xs (nat.prod n ts) dvector.nil
+  =
+  nat.prod n (λ n, realize_bounded_term xs (ts n) dvector.nil)
+| nat.zero :=
+begin
+  simp only [nat.prod],
+  refl,
+end
+| (nat.succ n) :=
+begin
+  simp only [nat.prod, struc_to_ring_struc.func_map, dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
+  ring_signature.mul, dvector.nth],
+  rw realize_nat_prod n,
+end
+
+lemma realize_pow {A : Type*} [comm_ring A]
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c)
+  (t : bounded_ring_term c) : Π (n : ℕ),
+  realize_bounded_term xs (t ^ n) dvector.nil
+  =
+  (realize_bounded_term xs t dvector.nil) ^ n
+| nat.zero := by
+  simpa only [nat.nat_zero_eq_zero, ring_signature.pow_zero,
+    realize_bounded_term, models_ring_theory_to_comm_ring.realize_one,
+    ring_signature.one, models_ring_theory_to_comm_ring.realize_one]
+| (nat.succ n) :=
+begin
+  simp only [struc_to_ring_struc.func_map, dvector.last, ring_signature.pow_succ, struc_to_ring_struc.binaries_map,
+  realize_bounded_term, ring_signature.mul, dvector.nth],
+  rw realize_pow n,
+  refl,
+end
+
+lemma realize_poly_indexed_by_monos
+  {A : Type*} [comm_ring A] {n d s p c : ℕ}
+  (hcf : Π (f : fin n.succ → ℕ), list.index_of f (n_var_monomials_of_deg_lt n d) + s < c.succ)
+  (hci : Π (i : ℕ), i + p < c.succ)
+  {xs : dvector (struc_to_ring_struc.Structure A) c.succ}  :
+  realize_bounded_term xs (poly_indexed_by_monos n d s p c) dvector.nil
+  =
+  list.sumr
+  (list.mapr
+    (λ f,
+    (dvector.nth xs (list.index_of f (n_var_monomials_of_deg_lt n d) + s) (hcf f))
+    *
+    (nat.prod n.succ $ λ i, ((dvector.nth xs (i + p) (hci i)) ^ (f i) ))
+    )
+  (n_var_monomials_of_deg_lt n d)
+  ) :=
+begin
+  simp only [poly_indexed_by_monos],
+  rw realize_sumr,
+  rw ← list.comp_mapr,
+  congr,
+  funext f,
+  simp only [realize_add_zero_hom, function.comp_app],
+  simp only [struc_to_ring_struc.func_map, fin.val_eq_coe, dvector.last,
+    struc_to_ring_struc.binaries_map, realize_bounded_term,
+    ring_signature.mul, dvector.nth],
+  congr,
+  {
+    norm_cast,
+    simp only [fin.val_eq_coe, fin.coe_of_nat_eq_mod],
+    rw ← nat.mod_eq_of_lt (hcf f),
+    congr,
+  },
+  {
+    rw realize_nat_prod,
+    congr,
+    funext i,
+    rw realize_pow,
+    simp,
+    norm_cast,
+    congr,
+    simp only [fin.val_eq_coe, fin.coe_of_nat_eq_mod],
+    rw nat.mod_eq_of_lt (hci i),
+  },
+end
+
+lemma realize_poly_map_data_coeffs_xs
+  {A : Type*} [comm_ring A] {n d : ℕ}
+  (ps : poly_map_data A n.succ)
+  (hdeg : ∀ (i : fin n.succ), (ps i).total_degree < d)
+  (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n.succ)
+  (i : fin n.succ)
+  :
+  realize_bounded_term (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps)))
+      (poly_indexed_by_monos n.succ d
+        (2 * n.succ + ↑i * (d.natlist (n_var_monomials_of_deg n.succ)).length)
+        0
+        (n.succ * n_var_monomials_of_deg_lt_length n d + n.succ + n))
+      dvector.nil
+  =
+  mv_polynomial.eval (λ (i : fin n.succ), xs.nth i i.2) (ps i) :=
+begin
+  rw realize_poly_indexed_by_monos,
+  { sorry },
+  {
+    intro f, -- f is a monomial
+    simp only [n_var_monomials_of_deg_lt],
+    sorry,
+  },
+  {
+    sorry
+  },
+end
+
 lemma Ax_Groth_inj_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K)
   {n d : ℕ}
   (ps : poly_map_data K n.succ)
   (hdeg : ∀ (i : fin n.succ), (ps i).total_degree < d)
   (hinj : function.injective (poly_map ps))
-  (xs0 : dvector (struc_to_ring_struc.Structure K)
-    (n.succ * n_var_monomials_of_deg_lt_length n d))
-  : realize_bounded_formula xs0 (inj_formula n d) dvector.nil :=
+  : @realize_bounded_formula _ (struc_to_ring_struc.Structure K)
+    _ _ (@poly_map_data.coeffs_dvector' K _ n d ps)
+    (inj_formula n d) dvector.nil :=
 begin
+  let xs0 := poly_map_data.coeffs_dvector' d ps,
+  -- open up the definition of inj_formula
   simp only [inj_formula],
   rw realize_bounded_formula_bd_alls',
-  intro xs,
+  intro xs, -- an n tuple in the domain
   rw realize_bounded_formula_bd_alls',
-  intro ys,
+  intro ys, -- an n tuple in the domain
   simp only [realize_bounded_formula_imp],
+  -- we are showing that ps xs = ps yx implies xs = ys
+  -- assume the images are all equal (expressed model theoretically)
   intro hImage,
   rw realize_bounded_formula_bd_big_and,
   rw realize_bounded_formula_bd_big_and at hImage,
-  intro k,
+  -- translate this to the images are equal (expressed algebraically / in the ring)
   have himage : (poly_map ps (λ i, dvector.nth xs i i.2)) = poly_map ps (λ i, dvector.nth ys i i.2),
-  {sorry},
+  {
+    funext i, -- for each i < n (... the tuples at i are equal)
+    simp only [poly_map],
+    have hImagei := hImage i,
+    simp only [n_var_monomials_of_deg_lt_length, realize_bounded_formula,
+      n_var_monomials_of_deg_lt] at hImagei,
+    sorry,
+  },
+  intro k, -- for each input (... they are equal)
+  -- ... they are equal
   {sorry},
 end
+
+-- realize_bounded_term (ys.append (xs.append xs0))
+      -- (poly_indexed_by_monos n.succ d (2 * n.succ + ↑i * (nat.natlist d (n_var_monomials_of_deg n.succ)).length) 0
+      --    (n.succ * n_var_monomials_of_deg_lt_length n d + n.succ + n.succ)
+      --    inj_formula_aux)
+      -- dvector.nil
+      --
+-- ⇑(mv_polynomial.eval (λ (i : fin n.succ), xs.nth ↑i _)) (ps i)
 
 lemma Ax_Groth_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K) {n d : ℕ}
@@ -324,21 +511,16 @@ lemma Ax_Groth_aux {K : Type} [field K] [is_alg_closed K]
   (hinj : function.injective (poly_map ps)) :
   function.surjective (poly_map ps) :=
 begin
+  let xs0 := poly_map_data.coeffs_dvector' d ps,
   have hAG := realize_Ax_Groth_formula h0 n d,
   simp only [realize_sentence_bd_alls,
     Ax_Groth_formula, realize_bounded_formula] at hAG,
-  -- write ps into a dvector of its coefficients
-  have xs0 := poly_map_data.coeffs_dvector d ps,
-  rw ← variable_bound_equal ps at xs0,
   -- injective -> realize inj_formula
   have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
-    xs0 (inj_formula n d) dvector.nil,
-  {
-    apply Ax_Groth_inj_aux h0 ps hdeg hinj,
-  },
+    (poly_map_data.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
+  {exact Ax_Groth_inj_aux h0 ps hdeg hinj},
   -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
   have hSurj := hAG xs0 hInj,
-
   sorry,
 end
 

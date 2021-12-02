@@ -530,24 +530,6 @@ begin
   }
 end
 
-namespace nat
-
-
-variables {A : Type u}
-
-def sum [has_add A] [has_zero A] : Π (n : ℕ) (as : ℕ → A), A
-| nat.zero := λ as, 0
-| (nat.succ n) := λ as, sum n as + as n
-
-def prod [has_mul A] [has_one A] : Π (n : ℕ) (as : ℕ → A), A
-| nat.zero := λ as, 1
-| (nat.succ n) := λ as, prod n as * as n
-
-@[simp] def natlist : Π (n : ℕ) (as : ℕ → list A), list A
-| nat.zero := λ as, []
-| (nat.succ n) := λ as, list.append (as n) (natlist n as)
-
-end nat
 
 
 /-- copy of bd_alls with ∃'s instead--/
@@ -598,3 +580,13 @@ begin
 end
 
 end fin
+
+structure add_zero_hom (M N : Type*) [has_zero M] [has_zero N] [has_add M] [has_add N] :=
+(to_fun : M → N)
+(map_zero : to_fun 0 = 0)
+(map_add : Π a b : M, to_fun (a + b) = to_fun a + to_fun b)
+
+structure mul_one_hom (M N : Type*) [has_one M] [has_one N] [has_mul M] [has_mul N] :=
+(to_fun : M → N)
+(map_one : to_fun 1 = 1)
+(map_mul : Π a b : M, to_fun (a * b) = to_fun a * to_fun b)
