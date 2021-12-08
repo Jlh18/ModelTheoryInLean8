@@ -13,15 +13,15 @@ section
 
 variables [has_mul A] [has_one A] [mul_one_class B]
 
--- def sum [has_add A] [has_zero A] : Π (n : ℕ) (as : ℕ → A), A
+-- def sum [has_add A] [has_zero A] : Π (n : ℕ) (as : fin n → A), A
 -- | nat.zero := λ as, 0
--- | (nat.succ n) := λ as, sum n as + as n
+-- | (nat.succ n) := λ as, sum n (λ n, as n) + as n
 
-def prod [has_mul A] [has_one A] : Π (n : ℕ) (as : ℕ → A), A
+def prod [has_mul A] [has_one A] : Π (n : ℕ) (as : fin n → A), A
 | nat.zero := λ as, 1
-| (nat.succ n) := λ as, prod n as * as n
+| (nat.succ n) := λ as, prod n (λ n, as n) * as n
 
-lemma map_prod (f : mul_one_hom A B) : Π {n : ℕ} {as : ℕ → A},
+lemma map_prod (f : mul_one_hom A B) : Π {n : ℕ} {as : fin n → A},
 f.to_fun (prod n as) = prod n (f.to_fun ∘ as)
 | nat.zero as := f.map_one
 | (nat.succ n) as :=

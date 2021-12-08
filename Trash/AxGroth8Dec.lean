@@ -2,8 +2,6 @@ import Rings.Rings
 import Rings.Fields
 import Rings.ToMathlib.list
 import Rings.ToMathlib.nat
-import algebra.big_operators.finprod
-import data.finset.basic
 
 namespace AxGroth
 
@@ -14,34 +12,29 @@ universe u
 open fol
 open Rings
 
-/-- composition by coe : fin d → ℕ -/
-def monom_of_bd_monom (n d : ℕ) :
-  (fin n → fin d) ↪ fin n → ℕ :=
-⟨
-  λ f, coe ∘ f ,
-  λ f g h,
-  begin
-    funext i,
-    have h' := congr_fun h i,
-    apply fin.coe_injective h',
-  end
-⟩
+def list_image_append {A : Type u} [decidable_eq A] {n} :
+  A → list (fin n → A) → list (fin n.succ → A) :=
+λ x, list.map (λ xs k, dite (↑k < n) (λ h, xs ⟨ k , h ⟩) (λ _ , x))
 
-/-- { f : fin n → ℕ | finsum f ≤ d } -/
-@[simp] def n_var_monom_of_deg_le_d_finset (n d : ℕ) : finset (fin n → ℕ) :=
-finset.map (monom_of_bd_monom n d.succ) finset.univ
+/-- lists all n-variable monomials of degree d -/
+@[simp] def n_var_monomials_of_deg : Π (n d : ℕ), list (fin n → ℕ)
+| 0 d := [fin_zero_elim]
+| 1 d := [λ k, d]
+| (n + 2) 0 := [λ k, 0]
+| (n + 2) (d + 1) := list.join $ list.of_fn $
+  λ i : fin (d + 2), list_image_append i (n_var_monomials_of_deg (n + 1) (d + 1 - i))
 
-/-- list of all n-variable monomials of degree ≤ d -/
-@[simp] def n_var_monom_of_deg_le (n d : ℕ) : list (fin n → ℕ) :=
-(n_var_monom_of_deg_le_d_finset n d).to_list
+/-- lists all n-variable monomials of degree ≤ d -/
+@[simp] def n_var_monomials_of_deg_le (n d : ℕ) : list (fin n → ℕ) :=
+nat.natlist d.succ (λ d', n_var_monomials_of_deg n d')
 
-/-- counts all n-variable monomials of degree ≤ d -/
-@[simp] def n_var_monom_of_deg_le_length (n d : ℕ) : ℕ :=
-list.length $ n_var_monom_of_deg_le n d
+-- counts all n-variable monomials of degree ≤ d
+@[simp] def n_var_monomials_of_deg_le_length (n d : ℕ) : ℕ :=
+list.length $ n_var_monomials_of_deg_le n d
 
 def finsupp_to_nat_of_fin_to_nat {n : ℕ} (p : fin n → ℕ) :
   fin n →₀ ℕ :=
-⟨ { k ∈ finset.fin_range n | p k ≠ 0 } , p ,
+⟨ {k ∈ finset.fin_range n | p k ≠ 0 } , p ,
 begin
   intro a,
   split,
@@ -50,39 +43,43 @@ begin
 end ⟩
 
 /-- lists all n-variable monomials of degree ≤ d as finsupp maps-/
-@[simp] def n_var_monom_of_deg_le₀ (n d : ℕ) : list (fin n →₀ ℕ) :=
-list.map (finsupp_to_nat_of_fin_to_nat) $ n_var_monom_of_deg_le n d
+@[simp] def n_var_monomials_of_deg_le₀ (n d : ℕ) : list (fin n →₀ ℕ) :=
+list.map (finsupp_to_nat_of_fin_to_nat) $ n_var_monomials_of_deg_le n d
 
 -- no restriction on degree
 /-- takes a polynomial in n.succ variables and gives a list of its coefficients-/
 @[simp] def coeffs_list_of_mv_polynomial
   {K : Type} [comm_semiring K] {n : ℕ} (d : ℕ)
   (p : mv_polynomial (fin n) K) : list K :=
-list.map (λ m, mv_polynomial.coeff m p) (n_var_monom_of_deg_le₀ n d)
+list.map (λ m, mv_polynomial.coeff m p) (n_var_monomials_of_deg_le₀ n d)
 
 section prop_decidable
 
 local attribute [instance] classical.prop_decidable
 
-lemma n_var_monoms_of_deg_le_length_ne_zero (n d : ℕ) :
-  n_var_monom_of_deg_le_length n d ≠ 0 :=
-begin
-  simp only [n_var_monom_of_deg_le, n_var_monom_of_deg_le_length,
-    finset.length_to_list, finset.card_map,
-    n_var_monom_of_deg_le_d_finset],
-  apply @finset.card_ne_zero_of_mem _,
-  {apply finset.mem_univ},
-  {exact λ i, 0},
-end
+namespace list
 
-lemma poly_indexed_by_monoms_aux (n d s c : ℕ)
-  (hndc : (n_var_monom_of_deg_le n d).length + s ≤ c) (f : fin n → ℕ) :
-  list.index_of' f (n_var_monom_of_deg_le n d) + s < c :=
+def fin_index_of {α : Type u} (a : α) :
+  Π (l : list α), (a ∈ l) → fin (list.length l)
+| [] h :=
 begin
-  apply nat.lt_of_lt_of_le _ hndc,
-  apply nat.add_lt_add_right,
-  apply list.index_of'_lt_length,
-  apply nat.pos_of_ne_zero (n_var_monoms_of_deg_le_length_ne_zero n d),
+  exfalso,
+  rw ← list.mem_nil_iff a,
+  apply h,
+end
+| (hd :: l) h := ⟨ list.index_of a (hd :: l) ,
+begin rw list.index_of_lt_length, apply h end ⟩
+
+-- λ a f, ⟨ list.index_of a f , (by rw list.index_of_lt_length; simp) ⟩
+
+end list
+
+lemma poly_indexed_by_monos_aux (n d s c : ℕ)
+  (hndc : (n_var_monomials_of_deg_lt n d).length + s < c) (f : fin n → ℕ) :
+  list.index_of f (n_var_monomials_of_deg_lt n d) + s < c :=
+begin
+  apply nat.lt_of_le_of_lt _ hndc,
+  apply nat.add_le_add_right list.index_of_le_length,
 end
 
 lemma fin_add_lt_of_add_le (n p c : ℕ) (hnpc : n + p ≤ c) (i : fin n) : (i : ℕ) + p < c :=
@@ -91,34 +88,53 @@ begin
   apply nat.add_lt_add_right i.2,
 end
 
-/-- ∑_{f ∈ n_var_monom_of_deg n d} xⱼ₊ₛ ∏ {0 ≤ i < n} xᵢ₊ₚᶠ⁽ⁱ⁾ in "context c"
- where j is the index of f in n_var_monom_of_deg n d
- the context should at least include the variables xⱼ₊ₛ -- this is hndc
- the context should at least include the variables xᵢ₊ₚ -- this is hpc -/
-@[simp] def poly_indexed_by_monoms (n d s p c : ℕ)
-  (hndc : (n_var_monom_of_deg_le n d).length + s ≤ c)
+-- ∑_{f ∈ n_var_monomials_of_deg n d} xⱼ₊ₛ ∏ {0 ≤ i < n} xᵢ₊ₚᶠ⁽ⁱ⁾ in "context c"
+-- where j is the index of f in n_var_monomials_of_deg n d
+-- the context should at least include the variables xⱼ₊ₛ -- this is hndc
+-- the context should at least include the variables xᵢ₊ₚ -- this is hpc
+@[simp] def poly_indexed_by_monos (n d s p c : ℕ)
+  (hndc : (n_var_monomials_of_deg_lt n d).length + s < c)
   (hnpc : n + p ≤ c) :
   bounded_ring_term c :=
--- sum indexed by the n-variable monom of degree < d
+-- sum indexed by the n-variable monomials of degree < d
 list.sumr
 (list.mapr
   (λ f : (fin n → ℕ),
     let
       x_js : bounded_ring_term c :=
-      x_ ⟨(list.index_of' f (n_var_monom_of_deg_le n d) + s) ,
-      poly_indexed_by_monoms_aux n d s c hndc f ⟩,
+      x_ ⟨(list.index_of f (n_var_monomials_of_deg_lt n d) + s) ,
+      poly_indexed_by_monos_aux n d s c hndc f ⟩,
       x_ip (i : fin n) : bounded_ring_term c :=
-      x_ ⟨ (i : ℕ) + p , fin_add_lt_of_add_le n p c hnpc i ⟩
+      x_ (⟨ (i : ℕ) + p , fin_add_lt_of_add_le n p c hnpc i ⟩)
     in
     x_js * (nat.prod n $ λ i, (x_ip i) ^ (f i) )
     )
-  (n_var_monom_of_deg_le n d)
+  (n_var_monomials_of_deg_lt n d)
 )
 
--- NOTE s = 2 * n
--- NOTE c = n * n_var_monom_of_deg_lt n.succ d + 2 * n
+
+#exit
+-- -- ∑ {f ∈ n_var_monomials_of_deg n.succ d} x₍ⱼ₊ₛ₎ ∏ {0 ≤ i < n} x₍ᵢ₊ₚ₎ᶠ⁽ⁱ⁾ in "context c"
+-- -- where j is the index of f in n_var_monomials_of_deg n.succ d
+-- @[simp] def poly_indexed_by_monos (n d s p c : ℕ) (h : 0 < c) :
+--   bounded_ring_term c :=
+-- begin
+--   rw ← nat.succ_pred_eq_of_pos h,
+--   apply poly_indexed_by_monos' n d s p,
+-- end
+
+
+-- NOTE s = 2 * n.succ
+-- NOTE c = n.succ * n_var_monomials_of_deg_lt n.succ d + 2 * n.succ
 
 end prop_decidable
+
+lemma inj_formula_aux {n d : ℕ} :
+  0 < n.succ * n_var_monomials_of_deg_lt_length n d + n.succ + n.succ :=
+begin
+  apply nat.lt_add_left 0 (n.succ) _ ,
+  simp,
+end
 
 -- in the context of having n.succ polynomials pⱼ indexed by
 -- their monomial coefficients,
@@ -126,55 +142,52 @@ end prop_decidable
 -- then each xᵢ = yᵢ.
 -- This says the polynomial map formed by the pⱼs is injective
 def inj_formula (n d : ℕ) :
-  bounded_ring_formula (n * (n_var_monom_of_deg_le_length n d)) :=
-let c := n * (n_var_monom_of_deg_le_length n d) + 2 * n,
-    monom := n_var_monom_of_deg_le_length n d in
+  bounded_ring_formula (n.succ * (n_var_monomials_of_deg_lt_length n d)) :=
+let c := n.succ * (n_var_monomials_of_deg_lt_length n d) + 2 * n.succ,
+    monom := n_var_monomials_of_deg_lt_length n d in
 -- for all pairs in the domain x₋ ∈ Kⁿ⁺¹ and ...
-bd_alls' n _
+bd_alls' n.succ _
 $
 -- ... y₋ ∈ Kⁿ⁺¹
-bd_alls' n _
+bd_alls' n.succ _
 $
 -- if at each pⱼ
 (bd_big_and n.succ
 -- pⱼ xᵢ = pⱼ yᵢ
   (λ j,
-    (poly_indexed_by_monoms n d (2 * n + j * monom) 0 _ sorry sorry)
+    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) 0 _)
     ≃
-    (poly_indexed_by_monoms n d (2 * n + j * monom) n _ sorry sorry)
+    (poly_indexed_by_monos n.succ d (2 * n.succ + j * monom) (n.succ) _)
   )
 )
 -- then
 ⟹
--- at each 0 ≤ i < n,
-(bd_big_and n $ λ i,
+-- at each 0 ≤ i < n.succ,
+(bd_big_and n.succ $ λ i,
 -- xᵢ = yᵢ (where yᵢ is written as xᵢ₊ₙ₊₁)
-  x_ ⟨ i , sorry ⟩ ≃ x_ (⟨ i + n , sorry ⟩)
+  x_ i ≃ x_ (i + n.succ)
 )
 
 def surj_formula (n d : ℕ) :
-  bounded_ring_formula (n * n_var_monom_of_deg_le_length n d) :=
-let monom := n_var_monom_of_deg_le_length n d in
+  bounded_ring_formula (n.succ * n_var_monomials_of_deg_lt_length n d) :=
+let monom := n_var_monomials_of_deg_lt_length n d in
 -- for all z₋ ∈ Kⁿ⁺¹ in the codomain
-bd_alls' n _
+bd_alls' n.succ _
 $
 -- there exists x₋ ∈ Kⁿ⁺¹ in the domain such that
-bd_exs' n _
+bd_exs' n.succ _
 $
 -- at each 0 ≤ j < n.succ
-bd_big_and n
+bd_big_and n.succ
 $
 -- zⱼ = pⱼ x₋
-λ j,
-  x_ ⟨ j , sorry ⟩
-  ≃
-  poly_indexed_by_monoms n d (n.succ + n.succ + j * monom) 0 _ sorry sorry
+λ j, x_ j ≃ poly_indexed_by_monos n.succ d (n.succ + n.succ + j * monom) 0 _
 
 def Ax_Groth_formula (n d : ℕ) : sentence ring_signature :=
 -- quantify over (n.succ) many (n.succ-variable polynomials) called ps;
 -- i.e. the data of a polynomial map
--- by quantifying over (n.succ * monom_of_bounded_degree) monomial coefficients
-bd_alls (n * (n_var_monom_of_deg_le_length n d))
+-- by quantifying over (n.succ * monomials_of_bounded_degree) monomial coefficients
+bd_alls (n.succ * (n_var_monomials_of_deg_lt_length n d))
 -- if the polynomial function is injective then it is surjective
 $ inj_formula n d ⟹ surj_formula n d
 
@@ -186,14 +199,23 @@ def poly_map {K : Type} [comm_semiring K] {n : ℕ} :
 λ ps as k, mv_polynomial.eval as (ps k)
 
 lemma realize_Ax_Groth_formula {K : Type} [field K] [is_alg_closed K]
-  (h0 : char_zero K) (n d : ℕ) :
-  struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
-sorry
+  (h0 : char_zero K) (n d : ℕ) : struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d := sorry
 
 ------------
 def dvector.of_list {A : Type} : Π (as : list A), dvector A (list.length as)
 | list.nil := []
 | (list.cons a as) := dvector.cons a (dvector.of_list as)
+
+-- #check list.length_map
+
+-- def coeffs_dvector_of_mv_polynomial {K : Type} [comm_semiring K] {n d : ℕ}
+--   (p : mv_polynomial (fin n.succ) K) (hdeg : mv_polynomial.total_degree p < d) :
+--   dvector K (list.length (coeffs_list_of_mv_polynomial d p)) :=
+-- dvector.of_list (coeffs_list_of_mv_polynomial d p)
+-- ------------
+
+-- #check @list.of_fn
+-- #eval list.join (list.cons (list.cons 0 list.nil) (list.cons (list.cons 1 list.nil) list.nil))
 
 section semiring
 
@@ -201,12 +223,11 @@ variables {A : Type} [comm_semiring A] {n : ℕ}
 
 -- takes a polynomial map (preferably of total deg < d) and gives list of coeffs of each polynomial
 @[simp] def poly_map_data.coeffs_list
-  {n : ℕ} (d : ℕ) (ps : poly_map_data A n) : list A :=
-list.join (list.of_fn (λ i : fin n, coeffs_list_of_mv_polynomial d (ps i)))
+  {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) : list A :=
+list.join (list.of_fn (λ i : fin n.succ, coeffs_list_of_mv_polynomial d (ps i)))
 
 /- Writes polynomial map into a dvector of its coefficients -/
-def poly_map_data.coeffs_dvector
-  {n : ℕ} (d : ℕ) (ps : poly_map_data A n) :
+def poly_map_data.coeffs_dvector {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) :
   dvector A (poly_map_data.coeffs_list d ps).length :=
 dvector.of_list (poly_map_data.coeffs_list d ps)
 
@@ -223,24 +244,21 @@ begin
 end
 
 lemma coeffs_list_of_mv_polynomial_const {d : ℕ}
-  (ps : poly_map_data A n) (i : fin n) :
-  (coeffs_list_of_mv_polynomial d (ps i)).length
-  =
-  n_var_monom_of_deg_le_length n d :=
+  (ps : poly_map_data A n.succ) (i : fin n.succ) :
+  (coeffs_list_of_mv_polynomial d (ps i)).length = n_var_monomials_of_deg_lt_length n d :=
 by simp
 
-lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map_data A n) :
-  (n * n_var_monom_of_deg_le_length n d) = (poly_map_data.coeffs_list d ps).length :=
+lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map_data A n.succ) :
+  (n.succ * n_var_monomials_of_deg_lt_length n d) = (poly_map_data.coeffs_list d ps).length :=
 begin
   simp only [poly_map_data.coeffs_list, list.length_join],
   rw list.map_length_of_fn_const _ (coeffs_list_of_mv_polynomial_const ps),
 end
 
-/- Writes polynomial map into a dvector of its coefficients
-  (with a better variable context) -/
+/- Writes polynomial map into a dvector of its coefficients (with a better variable context) -/
 lemma poly_map_data.coeffs_dvector' {n : ℕ} (d : ℕ)
-  (ps : poly_map_data A n) :
-  dvector A (n * n_var_monom_of_deg_le_length n d) :=
+  (ps : poly_map_data A n.succ) :
+  dvector A (n.succ * n_var_monomials_of_deg_lt_length n d) :=
 begin
   have xs0 := poly_map_data.coeffs_dvector d ps,
   rw ← variable_bound_equal d ps at xs0,
@@ -334,11 +352,11 @@ end
 -- list.sumr
 -- (list.mapr
 --   (λ f : (fin n.succ → ℕ),
---     (x_ (list.index_of f (n_var_monom_of_deg_lt n d) + s))
+--     (x_ (list.index_of f (n_var_monomials_of_deg_lt n d) + s))
 --     *
 --     (nat.prod n.succ $ λ i, (x_ (i + p)) ^ (f i) )
 --     )
---   (n_var_monom_of_deg_lt n d)
+--   (n_var_monomials_of_deg_lt n d)
 -- )
 
 
@@ -361,17 +379,17 @@ begin
 end
 
 lemma realize_nat_prod {A : Type*} [comm_ring A]
-  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c) :
-  Π (n : ℕ) (ts : fin n → bounded_ring_term c),
-  realize_bounded_term xs (nat.prod _ ts) dvector.nil
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c)
+  (ts : ℕ → bounded_ring_term c) : Π n,
+  realize_bounded_term xs (nat.prod n ts) dvector.nil
   =
-  nat.prod n (λ i, realize_bounded_term xs (ts i) dvector.nil)
-| nat.zero ts :=
+  nat.prod n (λ n, realize_bounded_term xs (ts n) dvector.nil)
+| nat.zero :=
 begin
   simp only [nat.prod],
   refl,
 end
-| (nat.succ n) ts :=
+| (nat.succ n) :=
 begin
   simp only [nat.prod, struc_to_ring_struc.func_map, dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
   ring_signature.mul, dvector.nth],
@@ -396,27 +414,24 @@ begin
   refl,
 end
 
-#exit
-
 lemma realize_poly_indexed_by_monos
   {A : Type*} [comm_ring A] {n d s p c : ℕ}
-  (hcf : Π (f : fin n → ℕ),
-    list.index_of' f (n_var_monom_of_deg_le n d) + s < c)
-  (hci : Π (i : ℕ), i + p < c)
-  {xs : dvector (struc_to_ring_struc.Structure A) c}  :
-  realize_bounded_term xs (poly_indexed_by_monoms n d s p c sorry sorry) dvector.nil
+  (hcf : Π (f : fin n.succ → ℕ), list.index_of f (n_var_monomials_of_deg_lt n d) + s < c.succ)
+  (hci : Π (i : ℕ), i + p < c.succ)
+  {xs : dvector (struc_to_ring_struc.Structure A) c.succ}  :
+  realize_bounded_term xs (poly_indexed_by_monos n d s p c) dvector.nil
   =
   list.sumr
   (list.mapr
     (λ f,
-    (dvector.nth xs (list.index_of' f (n_var_monom_of_deg_le n d) + s) (hcf f))
+    (dvector.nth xs (list.index_of f (n_var_monomials_of_deg_lt n d) + s) (hcf f))
     *
-    (nat.prod n $ λ i, ((dvector.nth xs (i + p) (hci i)) ^ (f i) ))
+    (nat.prod n.succ $ λ i, ((dvector.nth xs (i + p) (hci i)) ^ (f i) ))
     )
-  (n_var_monom_of_deg_le n d)
+  (n_var_monomials_of_deg_lt n d)
   ) :=
 begin
-  simp only [poly_indexed_by_monoms],
+  simp only [poly_indexed_by_monos],
   rw realize_sumr,
   rw ← list.comp_mapr,
   congr,
@@ -453,19 +468,19 @@ lemma realize_poly_map_data_coeffs_xs
   (i : fin n.succ)
   :
   realize_bounded_term (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps)))
-      (poly_indexed_by_monoms n.succ d
-        (2 * n.succ + ↑i * (d.natlist (n_var_monom_of_deg n.succ)).length)
+      (poly_indexed_by_monos n.succ d
+        (2 * n.succ + ↑i * (d.natlist (n_var_monomials_of_deg n.succ)).length)
         0
-        (n.succ * n_var_monom_of_deg_le_length n d + n.succ + n))
+        (n.succ * n_var_monomials_of_deg_lt_length n d + n.succ + n))
       dvector.nil
   =
   mv_polynomial.eval (λ (i : fin n.succ), xs.nth i i.2) (ps i) :=
 begin
-  rw realize_poly_indexed_by_monoms,
+  rw realize_poly_indexed_by_monos,
   { sorry },
   {
     intro f, -- f is a monomial
-    simp only [n_var_monom_of_deg_le],
+    simp only [n_var_monomials_of_deg_lt],
     sorry,
   },
   {
@@ -502,8 +517,8 @@ begin
     funext i, -- for each i < n (... the tuples at i are equal)
     simp only [poly_map],
     have hImagei := hImage i,
-    simp only [n_var_monom_of_deg_le_length, realize_bounded_formula,
-      n_var_monom_of_deg_le] at hImagei,
+    simp only [n_var_monomials_of_deg_lt_length, realize_bounded_formula,
+      n_var_monomials_of_deg_lt] at hImagei,
     convert hImagei,
     sorry,
     sorry,
@@ -514,8 +529,8 @@ begin
 end
 
 -- realize_bounded_term (ys.append (xs.append xs0))
-      -- (poly_indexed_by_monoms n.succ d (2 * n.succ + ↑i * (nat.natlist d (n_var_monom_of_deg n.succ)).length) 0
-      --    (n.succ * n_var_monom_of_deg_le_length n d + n.succ + n.succ)
+      -- (poly_indexed_by_monos n.succ d (2 * n.succ + ↑i * (nat.natlist d (n_var_monomials_of_deg n.succ)).length) 0
+      --    (n.succ * n_var_monomials_of_deg_lt_length n d + n.succ + n.succ)
       --    inj_formula_aux)
       -- dvector.nil
       --
