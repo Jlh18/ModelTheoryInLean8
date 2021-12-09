@@ -2,8 +2,11 @@ import Rings.Rings
 import Rings.Fields
 import Rings.ToMathlib.list
 import Rings.ToMathlib.nat
+import Rings.ToMathlib.fol
 import algebra.big_operators.finprod
+
 import data.finset.basic
+
 
 namespace AxGroth
 
@@ -199,7 +202,8 @@ section semiring
 
 variables {A : Type} [comm_semiring A] {n : ℕ}
 
--- takes a polynomial map (preferably of total deg < d) and gives list of coeffs of each polynomial
+/-- takes a polynomial map
+  (preferably of total deg < d) and gives list of coeffs of each polynomial -/
 @[simp] def poly_map_data.coeffs_list
   {n : ℕ} (d : ℕ) (ps : poly_map_data A n) : list A :=
 list.join (list.of_fn (λ i : fin n, coeffs_list_of_mv_polynomial d (ps i)))
@@ -210,34 +214,26 @@ def poly_map_data.coeffs_dvector
   dvector A (poly_map_data.coeffs_list d ps).length :=
 dvector.of_list (poly_map_data.coeffs_list d ps)
 
-lemma list.map_length_of_fn_const {α} {m : ℕ} (f : fin n → list α)
-  (h : ∀ i : fin n, (f i).length = m) :
-  (list.map list.length (list.of_fn f)).sum = n * m :=
-begin
- rw list.map_of_fn,
- rw list.sum_of_fn,
- have h' : (λ (i : fin n), (list.length ∘ f) i) = λ (i : fin n), m,
- {funext, exact h i},
- rw h',
- simp,
-end
-
-lemma coeffs_list_of_mv_polynomial_const {d : ℕ}
-  (ps : poly_map_data A n) (i : fin n) :
-  (coeffs_list_of_mv_polynomial d (ps i)).length
+/-- the number of coefficients of a mv_polynomial = number of monomials -/
+lemma coeffs_list_length_eq_n_var_monom_length {d : ℕ}
+  (p : mv_polynomial (fin n) A) :
+  (coeffs_list_of_mv_polynomial d p).length
   =
   n_var_monom_of_deg_le_length n d :=
 by simp
 
+/-- lemma for matching up lengths of contexts for mv_polynomials -/
 lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map_data A n) :
   (n * n_var_monom_of_deg_le_length n d) = (poly_map_data.coeffs_list d ps).length :=
 begin
   simp only [poly_map_data.coeffs_list, list.length_join],
-  rw list.map_length_of_fn_const _ (coeffs_list_of_mv_polynomial_const ps),
+  rw list.map_length_of_fn_const,
+  intro i,
+  apply coeffs_list_length_eq_n_var_monom_length,
 end
 
 /- Writes polynomial map into a dvector of its coefficients
-  (with a better variable context) -/
+  (with a replaced variable context) -/
 lemma poly_map_data.coeffs_dvector' {n : ℕ} (d : ℕ)
   (ps : poly_map_data A n) :
   dvector A (n * n_var_monom_of_deg_le_length n d) :=
@@ -247,75 +243,7 @@ begin
   exact xs0,
 end
 
-open mv_polynomial
-
--- (X₀ + 1 , X₁ + 1)
--- def example_poly_map : poly_map_data ℤ 2 := λ k, X k + 1
-
-
-
 end semiring
-
--- -- move to ToMathlib
--- def bd_pis {A : Type u} : Π (n : ℕ) (P : (fin n → A) → Prop), Prop
--- | nat.zero P := P fin_zero_elim
--- | (nat.succ n) P := Π (a : A), bd_pis n $ λ as, P $ fin.cons a as
-
--- lemma realize_bounded_formula_bd_big_and' {L} {S : Structure L} {n m : ℕ}
---   {v : dvector S n} (f : fin m.succ → bounded_formula L n) :
---   realize_bounded_formula v (bd_big_and m.succ f) dvector.nil
---   ↔
---   (realize_bounded_formula v (bd_big_and m (λ k, f k)) dvector.nil
---   ∧
---   realize_bounded_formula v (f m) dvector.nil) :=
--- begin
---   simp only [bd_big_and, realize_bounded_formula_and],
--- end
-
-@[simp] lemma realize_bounded_formula_bd_big_and {L} {S : Structure L} {n : ℕ}
-  {v : dvector S n} : Π {m : ℕ} (f : fin m → bounded_formula L n),
-  realize_bounded_formula v (bd_big_and m f) dvector.nil
-  ↔
-  (Π k : fin m, realize_bounded_formula v (f k) dvector.nil)
-| nat.zero f :=
-begin
-  simp only [bd_big_and, realize_bounded_formula_not,
-    realize_bounded_formula, true_iff, not_false_iff],
-  exact fin_zero_elim,
-end
-| (nat.succ m) f :=
-begin
-  simp only [bd_big_and, realize_bounded_formula_and],
-  split,
-  {
-    intros hf k,
-    rw realize_bounded_formula_bd_big_and at hf,
-    cases fin.lt_or_eq_fin k with hk,
-    -- by_cases hk : (k : ℕ) < m,
-    {
-      have h :=  hf.1 ⟨ k , _ ⟩,
-      {simpa using h},
-      {
-        rw fin.lt_coe_iff_val_lt,
-        exact hk,
-        exact lt_add_one m,
-      },
-    },
-    {rw h, exact hf.2}
-  },
-  {
-    intro hf,
-    split,
-    {
-      rw realize_bounded_formula_bd_big_and,
-      intro k,
-      apply hf k,
-    },
-    {exact hf m}
-  },
-end
-
--- #check list.sum
 
 @[simp] lemma realize_bounded_term_list_sumr
   {A : Structure ring_signature} {c : ℕ} {xs : dvector A c} :
@@ -330,16 +258,6 @@ begin
     ring_signature.add, list.sumr, realize_bounded_term],
   rw realize_bounded_term_list_sumr,
 end
-
--- list.sumr
--- (list.mapr
---   (λ f : (fin n.succ → ℕ),
---     (x_ (list.index_of f (n_var_monom_of_deg_lt n d) + s))
---     *
---     (nat.prod n.succ $ λ i, (x_ (i + p)) ^ (f i) )
---     )
---   (n_var_monom_of_deg_lt n d)
--- )
 
 
 def realize_add_zero_hom {A : Type*} [comm_ring A]

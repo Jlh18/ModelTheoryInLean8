@@ -72,7 +72,20 @@ begin
   }
 end
 
---  #check list.decidable_mem
+/-- if all the lists from fin n → list α are the same length m then
+  the whole thing has length n * m
+-/
+lemma map_length_of_fn_const {α} {n m : ℕ} (f : fin n → list α)
+  (h : ∀ i : fin n, (f i).length = m) :
+  (list.map list.length (list.of_fn f)).sum = n * m :=
+begin
+ rw list.map_of_fn,
+ rw list.sum_of_fn,
+ have h' : (λ (i : fin n), (list.length ∘ f) i) = λ (i : fin n), m,
+ {funext, exact h i},
+ rw h',
+ simp,
+end
 
 @[simp] def index_of' {A : Type*} [decidable_eq A] (a : A) (l : list A) : ℕ :=
 ite (a ∈ l) (index_of a l) 0
