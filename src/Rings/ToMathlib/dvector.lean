@@ -32,4 +32,8 @@ namespace dvector
   | nat.zero (nat.succ n) (dvector.cons a as) h := by simp
   | (nat.succ k) (nat.succ n) (dvector.cons a as) h := by {simpa using nth_eq_succ_nth}
 
+  def of_list {A : Type} : Π (as : list A), dvector A (list.length as)
+  | list.nil := dvector.nil
+  | (list.cons a as) := dvector.cons a (of_list as)
+
 end dvector

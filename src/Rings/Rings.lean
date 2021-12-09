@@ -2,6 +2,9 @@ import tactic
 import fol
 import Rings.Notation
 import Rings.ToMathlib
+import Rings.ToMathlib.fol
+import Rings.ToMathlib.dvector
+import Rings.ToMathlib.fin
 import data.polynomial.eval
 import data.mv_polynomial
 
@@ -471,7 +474,7 @@ namespace polynomial
     rw mv_polynomial.realized_term_is_evaluated_poly,
     rw dvector.fin_val_eq_x_val,
     rw mv_polynomial.eval_eq_poly_eval_mv_coeffs,
-    simp only [dvector.fin_val, function.comp_app, dvector.x_val,
+    simp only [dvector.fin_val, function.comp_app, fin.x_val,
       mv_polynomial.to_polynomial, term_evaluated_at_coeffs],
     have hcoes : polynomial.C.comp (int.cast_ring_hom AStruc) = int.cast_ring_hom (polynomial A) :=
     by simp,
