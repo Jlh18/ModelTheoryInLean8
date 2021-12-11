@@ -62,10 +62,6 @@ list.map (finsupp_to_nat_of_fin_to_nat) $ n_var_monom_of_deg_le n d
   (p : mv_polynomial (fin n) K) : list K :=
 list.map (λ m, mv_polynomial.coeff m p) (n_var_monom_of_deg_le₀ n d)
 
-section prop_decidable
-
-local attribute [instance] classical.prop_decidable
-
 /-- there is always a monomial of degree ≤ d,
   namely the constant polynomial 1 -/
 lemma n_var_monoms_of_deg_le_length_ne_zero (n d : ℕ) :
@@ -161,9 +157,7 @@ begin
   simp,
 end
 
-end prop_decidable
-
-lemma inj_formula_aux0 (n d : ℕ) (j : fin n) :
+lemma inj_formula_aux0 {n d : ℕ} {j : fin n} :
   n_var_monom_of_deg_le_length n d +
     (j * (n_var_monom_of_deg_le_length n d) + n + n)
   ≤
@@ -187,7 +181,7 @@ begin
   exact j.2,
 end
 
-lemma inj_formula_aux1 (n d : ℕ) :
+lemma inj_formula_aux1 {n d : ℕ} :
   n + 0
   ≤
   n * n_var_monom_of_deg_le_length n d + n + n :=
@@ -197,7 +191,7 @@ begin
   apply nat.zero_le,
 end
 
-lemma inj_formula_aux2 (n d : ℕ) :
+lemma inj_formula_aux2 {n d : ℕ} :
   n + n
   ≤
   n * n_var_monom_of_deg_le_length n d + n + n :=
@@ -206,7 +200,7 @@ begin
   apply nat.le_add_left,
 end
 
-lemma inj_formula_aux3 (n d : ℕ) (i : fin n) :
+lemma inj_formula_aux3 {n d : ℕ} {i : fin n} :
   (i : ℕ)
   <
   n * n_var_monom_of_deg_le_length n d + n + n :=
@@ -215,7 +209,7 @@ begin
   apply nat.le_add_left,
 end
 
-lemma inj_formula_aux4 (n d : ℕ) (i : fin n) :
+lemma inj_formula_aux4 {n d : ℕ} {i : fin n} :
   (i : ℕ) + n
   <
   n * n_var_monom_of_deg_le_length n d + n + n :=
@@ -246,11 +240,11 @@ $
 (bd_big_and n
 -- pⱼ xᵢ = pⱼ yᵢ
   (λ j,
-    (poly_indexed_by_monoms n d (j * monom + n + n) 0 _ -- note 0
-      (inj_formula_aux0 n d j) (inj_formula_aux1 n d))
-    ≃
     (poly_indexed_by_monoms n d (j * monom + n + n) n _ -- note n
-      (inj_formula_aux0 n d j) (inj_formula_aux2 n d))
+      inj_formula_aux0 inj_formula_aux2)
+    ≃
+    (poly_indexed_by_monoms n d (j * monom + n + n) 0 _ -- note 0
+      inj_formula_aux0 inj_formula_aux1)
   )
 )
 -- then
@@ -258,7 +252,7 @@ $
 -- at each 0 ≤ i < n,
 (bd_big_and n $ λ i,
 -- xᵢ = yᵢ (where yᵢ is written as xᵢ₊ₙ₊₁)
-  x_ ⟨ i , inj_formula_aux3 n d i ⟩ ≃ x_ (⟨ i + n , inj_formula_aux4 n d i ⟩)
+  x_ ⟨ i , inj_formula_aux3 ⟩ ≃ x_ (⟨ i + n , inj_formula_aux4 ⟩)
 )
 
 -- in the context of having n polynomials pⱼ indexed by
@@ -280,10 +274,10 @@ bd_big_and n
 $
 -- zⱼ = pⱼ x₋
 λ j,
-  x_ ⟨ j , inj_formula_aux3 n d j ⟩
+  x_ ⟨ j , inj_formula_aux3 ⟩
   ≃
   poly_indexed_by_monoms n d (j * monom + n + n) 0 _
-    (inj_formula_aux0 n d j) (inj_formula_aux1 n d)
+    inj_formula_aux0 inj_formula_aux1
 
 /-- Ax-Grothendieck stated model-theoretically -/
 def Ax_Groth_formula (n d : ℕ) : sentence ring_signature :=
@@ -362,22 +356,49 @@ end
 
 end semiring
 
--- lemma realize_poly_map_data_coeffs_xs
---   {A : Type*} [comm_ring A] {n d : ℕ}
---   (ps : poly_map_data A n)
---   (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
---   (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
---   (i : fin n)
---   :
---   realize_bounded_term (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps)))
---       (poly_indexed_by_monoms n d
---         (2 * n + ↑i * (d.natlist (n_var_monom_of_deg n)).length)
---         0
---         (n * n_var_monom_of_deg_le_length n d + n + n))
+-- ⇑(mv_polynomial.eval (λ (i : fin n), ys.reverse.nth ↑i _)) (ps i) =
+--     realize_bounded_term (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps)))
+--      (poly_indexed_by_monoms n d (↑i * (n_var_monom_of_deg_le_d_finset n d).to_list.length + n + n) 0
+--          (n * n_var_monom_of_deg_le_length n d + n + n)
+--          _
+--          _)
 --       dvector.nil
+
+-- {A : Type*} [comm_ring A] {n d s p c : ℕ}
+--   (hndsc : (n_var_monom_of_deg_le n d).length + s ≤ c)
+--   (hnpc : n + p ≤ c)
+--   {xs : dvector (struc_to_ring_struc.Structure A) c}  :
+--   realize_bounded_term xs
+--     (poly_indexed_by_monoms hndsc hnpc) dvector.nil
 --   =
---   mv_polynomial.eval (λ (i : fin n), xs.nth i i.2) (ps i) :=
--- begin
+--
+
+lemma realize_poly_map_data_coeffs_xs
+  {A : Type*} [comm_ring A] {n d : ℕ}
+  (ps : poly_map_data A n)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
+  (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
+  (i : fin n)
+  :
+  mv_polynomial.eval (λ (i : fin n), xs.reverse.nth i i.2) (ps i)
+  =
+  list.sumr (list.mapr
+    (λ (f : fin n → ℕ),
+       (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+         (list.index_of' f (n_var_monom_of_deg_le_d_finset n d).to_list +
+            (↑i * (n_var_monom_of_deg_le_d_finset n d).to_list.length + n + n))
+         (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
+         *
+         (n.prod
+           (λ (i : fin n),
+             (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+             (↑i + n) inj_formula_aux4 ^ f i))
+         )
+    (n_var_monom_of_deg_le n d))
+  :=
+begin
+  sorry
+end
 --   rw realize_poly_indexed_by_monoms,
 --   { sorry },
 --   {
@@ -389,6 +410,35 @@ end semiring
 --     sorry
 --   },
 -- end
+
+lemma realize_poly_map_data_coeffs_ys
+  {A : Type*} [comm_ring A] {n d : ℕ}
+  (ps : poly_map_data A n)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
+  (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
+  (i : fin n)
+  :
+  mv_polynomial.eval (λ (i : fin n), ys.reverse.nth i i.2) (ps i)
+  =
+  list.sumr (list.mapr
+    (λ (f : fin n → ℕ),
+       (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+         (list.index_of' f (n_var_monom_of_deg_le_d_finset n d).to_list +
+            (↑i * (n_var_monom_of_deg_le_d_finset n d).to_list.length + n + n))
+         (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
+         *
+         (n.prod
+           (λ (i : fin n),
+             (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+             (↑i + 0) inj_formula_aux3 ^ f i))
+         )
+    (n_var_monom_of_deg_le n d))
+  :=
+begin
+  sorry
+end
+
+#exit
 
 lemma Ax_Groth_inj_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K)
@@ -413,18 +463,20 @@ begin
   intro hImage,
   rw realize_bounded_formula_bd_big_and,
   rw realize_bounded_formula_bd_big_and at hImage,
-  -- translate this to the images are equal (expressed algebraically / in the ring)
-  have himage : (poly_map ps (λ i, dvector.nth xs i i.2))
-               = poly_map ps (λ i, dvector.nth ys i i.2),
+  -- translate this to the images are equal
+  -- (expressed algebraically / in the ring)
+  have himage : (poly_map ps (λ i, dvector.nth xs.reverse i i.2))
+               = poly_map ps (λ i, dvector.nth ys.reverse i i.2),
+  -- note that i need to reverse the index since de bruijn index
   {
     funext i, -- for each i < n (... the tuples at i are equal)
     simp only [poly_map],
     have hImagei := hImage i,
     simp only [n_var_monom_of_deg_le_length, realize_bounded_formula,
-      n_var_monom_of_deg_le] at hImagei,
+      n_var_monom_of_deg_le, realize_poly_indexed_by_monoms] at hImagei,
     convert hImagei,
-    sorry,
-    sorry,
+    {rw realize_poly_map_data_coeffs_xs ps hdeg xs ys, refl },
+    {rw realize_poly_map_data_coeffs_ys ps hdeg xs ys, refl },
   },
   intro k, -- for each input (... they are equal)
   -- ... they are equal

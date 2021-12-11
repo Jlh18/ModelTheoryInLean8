@@ -36,4 +36,10 @@ namespace dvector
   | list.nil := dvector.nil
   | (list.cons a as) := dvector.cons a (of_list as)
 
+
+  def reverse {A : Type*} : Π {n : ℕ} (v : dvector A n),
+    dvector A n
+  | nat.zero _ := dvector.nil
+  | (nat.succ n) (dvector.cons a v) := dvector.concat (reverse v) a
+
 end dvector
