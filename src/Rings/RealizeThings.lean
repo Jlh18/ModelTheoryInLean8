@@ -15,11 +15,11 @@ variables
   Π {l : list (bounded_ring_term c)},
   realize_bounded_term xs (list.sumr l) dvector.nil
   =
-  list.sumr (list.mapr (λ t, realize_bounded_term xs t dvector.nil) l)
+  list.sumr (list.map (λ t, realize_bounded_term xs t dvector.nil) l)
 | list.nil := by simp
 | (list.cons t ts) :=
 begin
-  simp only [list.mapr, models_ring_theory_to_comm_ring.realize_add,
+  simp only [list.map, models_ring_theory_to_comm_ring.realize_add,
     ring_signature.add, list.sumr, realize_bounded_term],
   simp only [struc_to_ring_struc.func_map, dvector.last,
     struc_to_ring_struc.binaries_map, add_right_inj, dvector.nth],
@@ -36,28 +36,28 @@ lemma sumr
   {ts : list (bounded_ring_term c)} :
   realize_bounded_term xs (ts).sumr dvector.nil
   =
-  (list.mapr (add_zero_hom xs).to_fun ts).sumr :=
+  (list.map (add_zero_hom xs).to_fun ts).sumr :=
 begin
   rw ← list.mapr_sumr (add_zero_hom xs) ts,
   refl,
 end
 
-lemma nat_prod :
+lemma nat_non_comm_prod :
   Π (n : ℕ) (ts : fin n → bounded_ring_term c),
-  realize_bounded_term xs (nat.prod _ ts) dvector.nil
+  realize_bounded_term xs (nat.non_comm_prod _ ts) dvector.nil
   =
-  nat.prod n (λ i, realize_bounded_term xs (ts i) dvector.nil)
+  nat.non_comm_prod n (λ i, realize_bounded_term xs (ts i) dvector.nil)
 | nat.zero ts :=
 begin
-  simp only [nat.prod],
+  simp only [nat.non_comm_prod],
   refl,
 end
 | (nat.succ n) ts :=
 begin
-  simp only [nat.prod, struc_to_ring_struc.func_map,
+  simp only [nat.non_comm_prod, struc_to_ring_struc.func_map,
     dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
     ring_signature.mul, dvector.nth],
-  rw nat_prod n,
+  rw nat_non_comm_prod n,
 end
 
 lemma pow (t : bounded_ring_term c) : Π (n : ℕ),

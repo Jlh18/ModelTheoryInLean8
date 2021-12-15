@@ -1,34 +1,22 @@
 import data.list
-import Rings.ToMathlib
+import data.fintype.card
+
+structure add_zero_hom (M N : Type*) [has_zero M] [has_zero N] [has_add M] [has_add N] :=
+(to_fun : M → N)
+(map_zero : to_fun 0 = 0)
+(map_add : Π a b : M, to_fun (a + b) = to_fun a + to_fun b)
+
+structure mul_one_hom (M N : Type*) [has_one M] [has_one N] [has_mul M] [has_mul N] :=
+(to_fun : M → N)
+(map_one : to_fun 1 = 1)
+(map_mul : Π a b : M, to_fun (a * b) = to_fun a * to_fun b)
+
 
 namespace list
 
 variables {A B C : Type*}
 
-@[simp] def mapr (f : A → B) : list A → list B
-| []       := []
-| (a :: l) := f a :: mapr l
-
-lemma comp_mapr (f : A → B) (g : B → C) : Π (as : list A),
-  mapr (g ∘ f) as = mapr g (mapr f as)
-| nil := rfl
-| (cons hd tl) :=
-begin
-  simp only [true_and, eq_self_iff_true, mapr],
-  rw comp_mapr,
-end
-
-@[simp] lemma mapr_append (f : A → B) : Π (l1 l2 : list A),
-  mapr f (append l1 l2) = append (mapr f l1) (mapr f l2)
-| nil l2 := by simp
-| (cons hd tl) l2 :=
-begin
-  simp only [true_and, cons_append, eq_self_iff_true, mapr],
-  rw mapr_append,
-end
-
 section sumr
-
 variables [has_zero A] [has_add A] [has_zero B] [has_add B]
 
 @[simp] def sumr : list A → A
@@ -58,17 +46,29 @@ end
 
 lemma mapr_sumr
   [has_zero A] [has_add A] [add_comm_group B] (f : add_zero_hom A B) (as : list A) :
-  f.to_fun as.sumr = (mapr f.to_fun as).sumr :=
+  f.to_fun as.sumr = (map f.to_fun as).sumr :=
 begin
   induction as with a as hind,
   {
-    simp only [sumr, mapr],
+    simp only [sumr, map],
     exact f.map_zero,
   },
   {
-    simp only [sumr, mapr],
+    simp only [sumr, map],
     rw f.map_add,
     rw hind,
+  }
+end
+
+lemma sumr_eq_sum
+  [add_comm_group A] (as : list A) :
+  as.sumr = as.sum :=
+begin
+  induction as with a as hind,
+  {simp},
+  {
+    simp only [sumr, map, sum_cons, add_right_inj],
+    exact hind,
   }
 end
 
@@ -140,6 +140,7 @@ by { classical, ext, simp }
 
 @[simp] lemma to_list_to_finset [decidable_eq α] (s : finset α) : s.to_list.to_finset = s :=
 by { ext, simp }
+
 
 end to_list
 

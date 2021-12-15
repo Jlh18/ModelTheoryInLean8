@@ -113,7 +113,7 @@ namespace mv_polynomial
     simp,
   end)
 
-  @[simp] lemma eval_add {val : σ → A} {p q : mv_polynomial σ A} :
+  lemma eval_add {val : σ → A} {p q : mv_polynomial σ A} :
   mv_polynomial.eval val (p + q) = mv_polynomial.eval val p + mv_polynomial.eval val q :=
   by simp
 
@@ -422,16 +422,3 @@ def big_add {A : Type u} [has_add A] [has_zero A] : Π {n : ℕ}, (fin n → A) 
 def big_mul {A : Type u} [has_mul A] [has_one A] : Π {n : ℕ}, (fin n → A) → A
 | nat.zero := 1
 | (nat.succ n) := λ as, (big_mul (λ k : fin n, as k)) * as n
-
-lemma dvector.nil_append {A} {n} (f : dvector A n) : dvector.append dvector.nil f = f :=
-by simp
-
-structure add_zero_hom (M N : Type*) [has_zero M] [has_zero N] [has_add M] [has_add N] :=
-(to_fun : M → N)
-(map_zero : to_fun 0 = 0)
-(map_add : Π a b : M, to_fun (a + b) = to_fun a + to_fun b)
-
-structure mul_one_hom (M N : Type*) [has_one M] [has_one N] [has_mul M] [has_mul N] :=
-(to_fun : M → N)
-(map_one : to_fun 1 = 1)
-(map_mul : Π a b : M, to_fun (a * b) = to_fun a * to_fun b)
