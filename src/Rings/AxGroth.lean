@@ -411,7 +411,7 @@ end semiring
 lemma realize_poly_map_data_coeffs_xs
   {A : Type*} [comm_ring A] {n d : ℕ}
   (ps : poly_map_data A n)
-  (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d)
   (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
   (i : fin n)
   :
@@ -552,7 +552,8 @@ def support_sub_n_var_monom_of_deg_le_finset
   (p : mv_polynomial (fin n) A)
   (hdeg : p.total_degree ≤ d)
   :
-  p.support ⊆ finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d) :=
+  p.support ⊆
+  finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d) :=
 begin
   intros f hf,
   simp only [true_and, exists_prop, finset.mem_univ,
@@ -586,10 +587,22 @@ begin
   end ⟩,
 end
 
+def support_union_compl_eq_n_var_monom_of_deg_le_finset
+  {A : Type*} [comm_ring A] {n d : ℕ}
+  [decidable_eq (mv_polynomial (fin n) A)]
+  (p : mv_polynomial (fin n) A)
+  (hdeg : p.total_degree ≤ d)
+  :
+  p.support ∪
+  (finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d)
+    \ p.support) =
+  finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d) :=
+finset.union_sdiff_of_subset $ support_sub_n_var_monom_of_deg_le_finset _ hdeg
+
 lemma realize_poly_map_data_coeffs_ys
   {A : Type*} [comm_ring A] {n d : ℕ}
   (ps : poly_map_data A n)
-  (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d)
   (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
   (j : fin n)
   :
@@ -597,16 +610,16 @@ lemma realize_poly_map_data_coeffs_ys
   =
   list.sumr (list.map
     (λ (f : fin n → ℕ),
-       (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
-         (list.index_of' f (n_var_monom_of_deg_le_finset n d).to_list +
-            (j * (n_var_monom_of_deg_le_finset n d).to_list.length + n + n))
-         (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
-         *
-         (n.non_comm_prod
-           (λ (i : fin n),
-             (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
-             (i + 0) inj_formula_aux3 ^ f i))
-         )
+      (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+        (list.index_of' f (n_var_monom_of_deg_le_finset n d).to_list +
+           (j * (n_var_monom_of_deg_le_finset n d).to_list.length + n + n))
+        (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
+        *
+        (n.non_comm_prod
+          (λ (i : fin n),
+            (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+            (i + 0) inj_formula_aux3 ^ f i))
+        )
     (n_var_monom_of_deg_le n d))
   :=
 begin
@@ -617,14 +630,13 @@ begin
 
 end
 
--- #check support_univ
 
 
 lemma Ax_Groth_inj_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K)
   {n d : ℕ}
   (ps : poly_map_data K n)
-  (hdeg : ∀ (i : fin n), (ps i).total_degree < d)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d)
   (hinj : function.injective (poly_map ps))
   : @realize_bounded_formula _ (struc_to_ring_struc.Structure K)
     _ _ (@poly_map_data.coeffs_dvector' K _ n d ps)
@@ -674,7 +686,7 @@ end
 lemma Ax_Groth_aux {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K) {n d : ℕ}
   (ps : poly_map_data K n)
-  (hdeg : ∀ (i : fin n), mv_polynomial.total_degree (ps i) < d)
+  (hdeg : ∀ (i : fin n), mv_polynomial.total_degree (ps i) ≤ d)
   (hinj : function.injective (poly_map ps)) :
   function.surjective (poly_map ps) :=
 begin
@@ -700,11 +712,10 @@ end
 
 def total_deg_le_max_total_deg {K : Type} [comm_semiring K] :
   Π {n m : ℕ} (ps : fin n → mv_polynomial (fin m) K) (i : fin n),
-  mv_polynomial.total_degree (ps i) < max_total_deg ps + 1
+  mv_polynomial.total_degree (ps i) ≤ max_total_deg ps
 | 0 _ ps i := fin_zero_elim i
 | (n + 1) _ ps i :=
 begin
-  rw nat.lt_add_one_iff,
   simp only [max_total_deg],
   rw le_max_iff,
   cases fin.lt_or_eq_fin i with h,
@@ -716,7 +727,7 @@ begin
       exact h,
     },
     have hind :=
-    nat.le_of_lt_succ (@total_deg_le_max_total_deg n _ (λ j, ps j.val.cast) ⟨ i , hlt ⟩),
+    @total_deg_le_max_total_deg n _ (λ j, ps j.val.cast) ⟨ i , hlt ⟩,
     simp only [fin.coe_eq_cast_succ, fin.cast_succ_mk, fin.eta] at hind,
     rw ← fin.coe_coe_eq_self i,
     exact hind,
@@ -726,7 +737,6 @@ begin
     rw h,
   },
 end
-
 
 theorem Ax_Groth {K : Type} [field K] [is_alg_closed K]
   (h0 : char_zero K) {n : ℕ}
