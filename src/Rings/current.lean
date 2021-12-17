@@ -4,150 +4,115 @@ import Rings.ToMathlib.list
 import Rings.ToMathlib.nat
 import Rings.ToMathlib.fol
 import Rings.ToMathlib.mv_polynomial
+import Rings.ToMathlib.finset
+import Rings.ToMathlib.dvector
 import Rings.RealizeThings
 import algebra.big_operators.finprod
 import data.finset.basic
+import Rings.AxGroth
+
+open Rings
+open AxGroth
 
 noncomputable theory
 
-/-- composition by coe : fin d → ℕ -/
-def monom_of_bd_monom {n d : ℕ} :
-  (fin n → fin d) ↪ fin n → ℕ :=
-⟨
-  λ f, coe ∘ f ,
-  λ f g h,
-  begin
-    funext i,
-    have h' := congr_fun h i,
-    apply fin.coe_injective h',
-  end
-⟩
-
-/-- converts map from fin n to same map with finite support -/
-def finsupp_of_fin_dom {A : Type*} [has_zero A] {n : ℕ}
-  (f : fin n → A) :
-  fin n →₀ A :=
-finsupp.on_finset finset.univ f (λ a h, finset.mem_univ _)
-
-def finsupp_of_fin_dom_emb {A : Type*} [has_zero A] {n : ℕ} :
-  (fin n → A) ↪ fin n →₀ A :=
-⟨
-  finsupp_of_fin_dom ,
-  λ _ _ h, congr_arg finsupp.to_fun h,
-⟩
-
-lemma finsupp_of_fin_dom_to_fun {A : Type*} [has_zero A] {n : ℕ}
-  (f : fin n →₀ A) : finsupp_of_fin_dom f.to_fun = f :=
+lemma poly_map_data.coeffs_dvector'_nth_aux
+  {A : Type*} [comm_ring A] {n d : ℕ}
+  {ps : poly_map_data A n} (j : fin n) (f : fin n → ℕ)
+    (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
+  list.index_of' f (monom_deg_le_finset n d).to_list + ↑j * (monom_deg_le_finset n d).to_list.length <
+    n * monom_deg_le_length n d :=
 begin
-  simp only [finsupp_of_fin_dom],
-  apply finsupp.ext,
-  intro k,
-  simpa,
+  have h1 : (1 + ↑j) * monom_deg_le_length n d ≤ n * monom_deg_le_length n d,
+  {
+    rw [mul_le_mul_right (zero_lt_monom_deg_le_length n d),
+      nat.one_add, nat.succ_le_iff],
+    exact j.2,
+  },
+  apply lt_of_lt_of_le _ h1,
+  rw add_mul,
+  apply add_lt_add_right,
+  rw one_mul,
+  apply list.index_of'_lt_length (zero_lt_monom_deg_le_length n d),
 end
 
-/-- {f : fin n → ℕ | ∀ i, f i < d.succ }-/
-@[simp] def n_var_bd_monom (n d : ℕ) : finset (fin n → ℕ) :=
-finset.map (@monom_of_bd_monom n d.succ)
-finset.univ
-
--- then convert these to maps f : fin n → ℕ
-/-- { f : fin n → ℕ | sum f ≤ d } -/
-@[simp] def n_var_monom_of_deg_le_finset (n d : ℕ) : finset (fin n → ℕ) :=
-finset.filter
-  (λ f : fin n → ℕ, (finsupp_of_fin_dom f).support.sum f ≤ d)
-  (n_var_bd_monom n d)
-
-
-/-- list of all n-variable monomials of degree ≤ d -/
-def n_var_monom_of_deg_le (n d : ℕ) : list (fin n → ℕ) :=
-(n_var_monom_of_deg_le_finset n d).to_list
-
-/-- counts all n-variable monomials of degree ≤ d -/
-def n_var_monom_of_deg_le_length (n d : ℕ) : ℕ :=
-list.length $ n_var_monom_of_deg_le n d
-
-
-
-def support_sub_n_var_monom_of_deg_le_finset
+lemma poly_map_data.coeffs_dvector'_nth
   {A : Type*} [comm_ring A] {n d : ℕ}
-  (p : mv_polynomial (fin n) A)
-  (hdeg : p.total_degree ≤ d)
-  :
-  p.support ⊆
-  finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d) :=
-begin
-  intros f hf,
-  simp only [true_and, exists_prop, finset.mem_univ,
-    finset.mem_map, n_var_monom_of_deg_le_finset, finset.mem_filter],
-  exact ⟨ f.to_fun,
-  begin
-    have hf_img_lt : ∀ i : fin n, f i < d.succ,
-    {
-      intro i,
-      rw nat.lt_succ_iff,
-      apply le_trans _ hdeg,
-      exact mv_polynomial.support_le_total_degree i f hf,
-    },
-    refine ⟨ ⟨ _ , _ ⟩ , _ ⟩ ,
-    {
-      simp only [n_var_bd_monom, monom_of_bd_monom, finset.mem_map,
-        finset.mem_univ],
-      refine ⟨ λ k, ⟨ f k, hf_img_lt k⟩, _ , _ ⟩,
-      {simp},
-      {funext, simpa},
-    },
-    {
-      apply le_trans _ hdeg,
-      rw finsupp_of_fin_dom_to_fun,
-      apply finset.le_sup hf,
-    },
-    {
-      simp only [finsupp_of_fin_dom_emb, finsupp_of_fin_dom_to_fun,
-        function.embedding.coe_fn_mk],
-    }
-  end ⟩,
-end
+  {ps : poly_map_data A n} (j : fin n) (f : fin n → ℕ)
+    (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
+  (ps j).to_fun (finsupp_of_fin_dom_emb f) =
+    (poly_map_data.coeffs_dvector' d ps).nth
+      (list.index_of' f (monom_deg_le_finset n d).to_list +
+        ↑j * (monom_deg_le_finset n d).to_list.length)
+      (poly_map_data.coeffs_dvector'_nth_aux j f hdeg) :=
+sorry
 
-lemma support_union_compl_eq_n_var_monom_of_deg_le_finset
-  {A : Type*} [comm_ring A] {n d : ℕ}
-  (p : mv_polynomial (fin n) A)
-  (hdeg : p.total_degree ≤ d)
-  :
-  p.support ∪
-  (finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d)
-    \ p.support) =
-  finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d) :=
-finset.union_sdiff_of_subset $ support_sub_n_var_monom_of_deg_le_finset _ hdeg
 
-lemma mv_polynomial_sum_eq_finset_map_n_var_monom_of_deg_le_finset_sum
+
+
+lemma realize_poly_map_data_coeffs_ys
   {A : Type*} [comm_ring A] {n d : ℕ}
-  (p : mv_polynomial (fin n) A)
-  (hdeg : p.total_degree ≤ d)
-  (as : (fin n →₀ ℕ) → A)
+  [decidable_eq (mv_polynomial (fin n) ↥(struc_to_ring_struc.Structure A))]
+  (ps : poly_map_data A n)
+  (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d)
+  (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
+  (j : fin n)
   :
-  p.support.sum (λ (f : fin n →₀ ℕ), mv_polynomial.coeff f p * as f)
+  mv_polynomial.eval (λ (i : fin n), ys.nth i i.2) (ps j)
   =
-  (finset.map finsupp_of_fin_dom_emb (n_var_monom_of_deg_le_finset n d)).sum
-  (λ (f : fin n →₀ ℕ), mv_polynomial.coeff f p * as f)
+  list.sumr (list.map
+    (λ (f : fin n → ℕ),
+      (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+        (list.index_of' f (monom_deg_le_finset n d).to_list +
+           (j * (monom_deg_le_finset n d).to_list.length + n + n))
+        (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
+        *
+        (n.non_comm_prod
+          (λ (i : fin n),
+            (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+            (i + 0) inj_formula_aux3 ^ f i))
+        )
+    (monom_deg_le n d))
   :=
 begin
-  rw ← support_union_compl_eq_n_var_monom_of_deg_le_finset p hdeg,
-  rw finset.sum_union,
+  rw mv_polynomial.eval_eq',
+  -- rw ← realize_poly_map_data_coeffs_ys_aux_prod ps xs ys,
+  rw mv_polynomial_sum_eq_finset_map_monom_deg_le_finset_sum (ps j) (hdeg j),
+  rw finset.sum_map,
+  rw monom_deg_le,
+  rw list.sumr_eq_sum,
+  rw finset.sum_to_list,
+  congr,
+  funext f,
+  rw realize_poly_map_data_coeffs_ys_aux_prod ps xs ys f,
+  congr,
+  rw mv_polynomial.coeff,
+  rw dvector.nth_append_big,
   {
-    set LHS :=
-      p.support.sum (λ (f : fin n →₀ ℕ), mv_polynomial.coeff f p * as f)
-      with hLHS,
-    rw ← add_zero LHS,
-    rw ← hLHS,
-    congr,
-    symmetry,
-    apply finset.sum_eq_zero,
-    intros f hf,
-    rw finset.mem_sdiff at hf,
-    cases hf with hfl hfr,
-    unfold mv_polynomial.coeff,
-    rw finsupp.not_mem_support_iff.1 hfr,
-    exact zero_mul _,
+    rw dvector.nth_append_big,
+    {
+      simp only [add_assoc],
+      simp only [symm (add_assoc (list.index_of' f (monom_deg_le_finset n d).to_list)
+        (j * (monom_deg_le_finset n d).to_list.length ) (n + n))],
+      simp only [symm (add_assoc (list.index_of' f (monom_deg_le_finset n d).to_list
+        + j * (monom_deg_le_finset n d).to_list.length) n n)],
+      simp only [nat.add_sub_cancel],
+      sorry,
+    },
+    {
+      rw ← add_assoc,
+      rw nat.add_sub_cancel,
+      rw ← add_assoc,
+      apply nat.le_add_left,
+    },
   },
-  {exact disjoint_sdiff_self_right},
+  {
+    rw ← add_assoc,
+    apply nat.le_add_left,
+  },
+
+
+  -- have h : ∀ i : fin n, (finsupp_of_fin_dom_emb f) i = f i
+  -- := congr_fun (to_fun_finsupp_of_fin_dom_emb f),
 end
+

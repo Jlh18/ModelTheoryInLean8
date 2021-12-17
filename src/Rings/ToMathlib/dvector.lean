@@ -48,7 +48,7 @@ namespace dvector
   | (nat.succ n) (dvector.cons a v) := dvector.concat (reverse v) a
 
   /-- if you append and take nth its the same as just taking nth for small n-/
-  def nth_append {α : Type*} : Π {xl yl : ℕ}
+  def nth_append_small {α : Type*} : Π {xl yl : ℕ}
     {xs : dvector α xl} {ys : dvector α yl} {n : ℕ} (h : n < xl),
     (dvector.append xs ys).nth n (nat.lt_of_lt_of_le h (nat.le_add_left _ _))
     = xs.nth n h
@@ -57,11 +57,26 @@ namespace dvector
   | (nat.succ xl) yl (dvector.cons x xs) ys (nat.succ n) h :=
   begin
     simp only [dvector.nth, dvector.append],
-    rw ← (@nth_append xl yl xs ys n (nat.succ_lt_succ_iff.1 h)),
+    rw ← (@nth_append_small xl yl xs ys n (nat.succ_lt_succ_iff.1 h)),
     refl,
   end
-  -- def append_nth {A : Type*} {xs : dvector A } :
-  -- (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth (↑i + 0) inj_formula_aux3 ^ f i =
-  --   ys.reverse.nth ↑i _ ^ f i
+
+/-- if you append and take nth its the same as just taking n - kth for big n-/
+def nth_append_big {α : Type*} : Π {xl yl : ℕ}
+  {xs : dvector α xl} {ys : dvector α yl} {n : ℕ}
+  (hbig : xl ≤ n) (h : n < yl + xl),
+  (dvector.append xs ys).nth n h
+  = ys.nth (n - xl) ((nat.sub_lt_right_iff_lt_add hbig).2 h)
+| 0             yl nil                 ys n hbig h := by simpa
+| (nat.succ xl) yl (dvector.cons x xs) ys 0 hbig h :=
+begin
+  exfalso,
+  exact nat.not_succ_le_zero _ hbig,
+end
+| (nat.succ xl) yl (dvector.cons x xs) ys (nat.succ n) hbig h :=
+begin
+  simp only [nat.succ_sub_succ_eq_sub, dvector.append, dvector.nth],
+  apply nth_append_big (nat.le_of_succ_le_succ hbig),
+end
 
 end dvector

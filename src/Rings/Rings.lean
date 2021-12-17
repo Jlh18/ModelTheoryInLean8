@@ -83,8 +83,9 @@ namespace ring_signature
 
 -- has_pow comes for free by having instances of mul and 1 (see ToMathlib) -- input x ^ n
 
-@[simp] lemma pow_zero {n} (t : bounded_ring_term n) : t ^ 0 = 1 := rfl
-@[simp] lemma pow_succ {n m} (t : bounded_ring_term m) : t ^ (n + 1) = t * t ^ n := rfl
+@[simp] lemma pow_zero {n} (t : bounded_ring_term n) : npow_rec 0 t = 1 := rfl
+@[simp] lemma pow_succ {n m} (t : bounded_ring_term m) :
+  npow_rec (n + 1) t = t * npow_rec n t := rfl
 
 def bounded_ring_term.sum {d : ℕ} :
    Π (n : ℕ), (fin n → bounded_ring_term d) → bounded_ring_term d
@@ -548,7 +549,7 @@ namespace polynomial
   end
 
   lemma term_evaluated_at_coeffs_pow {n : ℕ} : Π {m : ℕ} {as : dvector A n},
-    polynomial.term_evaluated_at_coeffs as (x_ 0 ^ m) = polynomial.X ^ m
+    polynomial.term_evaluated_at_coeffs as (npow_rec m x_ 0) = polynomial.X ^ m
   | 0       _ :=
   begin
     rw ring_signature.pow_zero,
@@ -556,16 +557,11 @@ namespace polynomial
     refl,
   end
   | (n + 1) as :=
-  begin
-    rw ring_signature.pow_succ,
-    rw term_evaluated_at_coeffs_mul,
-    rw term_evaluated_at_coeffs_X,
-    rw term_evaluated_at_coeffs_pow,
-    refl
-  end
+  by rw [ring_signature.pow_succ, term_evaluated_at_coeffs_mul,
+     term_evaluated_at_coeffs_X, term_evaluated_at_coeffs_pow]; refl
 
   lemma term_evaluated_at_coeffs_monomial {n : ℕ} {m : ℕ} {as : dvector A n} {k : fin n} :
-    polynomial.term_evaluated_at_coeffs as (x_ (k.succ) * x_ 0 ^ m)
+    polynomial.term_evaluated_at_coeffs as (x_ (k.succ) * npow_rec m x_ 0)
       = polynomial.monomial m (dvector.nth' as k) :=
   begin
     rw term_evaluated_at_coeffs_mul,

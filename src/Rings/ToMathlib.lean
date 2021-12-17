@@ -14,9 +14,9 @@ universes u v
 
 lemma with_bot.succ_lt_succ_succ {n : ℕ} : (n + 1 : with_bot ℕ) < ↑n.succ + 1 := by tidy
 
-/-- More general version of monoid.has_pow -/
-instance has_pow_of_has_one_has_mul (A : Type u) [has_one A] [has_mul A] :
-  has_pow A ℕ := ⟨ λ t k, npow_rec k t ⟩
+-- More general version of monoid.has_pow
+-- instance has_pow_of_has_one_has_mul (A : Type u) [has_one A] [has_mul A] :
+--   has_pow A ℕ := ⟨ λ t k, npow_rec k t ⟩
 
 namespace mv_polynomial
   variables

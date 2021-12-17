@@ -117,14 +117,14 @@ end models_theory_of_fields_to_is_field
  and x_ 0 as the indeterminate -/
 @[simp] def gen_poly : Π (n : ℕ), bounded_term ring_signature (n + 2)
 | 0       := x_ 1
-| (n + 1) := (x_ (fin.succ n.succ)) * ((x_ 0) ^ (n + 1)) +
+| (n + 1) := (x_ (fin.succ n.succ)) * (npow_rec n.succ (x_ 0)) +
   bounded_preterm.lift_succ (gen_poly n)
 
 /-- Adds a monic term at the beginning of gen_poly.
  We will require that these polynomials have solutions for `algebraically closed`.
  We cannot just use gen_poly as we need the polynomials to have 0 < deg -/
 @[simp] def gen_monic_poly (n : ℕ) : bounded_term ring_signature (n + 2) :=
-(x_ 0) ^ (n + 2) + gen_poly n
+npow_rec (n + 2) (x_ 0) + gen_poly n
 
 section poly_lemmas
 
@@ -134,7 +134,7 @@ include hcomm hnt hde
 
 /-- xᵐ has degree m -/
 lemma deg_pow {n m : ℕ} {as : dvector A (n + 1)} :
-(polynomial.term_evaluated_at_coeffs as (x_ 0 ^ m)).degree = m :=
+(polynomial.term_evaluated_at_coeffs as (npow_rec m x_ 0)).degree = m :=
 begin
   rw polynomial.term_evaluated_at_coeffs_pow,
   apply polynomial.degree_X_pow,
@@ -185,7 +185,7 @@ lemma gen_monic_poly_non_const {n} {as : dvector A (n + 1)} :
 begin
   unfold gen_monic_poly,
   apply ne_of_gt,
-  have hp : (polynomial.term_evaluated_at_coeffs as (x_ 0 ^ (n + 2))).degree = n + 2,
+  have hp : (polynomial.term_evaluated_at_coeffs as (npow_rec (n + 2) x_ 0)).degree = n + 2,
   {apply deg_pow},
   have hq : (polynomial.term_evaluated_at_coeffs as (gen_poly n)).degree < n + 2,
   {
@@ -195,7 +195,7 @@ begin
     exact hde, -- why??
   },
   have hle : (polynomial.term_evaluated_at_coeffs as (gen_poly n)).degree
-    < (polynomial.term_evaluated_at_coeffs as (x_ 0 ^ (n + 2))).degree,
+    < (polynomial.term_evaluated_at_coeffs as (npow_rec (n + 2) x_ 0)).degree,
   { rw hp, exact hq },
   rw polynomial.term_evaluated_at_coeffs_add,
   rw (polynomial.degree_add_eq_left_of_degree_lt hle),
