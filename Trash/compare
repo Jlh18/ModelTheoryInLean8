@@ -1,0 +1,54 @@
+A : Type,
+_inst_1 : comm_ring.{0} A,
+n d : nat,
+ps : @AxGroth.poly_map_data A (@comm_ring.to_comm_semiring.{0} A _inst_1) n,
+j : fin n,
+f : fin n → nat,
+hf :
+  @has_mem.mem.{0 0} (fin n → nat) (list.{0} (fin n → nat)) (@list.has_mem.{0} (fin n → nat)) f
+    (AxGroth.monom_deg_le n d),
+hj :
+  @eq.{1} (@subtype.{1} nat (λ (i : nat), @has_lt.lt.{0} nat nat.has_lt i n))
+    (@subtype.mk.{1} nat (λ (i : nat), @has_lt.lt.{0} nat nat.has_lt i n)
+       (@subtype.val.{1} nat (λ (i : nat), @has_lt.lt.{0} nat nat.has_lt i n) j)
+       (@subtype.property.{1} nat (λ (i : nat), @has_lt.lt.{0} nat nat.has_lt i n) j))
+    j,
+h :
+  @eq.{1} (fin n → nat)
+    (@list.nth_le.{0} (fin n → nat) (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d))
+       (@list.index_of'.{0} (fin n → nat)
+          (λ (a b : fin n → nat),
+             (λ (a b : fin n → nat),
+                @fintype.decidable_pi_fintype.{0 0} (fin n) (λ (a : fin n), nat)
+                  (λ (a : fin n) (a b : nat), nat.decidable_eq a b)
+                  (fin.fintype n)
+                  a
+                  b)
+               a
+               b)
+          f
+          (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d)))
+       (@list.index_of'_lt_length.{0} (fin n → nat)
+          (λ (a b : fin n → nat),
+             (λ (a b : fin n → nat),
+                @fintype.decidable_pi_fintype.{0 0} (fin n) (λ (a : fin n), nat)
+                  (λ (a : fin n) (a b : nat), nat.decidable_eq a b)
+                  (fin.fintype n)
+                  a
+                  b)
+               a
+               b)
+          f
+          (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d))
+          (@list.length_pos_of_mem.{0} (fin n → nat) f
+             (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d))
+             hf)))
+    f
+⊢ @eq.{1} (fin n → nat) f
+    (@list.nth_le.{0} (fin n → nat) (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d))
+       (@list.index_of'.{0} (fin n → nat)
+          (@fintype.decidable_pi_fintype.{0 0} (fin n) (λ (a : fin n), nat) (λ (a : fin n), nat.decidable_eq)
+             (fin.fintype n))
+          f
+          (@finset.to_list.{0} (fin n → nat) (AxGroth.monom_deg_le_finset n d)))
+       (@index_of_monom_deg_le_lt_length n d f))

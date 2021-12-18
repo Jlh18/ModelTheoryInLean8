@@ -29,6 +29,21 @@ by { classical, ext, simp }
 @[simp] lemma to_list_to_finset [decidable_eq α] (s : finset α) : s.to_list.to_finset = s :=
 by { ext, simp }
 
+@[to_additive] lemma prod_to_list [comm_monoid β]
+  (s : finset α) (f : α → β) :
+  (list.map f s.to_list).prod = finset.prod s f :=
+begin
+  delta finset.prod,
+  rw [← multiset.coe_prod, ← multiset.coe_map, finset.coe_to_list],
+end
+
+lemma to_list_cons {a : α} {s : finset α} (h : a ∉ s) : (cons a s h).to_list ~ a :: s.to_list :=
+(list.perm_ext (nodup_to_list _) (by simp [h, nodup_to_list s])).2 $
+  λ x, by simp only [list.mem_cons_iff, finset.mem_to_list, finset.mem_cons]
+
+lemma to_list_insert [decidable_eq α] {a : α} {s : finset α} (h : a ∉ s) :
+  (insert a s).to_list ~ a :: s.to_list :=
+cons_eq_insert _ _ h ▸ to_list_cons _
 
 end to_list
 
@@ -44,11 +59,3 @@ dite (f x = 0)
 (λ h, finset.single_le_sum (λ s hs, nat.zero_le _) (finsupp.mem_support_iff.2 h))
 
 end finsupp
-
-@[to_additive] lemma finset.prod_to_list {A B : Type*} [comm_monoid B]
-  (s : finset A) (f : A → B) :
-  (list.map f s.to_list).prod = finset.prod s f :=
-begin
-  delta finset.prod,
-  rw [← multiset.coe_prod, ← multiset.coe_map, finset.coe_to_list],
-end

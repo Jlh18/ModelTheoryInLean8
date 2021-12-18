@@ -49,9 +49,25 @@ begin
 end
 
 /-- copy of bd_alls with ∃'s instead--/
-@[simp] def bd_exs' {L : Language} : Π k n : ℕ, bounded_formula L (n + k) → bounded_formula L n
-| 0 n         f := f
-| (k+1) n     f := bd_exs' k n (∃' f)
+@[simp] def bd_exs' {L : Language} (k n : ℕ) :
+  bounded_formula L (n + k) → bounded_formula L n :=
+λ f, bd_not (bd_alls' k n (bd_not f))
+
+/-- realizing ∀ x_1 ... x_k, f is the same as realizing f for each (x_1 ... x_k) -/
+lemma realize_bounded_formula_bd_exs' {L} {n} {k} {f : bounded_formula L (n + k)}
+  {S : Structure L} (v : dvector S n) :
+  (realize_bounded_formula v (bd_exs' k n f) dvector.nil)
+  ↔
+  (∃ xs : dvector S k, realize_bounded_formula (dvector.append xs v) f dvector.nil) :=
+begin
+  have hrw : (∀ (x : dvector ↥S k), ¬realize_bounded_formula (x.append v) f dvector.nil)
+    ↔ (∀ (x : dvector ↥S k), realize_bounded_formula (x.append v) (bd_not f) dvector.nil),
+  {simp only [realize_bounded_formula_not]},
+  simp only [bd_exs'],
+  rw [← not_iff_not, not_exists, hrw, realize_bounded_formula_not, not_not,
+    realize_bounded_formula_bd_alls'],
+end
+
 
 @[simp] lemma realize_bounded_formula_bd_big_and {L} {S : Structure L} {n : ℕ}
   {v : dvector S n} : Π {m : ℕ} (f : fin m → bounded_formula L n),
