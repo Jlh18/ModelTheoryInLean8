@@ -112,4 +112,22 @@ begin
   {simpa [dvector.nth, list.nth_le, nth_of_list l]},
 end
 
+def of_fn : (fin n → α) → dvector α n :=
+λ f, dvector.cast (list.length_of_fn _) (dvector.of_list (list.of_fn f))
+
+lemma nth_of_fn (as : fin n → α) (k : ℕ) (hk : k < n) :
+  (dvector.of_fn as).nth k hk = as ⟨ k , hk ⟩ :=
+by rw [of_fn, nth_cast, nth_of_list, list.nth_le_of_fn']
+
+
+
+def to_list : Π {n : ℕ},
+  dvector α n → list α
+| 0            as := []
+| (nat.succ n) (dvector.cons a as) := list.cons a (to_list as)
+
+-- def to_fn (n : ℕ) (as : dvector α n) : fin n → α :=
+-- dvector.nth' as
+
+
 end dvector

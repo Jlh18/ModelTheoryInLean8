@@ -1,20 +1,12 @@
-import Rings.Rings
-import Rings.Fields
-import Rings.ToMathlib.list
-import Rings.ToMathlib.nat
-import Rings.ToMathlib.fol
-import Rings.ToMathlib.mv_polynomial
-import Rings.ToMathlib.finset
-import Rings.ToMathlib.dvector
-import Rings.RealizeThings
-import algebra.big_operators.finprod
-import data.finset.basic
+import fol
 import Rings.AxGroth
 
 open Rings
 open AxGroth
 
 noncomputable theory
+
+variables {K : Type*} [field K] [is_alg_closed K]
 
 lemma Ax_Groth_surj_aux
   {n d : ℕ}
@@ -27,8 +19,8 @@ lemma Ax_Groth_surj_aux
   function.surjective (poly_map ps)
   :=
 begin
-  simp only [surj_formula,
-    realize_bounded_formula_bd_alls'
-    ] at hSurj,
-  sorry,
+  -- simp only [surj_formula,
+  --   realize_bounded_formula_bd_alls'
+  --   ] at hSurj,
+  sorry
 end
