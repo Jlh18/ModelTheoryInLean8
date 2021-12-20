@@ -3,6 +3,17 @@
  (lambda ()
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("geometry" "left=1in" "right=1in" "tmargin=25mm" "bmargin=25mm") ("xcolor" "dvipsnames") ("fontenc" "T1") ("inputenc" "utf8")))
+   (add-to-list 'LaTeX-verbatim-environments-local "lstlisting")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "lstinline")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-delims-local "lstinline")
+   (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
     "background/language"
@@ -164,9 +175,35 @@
    (LaTeX-add-environments
     "forward"
     "backward"
-    "rmk"
     "cd")
    (LaTeX-add-bibliographies
-    "refs"))
+    "refs")
+   (LaTeX-add-amsthm-newtheorems
+    "rmk")
+   (LaTeX-add-amsthm-newtheoremstyles
+    "definitionstyle"
+    "propositionstyle"
+    "exercisestyle"
+    "remarkstyle")
+   (LaTeX-add-mdframed-mdtheorems
+    '("dfn" "new")
+    '("prop" "new")
+    '("cor" "new")
+    '("lem" "new")
+    '("ex" "new")
+    '("eg" "new")
+    '("nttn" "new"))
+   (LaTeX-add-color-definecolors
+    "darkgrey"
+    "lightgrey"
+    "slightgrey"
+    "softblue"
+    "keywordcolor"
+    "tacticcolor"
+    "commentcolor"
+    "symbolcolor"
+    "sortcolor"
+    "attributecolor"
+    "draculaGrey"))
  :latex)
 

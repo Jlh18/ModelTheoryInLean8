@@ -29,10 +29,11 @@ We introduce the formalisations of the content in \texttt{lean} alongside the th
   (like a group structure, or ring structure)
   that consists of two pieces of data,
   a map called \texttt{functions} and another called \texttt{relations}.
-  Both take a natural number and spit out a \textit{type} (think \textit{set} for now)
+  Both take a natural number and spit out a \textit{type}
+  (which in \texttt{lean} might as well mean \textit{set})
   that consists respectively of all the function symbols and relation symbols of arity $n$.
 
-  In more detail: in type theory when we write \texttt{a A} we mean \texttt{a} is a \textit{term}
+  In more detail: in type theory when we write \texttt{a:A} we mean \texttt{a} is a \textit{term}
   of \textit{type} \texttt{A}.
   We can draw an analogy with the set theoretic notion $a \in A$,
   but types in \texttt{lean} have slightly different
@@ -114,9 +115,10 @@ We introduce the formalisations of the content in \texttt{lean} alongside the th
       \item The \link{dfn_int}{integers} can be defined as inductive types
     \end{itemize}
 
-    We now collect all the above into a single definition \texttt{ring_funcs}
+    We now collect all the above into a single definition \texttt{ring funcs}
     that takes each natural \texttt{n} to the type of \texttt{n}-ary
     function symbols in the language of rings.
+
     \begin{lstlisting}
       /-- All function symbols in RingSignature-/
       def ring_funcs : ℕ → Type u
@@ -124,6 +126,7 @@ We introduce the formalisations of the content in \texttt{lean} alongside the th
       | 1 := ring_unaries
       | 2 := ring_binaries
       | (n + 3) := pempty\end{lstlisting}
+
     The type \texttt{pempty} is the empty type and is meant to have no terms in it,
     since we wish to have no function symbols beyond arity $2$.
     Finally we make the language of rings
@@ -131,8 +134,7 @@ We introduce the formalisations of the content in \texttt{lean} alongside the th
     \begin{lstlisting}
       /-- The language of rings -/
       def ring_signature : Language :=
-      (Language.mk) (ring_funcs) (λ n, pempty)
-    \end{lstlisting}
+      (Language.mk) (ring_funcs) (λ n, pempty)\end{lstlisting}
 
 
 
