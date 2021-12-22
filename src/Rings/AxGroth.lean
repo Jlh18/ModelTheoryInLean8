@@ -367,7 +367,7 @@ def poly_map {K : Type*} [comm_semiring K] {n : ℕ} :
 
 /-- The main result: algebraically closed fields of characteristic zero
    satisfy Ax-Grothendieck formula -/
-lemma realize_Ax_Groth_formula {K : Type*} [field K] [is_alg_closed K]
+lemma realize_Ax_Groth_formula_of_char_zero {K : Type*} [field K] [is_alg_closed K]
   (h0 : char_zero K) (n d : ℕ) :
   struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
 sorry
@@ -901,7 +901,7 @@ lemma Ax_Groth_aux
   function.surjective (poly_map ps) :=
 begin
   let xs0 := poly_map_data.coeffs_dvector' d ps,
-  have hAG := realize_Ax_Groth_formula h0 n d,
+  have hAG := realize_Ax_Groth_formula_of_char_zero h0 n d,
   simp only [realize_sentence_bd_alls,
     Ax_Groth_formula, realize_bounded_formula] at hAG,
   -- injective -> realize inj_formula

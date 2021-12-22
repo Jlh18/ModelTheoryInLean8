@@ -87,16 +87,6 @@ namespace ring_signature
 @[simp] lemma pow_succ {n m} (t : bounded_ring_term m) :
   npow_rec (n + 1) t = t * npow_rec n t := rfl
 
-def bounded_ring_term.sum {d : ℕ} :
-   Π (n : ℕ), (fin n → bounded_ring_term d) → bounded_ring_term d
-| nat.zero ps := 1
-| (nat.succ n) ps := bounded_ring_term.sum n (λ k, ps k) + ps (n.succ)
-
-def bounded_ring_term.prod {d : ℕ} :
-   Π (n : ℕ), (fin n → bounded_ring_term d) → bounded_ring_term d
-| nat.zero ps := 1
-| (nat.succ n) ps := bounded_ring_term.prod n (λ k, ps k) * ps (n.succ)
-
 -- with has_one and has_add you can write any natural and lean will know what term you mean
 -- with has_neg you can write any integer etc.
 
@@ -754,7 +744,7 @@ variables (A : Type u) [comm_ring A]
 
 lemma structure_eq_carrier : A = struc_to_ring_struc.Structure A := rfl
 
-example : has_one (struc_to_ring_struc.Structure A) := by apply_instance
+-- example : has_one (struc_to_ring_struc.Structure A) := by apply_instance
 
 -- need to check how this works with inj -> surj thing
 
