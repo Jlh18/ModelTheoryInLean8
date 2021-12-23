@@ -2117,7 +2117,7 @@ def subst0_bounded_formula {n l} (f : bounded_preformula L (n+1) l) (s : bounded
 
 notation f `[`:max s ` /0]`:0 := fol.subst0_bounded_formula f s
 
-@[simp] lemma subst0_bounded_formula_fst {n l} (f : bounded_preformula L (n+1) l)
+lemma subst0_bounded_formula_fst {n l} (f : bounded_preformula L (n+1) l)
   (s : bounded_term L n) : (subst0_bounded_formula f s).fst = f.fst[s.fst//0] :=
 by rw [subst0_bounded_formula, bounded_preformula.cast_eq_fst, subst_bounded_formula_fst]
 
