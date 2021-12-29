@@ -107,6 +107,9 @@ namespace Lhom
 /- -/
 variables {L : Language.{u}} {L' : Language.{u}} (ϕ : L →ᴸ L')
 
+def cast1 {L0 L1 : Language} (heq : L0 = L1) : L0 →ᴸ L1 :=
+⟨λ n, cast (by rw heq) , λ n, cast (by rw heq)⟩
+
 protected def id (L : Language) : L →ᴸ L :=
 ⟨λn, id, λ n, id⟩
 
@@ -135,7 +138,13 @@ local infix ` ∘ `:60 := Lhom.comp
 
 @[simp]lemma id_is_left_identity {L1 L2} {F : L1 →ᴸ L2} : (Lhom.id L2) ∘ F = F := by {cases F, refl}
 
+@[simp]lemma trivial_cast1_is_left_identity {L1 L2} {F : L1 →ᴸ L2} :
+  (@Lhom.cast1 L2 L2 rfl) ∘ F = F := by {cases F, refl}
+
 @[simp]lemma id_is_right_identity {L1 L2} {F : L1 →ᴸ L2} : F ∘ (Lhom.id L1) = F := by {cases F, refl}
+
+@[simp]lemma trivial_cast1_is_right_identity {L1 L2} {F : L1 →ᴸ L2} :
+  F ∘ (@Lhom.cast1 L1 L1 rfl) = F := by {cases F, refl}
 
 structure is_injective : Prop :=
 (on_function {n} : injective (on_function ϕ : L.functions n → L'.functions n))
@@ -267,6 +276,70 @@ end
 | _ _ (f₁ ⟹ f₂)      := by simp*
 | _ _ (∀' f)          := by simp*
 
+lemma on_bounded_formula_fst_imp : ∀{n} (f₁ f₂ : bounded_preformula L n 0),
+  (ϕ.on_bounded_formula (f₁ ⟹ f₂)).fst = ϕ.on_formula (f₁ ⟹ f₂).fst
+:= by simp*
+
+lemma on_bounded_formula_fst_ex : ∀{n} (f : bounded_preformula L (n+1) 0),
+  (ϕ.on_bounded_formula (∃' f)).fst = ϕ.on_formula (∃' f).fst
+:= by simp*
+
+lemma on_bounded_formula_all {n} (f : bounded_preformula L (n+1) 0) :
+  ∀' ϕ.on_bounded_formula f = ϕ.on_bounded_formula (∀' f)
+:= by simp*
+
+lemma on_bounded_formula_not {n} (f : bounded_preformula L n 0) :
+  bd_not (ϕ.on_bounded_formula f) = ϕ.on_bounded_formula (bd_not f)
+:= by simp [bd_not]
+
+lemma on_bounded_formula_ex {n} (f : bounded_preformula L (n+1) 0) :
+  ∃' ϕ.on_bounded_formula f = ϕ.on_bounded_formula (∃' f)
+:= by simp only [bd_ex, on_bounded_formula_not, on_bounded_formula_all]
+
+lemma on_bounded_term_cast {n} : Π {m l} {t : bounded_preterm L n l} {h : n ≤ m},
+  ϕ.on_bounded_term (bounded_preterm.cast h t) =
+    bounded_preterm.cast h (ϕ.on_bounded_term t)
+| _ _ &k           _ := rfl
+| _ _ (bd_func f)  _ := rfl
+| _ _ (bd_app t s) _ :=
+begin
+  rw bounded_preterm.cast,
+  rw on_bounded_term,
+  rw @on_bounded_term_cast _ _ t,
+  rw @on_bounded_term_cast _ _ s,
+  refl,
+end
+
+lemma on_bounded_formula_cast1 : ∀{n l} (f : bounded_preformula L n l),
+  ϕ.on_bounded_formula f.cast1
+  =
+  (ϕ.on_bounded_formula f).cast1
+| _ _ bd_falsum       := rfl
+| _ _ (t₁ ≃ t₂)       :=
+by simp only [bounded_preformula.cast1, bounded_preformula.cast,
+    on_bounded_formula, on_bounded_term_cast, eq_self_iff_true, true_and]
+| _ _ (bd_rel R)      :=
+by simp only [bounded_preformula.cast1, bounded_preformula.cast,
+    on_bounded_formula]
+| _ _ (bd_apprel f t) :=
+begin
+  simp only [bounded_preformula.cast1, bounded_preformula.cast,
+    on_bounded_formula, on_bounded_term_cast, eq_self_iff_true, and_true],
+  exact on_bounded_formula_cast1 f,
+end
+| _ _ (f₁ ⟹ f₂)      :=
+begin
+  simp only [bounded_preformula.cast1, bounded_preformula.cast,
+  on_bounded_formula],
+  split,
+  repeat {apply on_bounded_formula_cast1},
+end
+| _ _ (∀' f)          :=
+begin
+  simp only [bounded_preformula.cast1, bounded_preformula.cast,
+    on_bounded_formula],
+  apply on_bounded_formula_cast1,
+end
 
 /- Various lemmas of the shape "on_etc is a functor to Type*" -/
 @[simp]lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2):

@@ -278,9 +278,8 @@ begin
     {by {exfalso, fapply nat.succ_ne_zero, exact y, apply (nat.le_zero_iff).mp, assumption}},
   },
   {
-    by_cases hyz : y = z+1, subst hyz;
-    by_cases x = z+1;
-    {repeat{dsimp[diagram.mk.map], simp*, refl}},
+    by_cases hyz : y = z+1,
+    subst hyz; by_cases x = z+1; {repeat{dsimp[diagram.mk.map], simp*, refl}},
     by_cases hxz : x = z+1,
     {exfalso, have h'': y < z+1 := lt_of_le_of_ne Hyz hyz, dsimp at *, linarith},
     {

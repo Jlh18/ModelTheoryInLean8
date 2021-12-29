@@ -1974,6 +1974,13 @@ end
 | _ _ _ _ (∀' f)          s rfl :=
   ∀' (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
 
+lemma subst_bounded_formula_imp {L} : Π {n n' n''} (f₁ f₂ : bounded_preformula L n'' 0)
+  (s : bounded_term L n') (h : n+n'+1 = n''),
+  subst_bounded_formula (f₁ ⟹ f₂) s h
+  =
+  (subst_bounded_formula f₁ s h) ⟹ (subst_bounded_formula f₂ s h)
+| _ _ _  f₁ f₂ s rfl := rfl
+
 notation f `[`:95 s ` // `:95 n ` // `:95 h `]`:0 := @fol.subst_bounded_formula _ n _ _ _ f s h
 
 @[simp] def subst_bounded_formula_fst : ∀{n n' n'' l} (f : bounded_preformula L n'' l)
@@ -2114,6 +2121,13 @@ end
 def subst0_bounded_formula {n l} (f : bounded_preformula L (n+1) l) (s : bounded_term L n) :
   bounded_preformula L n l :=
 (subst_bounded_formula f s $ zero_add (n+1)).cast_eq $ zero_add n
+
+lemma subst0_bounded_formula_imp {n} (f₁ f₂ : bounded_preformula L (n+1) 0)
+  (s : bounded_term L n) :
+  subst0_bounded_formula (f₁ ⟹ f₂) s
+  =
+  (subst0_bounded_formula f₁ s) ⟹ (subst0_bounded_formula f₂ s) :=
+by simpa only [subst0_bounded_formula, subst_bounded_formula_imp]
 
 notation f `[`:max s ` /0]`:0 := fol.subst0_bounded_formula f s
 
