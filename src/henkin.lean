@@ -898,17 +898,26 @@ end
 
 def complete_henkin_Theory_over {L : Language} (T : Theory L) (hT : is_consistent T) : Type u := Σ' T' : Theory_over T hT, has_enough_constants T'.val ∧ is_complete T'.val
 
-@[reducible]def henkinization {L : Language} {T : Theory L} (hT : is_consistent T) : Theory (@henkin_language L T hT) := T_infty T
+@[reducible]def henkinization
+{L : Language} {T : Theory L} (hT : is_consistent T) :
+  Theory (@henkin_language L T hT) :=
+T_infty T
 
 /-- Given an f : bounded_formula L_infty, return a Henkin witness for f, along with all the
     data and conditions needed to obtain this witness --/
-noncomputable def wit_infty {L} {T : Theory L} {hT : is_consistent T} (f : bounded_formula (@henkin_language L T hT) 1) : Σ c : (@henkin_language L T hT).constants, Σ (f' : Σ' (x : colimit (@henkin_bounded_formula_chain' L)), bounded_formula'_comparison x = f), Σ' (f'' : coproduct_of_directed_diagram (@henkin_bounded_formula_chain' L)), ⟦f''⟧ = f'.fst ∧ c = (henkin_language_canonical_map (f''.fst + 1)).on_function  (wit' f''.snd) :=
+noncomputable def wit_infty {L} {T : Theory L} {hT : is_consistent T}
+  (f : bounded_formula (@henkin_language L T hT) 1) :
+  Σ c : (@henkin_language L T hT).constants,
+  Σ (f' : Σ' (x : colimit (@henkin_bounded_formula_chain' L)),
+    bounded_formula'_comparison x = f),
+  Σ' (f'' : coproduct_of_directed_diagram (@henkin_bounded_formula_chain' L)),
+  ⟦f''⟧ = f'.fst ∧
+  c = (henkin_language_canonical_map (f''.fst + 1)).on_function (wit' f''.snd) :=
 begin
   have f_lift1 := classical.psigma_of_exists ((bounded_formula'_comparison_bijective).right f),
   have f_lift2 := germ_rep (f_lift1.fst),
   refine ⟨(henkin_language_canonical_map (f_lift2.fst.fst + 1)).on_function (wit' (f_lift2.fst.snd)), f_lift1,(f_lift2.fst), f_lift2.snd,rfl⟩,
 end
-
 
 
 @[simp]lemma henkinization_is_henkin {L : Language} {T : Theory L} (hT : is_consistent T) : has_enough_constants (henkinization hT) :=
@@ -925,20 +934,23 @@ begin
    exact f'', exact (wit' f'')},
   {fapply in_iota_of_in_step, fapply or.inr, tidy},
   {
-    let c_infty := (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))),
+    set c_infty :=
+      (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f'')))
+      with hc,
     have this1 : bounded_preformula.fst (∃' f) ⟹
       (bounded_preformula.fst f)[bounded_preterm.fst
           (bd_const ((henkin_language_canonical_map (i + 1)).on_function (wit' f''))) //
         0] = bounded_preformula.fst ((∃' f) ⟹ f[c_infty/0]),
     {
-      rw fst_imp,
-      simp only [fol.subst0_bounded_term, true_and, eq_self_iff_true],
-
-      sorry
+      rw [fst_imp, ← hc],
+      delta subst0_bounded_formula,
+      simp only [true_and, eq_self_iff_true,
+        fol.bounded_preformula.cast_eq_fst, subst_bounded_formula_fst],
     },
     rw this1,
     suffices : (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
-         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f''))) = (∃' f ⟹ f[c_infty /0]), by rw[this],
+         (wit_property (Lhom.on_bounded_formula henkin_language_inclusion f'') (wit' f'')))
+         = (∃' f ⟹ f[c_infty /0]), by rw[this],
     unfold wit_property at *, dsimp[c_infty], rw[<-canonical_map_quotient] at H,
     dsimp only [on_bounded_formula] at H,
     rw[<-Hf',<-H.left],
@@ -967,12 +979,7 @@ begin
           (Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
            ((Lhom.on_bounded_formula henkin_language_inclusion f'')[bd_const
            (wit' f'') /0])),
-    { sorry,
-      -- simp only [henkin_language_canonical_map,
-      --   canonical_map_language, canonical_inclusion_coproduct,
-      --   subst0_bounded_formula],
-
-    },
+    { rw on_bounded_formula_subst0_bounded_formula },
     rw[this2],
     have this3 : ∃' Lhom.on_bounded_formula (henkin_language_canonical_map (i + 1))
           (Lhom.on_bounded_formula henkin_language_inclusion f'')
@@ -1016,19 +1023,23 @@ begin
     },
     {
       obtain ⟨ s , H , hxs ⟩ := a,
-      simp only [henkinization, T_infty],
-      delta ι,
       refine ⟨ s , _ , hxs ⟩,
       simp only [on_sentence, set.mem_range, on_bounded_formula],
-      obtain ⟨ ⟨a , a1⟩ , b , hrw ⟩ :=  H,
+      obtain ⟨ ⟨S, _ ⟩ , hSmem , hrw ⟩ :=  H,
       rw ← hrw,
-      sorry,
+      exact hSmem,
     },
-    {sorry,
-    -- right, cases a_h with H₁ H₂, use a_w, refine ⟨_,‹_›⟩,
-    --   { unfold henkin_theory_schain, rw[set.mem_range] at H₁,
-    --     cases H₁ with n Hn, rw[set.mem_image], refine ⟨_,_⟩,
-    --     use a_w, tidy, apply is_consistent_iota; from ‹_› }
+    {
+      intro hx,
+      right,
+      obtain ⟨ s , hsmem , hxs ⟩ := hx,
+      simp only [exists_prop, set.mem_Union, set.sUnion_image,
+        exists_and_distrib_right, subtype.exists, subtype.coe_mk,
+        subtype.val_eq_coe],
+      obtain ⟨ k , hks ⟩ := hsmem,
+      refine ⟨ s , ⟨ _ , k , hks ⟩ , hxs ⟩,
+      rw ← hks,
+      exact ⟨ iota_inclusion_of_le (nat.zero_le _) , is_consistent_iota hT _ ⟩,
     }, recover
 end
 

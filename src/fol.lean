@@ -1974,7 +1974,22 @@ end
 | _ _ _ _ (∀' f)          s rfl :=
   ∀' (subst_bounded_formula f s $ by simp [succ_add]).cast_eq (succ_add _ _)
 
-lemma subst_bounded_formula_imp {L} : Π {n n' n''} (f₁ f₂ : bounded_preformula L n'' 0)
+lemma subst_bounded_formula_falsum : Π {n n' n''}
+  (s : bounded_term L n') (h : n+n'+1 = n''),
+  subst_bounded_formula bd_falsum s h
+  =
+  bd_falsum
+| _ _ _ s rfl := rfl
+
+lemma subst_bounded_formula_term : Π {n n' n''}
+  (s : bounded_term L n') (t₁ t₂ : bounded_term L n'')
+  (h : n+n'+1 = n''),
+  subst_bounded_formula (t₁ ≃ t₂) s h
+  =
+  subst_bounded_term (cast (by rw h) t₁) s ≃ subst_bounded_term (cast (by rw h) t₂) s
+| _ _ _ _ _ s rfl := rfl
+
+lemma subst_bounded_formula_imp : Π {n n' n''} (f₁ f₂ : bounded_preformula L n'' 0)
   (s : bounded_term L n') (h : n+n'+1 = n''),
   subst_bounded_formula (f₁ ⟹ f₂) s h
   =

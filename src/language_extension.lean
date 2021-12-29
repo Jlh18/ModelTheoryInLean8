@@ -259,6 +259,29 @@ end
 | _ (bd_func f)  := rfl
 | _ (bd_app t s) := by dsimp; simp*
 
+lemma on_bounded_term_subst_bounded_term {L0 L1} {F : L0 →ᴸ L1} {c : L0.constants}
+  {n n' : ℕ} : Π {l : ℕ} {t : bounded_preterm L0 (n + n' + 1) l},
+  F.on_bounded_term (subst_bounded_term t (bd_const c)) =
+    subst_bounded_term (F.on_bounded_term t) (bd_const (F.on_function c))
+| _ (bd_var k)     :=
+begin
+  by_cases hkn : k.val < n,
+  { simp only [Lhom.on_bounded_term, subst_bounded_term, dif_pos hkn] },
+  { by_cases hnk : n < k.val,
+    {simp only [Lhom.on_bounded_term, subst_bounded_term, dif_neg hkn,
+      dif_pos hnk]},
+    {simpa only [Lhom.on_bounded_term, subst_bounded_term, dif_neg hkn,
+      dif_neg hnk]},},
+end
+| _ (bd_func f)    := rfl
+| _ (bd_app t₁ t₂) :=
+begin
+  simp only [Lhom.on_bounded_term, subst_bounded_term],
+  split,
+  exact on_bounded_term_subst_bounded_term,
+  exact on_bounded_term_subst_bounded_term,
+end
+
 @[simp] def on_bounded_formula : ∀{n l} (f : bounded_preformula L n l), bounded_preformula L' n l
 | _ _ bd_falsum       := ⊥
 | _ _ (t₁ ≃ t₂)       := ϕ.on_bounded_term t₁ ≃ ϕ.on_bounded_term t₂
@@ -310,6 +333,28 @@ begin
   refl,
 end
 
+lemma on_bounded_formula_cast {L0 L1} {F : L0 →ᴸ L1} :
+  Π {n m l} {h : n ≤ m} {ψ : bounded_preformula L0 n l},
+      F.on_bounded_formula (bounded_preformula.cast h ψ) =
+    bounded_preformula.cast h (F.on_bounded_formula ψ)
+| _ _ _ h bd_falsum       := rfl
+| _ _ _ h (t₁ ≃ t₂)       :=
+by simp only [bounded_preformula.cast, Lhom.on_bounded_formula,
+    Lhom.on_bounded_term_cast, eq_self_iff_true, and_self, cast_eq]
+| _ _ _ h (bd_rel R)      := rfl
+| _ _ _ h (bd_apprel f t) :=
+by simp only [bounded_preformula.cast, Lhom.on_bounded_formula,
+    Lhom.on_bounded_term_cast, @on_bounded_formula_cast _ _ _ _ f,
+    eq_self_iff_true, and_self, cast_eq]
+| _ _ _ h (f₁ ⟹ f₂)     :=
+by simp only [bounded_preformula.cast, Lhom.on_bounded_formula,
+    Lhom.on_bounded_term_cast, @on_bounded_formula_cast _ _ _ _ f₁,
+    @on_bounded_formula_cast _ _ _ _ f₂,
+    eq_self_iff_true, and_self, cast_eq]
+| _ _ _ h (∀' f)          :=
+by simp only [bounded_preformula.cast, Lhom.on_bounded_formula,
+    @on_bounded_formula_cast _ _ _ _ f]
+
 lemma on_bounded_formula_cast1 : ∀{n l} (f : bounded_preformula L n l),
   ϕ.on_bounded_formula f.cast1
   =
@@ -340,6 +385,41 @@ begin
     on_bounded_formula],
   apply on_bounded_formula_cast1,
 end
+
+lemma on_bounded_formula_subst_bounded_formula
+  {L0 L1} {F : L0 →ᴸ L1} {c : L0.constants}
+  : Π {n n' n'' l} {ψ : bounded_preformula L0 n'' l} {h : n + (n' + 1) = n''},
+  F.on_bounded_formula (subst_bounded_formula ψ (bd_const c) h) =
+  subst_bounded_formula (F.on_bounded_formula ψ) (bd_const (F.on_function c)) h
+| _ _ _ _ bd_falsum       rfl := rfl
+| _ _ _ _ (t₁ ≃ t₂)       rfl :=
+by simp only [Lhom.on_bounded_formula,
+  subst_bounded_formula_term, bounded_preformula.cast_eq,
+  Lhom.on_bounded_term_cast, on_bounded_term_subst_bounded_term,
+  eq_self_iff_true, and_self, cast_eq]
+| _ _ _ _ (bd_rel R)      rfl :=
+by simp only [subst_bounded_formula, Lhom.on_bounded_formula]
+| _ _ _ _ (bd_apprel f t) rfl :=
+by simp only [subst_bounded_formula, Lhom.on_bounded_formula,
+  @on_bounded_formula_subst_bounded_formula _ _ _ _ f,
+  on_bounded_term_subst_bounded_term, eq_self_iff_true, and_self]
+| _ _ _ _ (f₁ ⟹ f₂)     rfl :=
+by simp only [subst_bounded_formula, Lhom.on_bounded_formula,
+  @on_bounded_formula_subst_bounded_formula _ _ _ _ f₁,
+  @on_bounded_formula_subst_bounded_formula _ _ _ _ f₂,
+  eq_self_iff_true, and_self]
+| _ _ _ _ (∀' f)          rfl :=
+by simp only [subst_bounded_formula, Lhom.on_bounded_formula,
+    bounded_preformula.cast_eq, on_bounded_formula_cast];
+   rw ← @on_bounded_formula_subst_bounded_formula _ _ _ _ f
+
+lemma on_bounded_formula_subst0_bounded_formula
+  {L0 L1} {F : L0 →ᴸ L1} {c : L0.constants}
+  {n l} {ψ : bounded_preformula L0 (n+1) l} :
+  F.on_bounded_formula (ψ[bd_const c /0]) =
+  (F.on_bounded_formula ψ)[bd_const (F.on_function c) /0] :=
+by simp only [subst0_bounded_formula, bounded_preformula.cast_eq,
+    on_bounded_formula_cast, on_bounded_formula_subst_bounded_formula]
 
 /- Various lemmas of the shape "on_etc is a functor to Type*" -/
 @[simp]lemma comp_on_function {L1} {L2} {L3} (g : L2 →ᴸ L3) (f : L1 →ᴸ L2):
