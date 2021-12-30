@@ -162,15 +162,20 @@ simp only [*, V.h_compat Hik, V.h_compat Hjk, function.injective.eq_iff, eq_self
 end
 
 /- Given a germ-equivalence class from the colimit, return a representative from the coproduct and a proof that this is a lift  -/
-noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) : Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a := classical.psigma_of_exists (quotient.exists_rep a)
+noncomputable def germ_rep {D} {F : directed_diagram D} (a : colimit F) :
+  Σ' x : (coproduct_of_directed_diagram F), ⟦x⟧ = a :=
+classical.psigma_of_exists (quotient.exists_rep a)
 
 @[simp]lemma canonical_map_quotient {D} {F : directed_diagram D} (a : coproduct_of_directed_diagram F) : canonical_map a.fst a.snd = ⟦a⟧ :=
 by {cases a, refl}
 
 /- Assuming canonical maps into the colimit are injective, ⟨i,x⟩ and ⟨j,y⟩ in the same fiber
 over a ⟦z⟧ : colimit F are related by any transition map i → j. -/
-@[simp]lemma eq_mor_of_same_fiber {D} {F : directed_diagram D} (a b : coproduct_of_directed_diagram F) {z : colimit F} (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
-                           (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i)) (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
+@[simp]lemma eq_mor_of_same_fiber {D} {F : directed_diagram D}
+  (a b : coproduct_of_directed_diagram F) {z : colimit F}
+  (Ha : ⟦a⟧ = z) (Hb : ⟦b⟧ = z)
+  (H_inj : ∀ i : D.carrier, function.injective (@canonical_map D F i))
+  (H_rel : D.rel a.fst b.fst) : F.mor H_rel a.snd = b.snd :=
 begin
 have H_eq : z = canonical_map (b.fst) (F.mor H_rel (a.snd)), by
   {have := (cocone_of_colimit F).h_compat, have H := congr_fun (@this a.fst b.fst H_rel) a.snd,

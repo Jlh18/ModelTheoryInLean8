@@ -351,11 +351,6 @@ begin
   }
 end
 
-lemma cast_comp_eq_self {L L1 : Language} {ϕ : L1 →ᴸ L} :
-  {on_function := λ (n : ℕ), cast rfl, on_relation := λ (n : ℕ), cast rfl} ∘ ϕ
-  = ϕ :=
-by cases ϕ; refl
-
 /- Given a language, iterate henkin_language_step, returning this data in the form
    of a directed diagram of types indexed by ℕ' -/
 def henkin_language_chain {L : Language} :
@@ -424,16 +419,16 @@ def L_infty (L) : Language :=
    colimit_language $ @henkin_language_chain L
 
 /-- For every n : ℕ, return the canonical inclusion L_n → L_infty  --/
-def henkin_language_canonical_map {L : Language} (m : ℕ) : (@henkin_language_chain L).obj m →ᴸ (@L_infty L) := by apply canonical_map_language
+def henkin_language_canonical_map {L : Language} (m : ℕ) :
+  (@henkin_language_chain L).obj m →ᴸ (@L_infty L) :=
+by apply canonical_map_language
 
 @[simp]lemma henkin_language_canonical_map_inj {L : Language} (m : ℕ) : Lhom.is_injective $ @henkin_language_canonical_map L m :=
 begin
   split,
-
   {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_function,
   have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_functions directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_functions, henkin_language_chain],
   fapply ((henkin_language_chain_maps_inj) L H).on_function},
-
   {intro n, unfold henkin_language_canonical_map canonical_map_language Lhom.on_relation,
   have := @canonical_map_inj_of_transition_maps_inj directed_type_of_nat (@diagram_relations directed_type_of_nat (@henkin_language_chain L) n), unfold canonical_map at this, apply this,intros i j H, dsimp[diagram_relations, henkin_language_chain],
   fapply ((henkin_language_chain_maps_inj) L H).on_relation}
@@ -492,9 +487,9 @@ begin
   refine ⟨λ k, bounded_preformula (@henkin_language_chain_objects L k) n l, _, _⟩,
   {intros x y H, apply Lhom.on_bounded_formula, apply @henkin_language_chain_maps L, exact H},
   {intros x y z f1 f2 f3, dsimp only [*],
-   have : (henkin_language_chain_maps L f3) =
-   (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
-   fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
+  have : (henkin_language_chain_maps L f3) =
+    (henkin_language_chain_maps L f2) ∘ (henkin_language_chain_maps L f1),
+  fapply henkin_language_chain.h_mor, rw[this, Lhom.comp_on_bounded_formula]}
 end
 
 @[reducible]def henkin_bounded_formula_chain' {L : Language} : directed_diagram ℕ' := @henkin_bounded_formula_chain L 1 0
@@ -998,11 +993,14 @@ rw[← Ha] at a2, exact ⟨a, a2⟩
 end
 
 /- For every n, T_n is a theory over T in Theory L_infty -/
-def henkin_Theory_over {L} (T : Theory L) (hT : is_consistent T) (n : ℕ) : Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0) :=
+def henkin_Theory_over {L} (T : Theory L) (hT : is_consistent T) (n : ℕ) :
+  Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0) :=
+⟨@ι _ T n,
 begin
-  refine ⟨@ι _ T n, _⟩, split, apply iota_inclusion_of_le (nat.zero_le _),
+  split, apply iota_inclusion_of_le (nat.zero_le _),
   apply is_consistent_iota hT
-end
+end⟩
+
 
 def henkin_theory_schain {L} (T : Theory L) (hT : is_consistent T): set (Theory_over (@ι _ T 0) (@is_consistent_iota L T hT 0))
 := {T' | ∃ k : ℕ, (@ι _ T k) = T'.val}

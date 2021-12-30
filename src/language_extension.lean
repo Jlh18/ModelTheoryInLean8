@@ -962,8 +962,6 @@ begin
   have hs₀' := subset.trans hs₀ (diff_subset _ _),
   rcases finset.subset_image_iff.mp hs₀' with ⟨s₀, hs₀x, rfl⟩,
   apply lem s₀, refine h₀.map _, apply sweakening,
-  clear H,
-  clear lem,
   simp only [finset.coe_union],
   apply union_subset_union ht₀,
   rw finset.coe_image,
