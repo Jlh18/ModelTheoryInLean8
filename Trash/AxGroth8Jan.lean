@@ -81,6 +81,10 @@ finset.filter
 def monom_deg_le (n d : ℕ) : list (fin n → ℕ) :=
 (monom_deg_le_finset n d).to_list
 
+/-- counts all n-variable monomials of degree ≤ d -/
+-- def monom_deg_le_length (n d : ℕ) : ℕ :=
+-- list.length $ monom_deg_le n d
+
 /-- lists all n-variable monomials of degree ≤ d as finsupp maps-/
 @[simp] def monom_deg_le₀ (n d : ℕ) : list (fin n →₀ ℕ) :=
 list.map (finsupp_of_fin_dom) $ monom_deg_le n d
@@ -174,17 +178,16 @@ end
 -- sum indexed by the n-variable monom of degree < d
 list.sumr
 (list.map
-  (
-    λ f : (fin n → ℕ),
+  (λ f : (fin n → ℕ),
     let
       x_js : bounded_ring_term c :=
       x_ ⟨(list.index_of' f (monom_deg_le n d) + s) ,
-        poly_indexed_by_monoms_aux0 n d s c hndsc f ⟩,
+      poly_indexed_by_monoms_aux0 n d s c hndsc f ⟩,
       x_ip (i : fin n) : bounded_ring_term c :=
       x_ ⟨ (i : ℕ) + p , fin_add_lt_of_add_le n p c hnpc i ⟩
     in
     x_js * (n.non_comm_prod $ λ i, npow_rec (f i) (x_ip i))
-  )
+    )
   (monom_deg_le n d)
 )
 
@@ -268,17 +271,17 @@ begin
   apply nat.le_add_left,
 end
 
-lemma inj_formula_aux3 {n m : ℕ} {i : fin n} :
+lemma inj_formula_aux3 {n d : ℕ} {i : fin n} :
   (i : ℕ)
   <
-  n * m + n + n :=
+  n * (monom_deg_le n d).length + n + n :=
 begin
   apply nat.lt_of_lt_of_le i.2,
   apply nat.le_add_left,
 end
 
-lemma inj_formula_aux4 {n m : ℕ} {i : fin n} :
-  (i : ℕ) + n < n * m + n + n :=
+lemma inj_formula_aux4 {n d : ℕ} {i : fin n} :
+  (i : ℕ) + n < n * (monom_deg_le n d).length + n + n :=
 begin
   rw nat.add_assoc,
   apply nat.lt_add_left,
@@ -362,12 +365,19 @@ def poly_map {K : Type*} [comm_semiring K] {n : ℕ} :
   poly_map_data K n → (fin n → K) → (fin n → K) :=
 λ ps as k, mv_polynomial.eval as (ps k)
 
+/-- The main result: algebraically closed fields of characteristic zero
+   satisfy Ax-Grothendieck formula -/
+lemma realize_Ax_Groth_formula_of_char_zero {K : Type*} [field K] [is_alg_closed K]
+  (h0 : char_zero K) (n d : ℕ) :
+  struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
+sorry
+
 section semiring
 
 variables {A : Type*} [comm_semiring A] {n : ℕ}
 
 /-- takes a polynomial map
-  (preferably of total deg < d) and gives list of coeffs of each monomial -/
+  (preferably of total deg < d) and gives list of coeffs of each polynomial -/
 @[simp] def poly_map_data.coeffs_list
   {n : ℕ} (d : ℕ) (ps : poly_map_data A n) : list A :=
 list.join (list.of_fn (λ i : fin n, coeffs_list_of_mv_polynomial d (ps i)))
@@ -406,6 +416,23 @@ dvector.cast (symm (variable_bound_equal d ps))
   (poly_map_data.coeffs_dvector d ps)
 
 end semiring
+
+-- ⇑(mv_polynomial.eval (λ (i : fin n), ys.reverse.nth ↑i _)) (ps i) =
+--     realize_bounded_term (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps)))
+--      (poly_indexed_by_monoms n d (↑i * (monom_deg_le_finset n d).to_list.length + n + n) 0
+--          (n * (monom_deg_le n d).length + n + n)
+--          _
+--          _)
+--       dvector.nil
+
+-- {A : Type*} [comm_ring A] {n d s p c : ℕ}
+--   (hndsc : (monom_deg_le n d).length + s ≤ c)
+--   (hnpc : n + p ≤ c)
+--   {xs : dvector (struc_to_ring_struc.Structure A) c}  :
+--   realize_bounded_term xs
+--     (poly_indexed_by_monoms hndsc hnpc) dvector.nil
+--   =
+--
 
 section realize_poly_map_data_coeffs_xs_and_ys
 
@@ -491,11 +518,10 @@ variables (ps : poly_map_data A n)
   (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
 
 lemma realize_poly_map_data_coeffs_xs_aux_prod
-  {m} (f : fin n → ℕ)
-  (coeffs : dvector ↥(struc_to_ring_struc.Structure A) (n * m)) :
+  (f : fin n → ℕ) :
   n.non_comm_prod
   (λ (i : fin n),
-    (ys.append (xs.append coeffs)).nth
+    (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
     (i + n) inj_formula_aux4 ^ f i) =
   finset.univ.prod (λ (i : fin n), xs.nth i i.2 ^ f i) :=
 begin
@@ -509,11 +535,10 @@ begin
 end
 
 lemma realize_poly_map_data_coeffs_ys_aux_prod
-  {m} (f : fin n → ℕ)
-  (coeffs : dvector ↥(struc_to_ring_struc.Structure A) (n * m)) :
+  (f : fin n → ℕ) :
   n.non_comm_prod
   (λ (i : fin n),
-    (ys.append (xs.append coeffs)).nth
+    (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
     (i + 0) inj_formula_aux3 ^ f i) =
   finset.univ.prod (λ (i : fin n), ys.nth i i.2 ^ f i) :=
 begin
@@ -636,7 +661,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw realize_poly_map_data_coeffs_xs_aux_prod xs ys f,
+  rw realize_poly_map_data_coeffs_xs_aux_prod ps xs ys f,
   congr,
   rw mv_polynomial.coeff,
   rw dvector.nth_append_big,
@@ -693,7 +718,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw realize_poly_map_data_coeffs_ys_aux_prod xs ys f,
+  rw realize_poly_map_data_coeffs_ys_aux_prod ps xs ys f,
   congr,
   rw mv_polynomial.coeff,
   rw dvector.nth_append_big,
@@ -797,10 +822,10 @@ begin
   {
     funext j, -- for each i < n (... the tuples at i are equal)
     simp only [poly_map],
-    have hImagej := hImage j,
+    have hImagei := hImage j,
     simp only [realize_bounded_formula,
-      monom_deg_le, realize_poly_indexed_by_monoms] at hImagej,
-    convert hImagej,
+      monom_deg_le, realize_poly_indexed_by_monoms] at hImagei,
+    convert hImagei,
     {rw realize_poly_map_data_coeffs_xs ps xs ys hdeg j, refl },
     {rw realize_poly_map_data_coeffs_ys ps xs ys hdeg j, refl },
   },
@@ -877,13 +902,6 @@ begin
    { rw nat.add_sub_cancel, exact k.2 },
  },
 end
-
-/-- The main result: algebraically closed fields of characteristic zero
-   satisfy Ax-Grothendieck formula -/
-lemma realize_Ax_Groth_formula_of_char_zero
-  (h0 : char_zero K) (n d : ℕ) :
-  struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
-sorry
 
 lemma Ax_Groth_aux
   (h0 : char_zero K) {n d : ℕ}

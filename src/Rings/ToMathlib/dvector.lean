@@ -119,15 +119,25 @@ lemma nth_of_fn (as : fin n → α) (k : ℕ) (hk : k < n) :
   (dvector.of_fn as).nth k hk = as ⟨ k , hk ⟩ :=
 by rw [of_fn, nth_cast, nth_of_list, list.nth_le_of_fn']
 
+lemma nth'_of_fn (as : fin n → α) (k : fin n) :
+  (dvector.of_fn as).nth' k = as k :=
+by simp only [dvector.nth', nth_of_fn, fin.val_eq_coe, fin.eta]
 
+lemma nth'_of_fn1 (as : fin n → α) :
+  (dvector.of_fn as).nth' = as :=
+funext $ nth'_of_fn as
+--by rw [of_fn, nth_cast, nth_of_list, list.nth_le_of_fn']
 
 def to_list : Π {n : ℕ},
   dvector α n → list α
 | 0            as := []
 | (nat.succ n) (dvector.cons a as) := list.cons a (to_list as)
 
--- def to_fn (n : ℕ) (as : dvector α n) : fin n → α :=
--- dvector.nth' as
+lemma to_list_length : Π {n : ℕ} {as : dvector α n},
+  list.length (to_list as) = n
+| 0            as := rfl
+| (nat.succ n) (dvector.cons a as) :=
+by simp only [to_list, list.length_cons, @to_list_length n as]
 
 
 end dvector

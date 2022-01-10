@@ -38,7 +38,7 @@ lemma sumr
   =
   (list.map (add_zero_hom xs).to_fun ts).sumr :=
 begin
-  rw ← list.mapr_sumr (add_zero_hom xs) ts,
+  rw ← list.add_zero_hom_sumr (add_zero_hom xs) ts,
   refl,
 end
 

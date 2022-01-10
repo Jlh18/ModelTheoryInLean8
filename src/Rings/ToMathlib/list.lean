@@ -58,13 +58,13 @@ variables [has_zero α] [has_add α] [has_zero β] [has_add β]
 | nil := 0
 | (cons hd tl) := hd + sumr tl
 
-def eval_sumr (f : add_zero_hom α β) : Π (l : list α),
+def add_zero_hom_sumr (f : add_zero_hom α β) : Π (l : list α),
   f.to_fun (sumr l) = sumr (list.map f.to_fun l)
 | nil := by simpa using f.map_zero
 | (cons hd tl) :=
 begin
   simp only [sumr, map, add_zero_hom.map_add],
-  rw eval_sumr,
+  rw add_zero_hom_sumr,
 end
 
 end sumr
@@ -79,21 +79,21 @@ begin
   rw add_assoc,
 end
 
-lemma mapr_sumr
-  [has_zero α] [has_add α] [add_comm_group β] (f : add_zero_hom α β) (as : list α) :
-  f.to_fun as.sumr = (map f.to_fun as).sumr :=
-begin
-  induction as with a as hind,
-  {
-    simp only [sumr, map],
-    exact f.map_zero,
-  },
-  {
-    simp only [sumr, map],
-    rw f.map_add,
-    rw hind,
-  }
-end
+-- lemma mapr_sumr
+--   [has_zero α] [has_add α] [add_comm_group β] (f : add_zero_hom α β) (as : list α) :
+--   f.to_fun as.sumr = (map f.to_fun as).sumr :=
+-- begin
+--   induction as with a as hind,
+--   {
+--     simp only [sumr, map],
+--     exact f.map_zero,
+--   },
+--   {
+--     simp only [sumr, map],
+--     rw f.map_add,
+--     rw hind,
+--   }
+-- end
 
 lemma sumr_eq_sum
   [add_comm_group α] (as : list α) :
