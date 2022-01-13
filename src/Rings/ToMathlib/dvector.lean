@@ -139,5 +139,42 @@ lemma to_list_length : Π {n : ℕ} {as : dvector α n},
 | (nat.succ n) (dvector.cons a as) :=
 by simp only [to_list, list.length_cons, @to_list_length n as]
 
+lemma ith_chunk_aux {n m : ℕ} (i : fin n) (k : fin m) :
+  i.val * m + ↑k < n * m :=
+begin
+  induction n with n hn,
+  { apply fin_zero_elim i },
+  {
+    rw nat.succ_mul,
+    cases fin.lt_or_eq_nat i with hi hi,
+    {
+      apply add_lt_add _ k.2,
+      apply lt_of_le_of_lt _ (hn ⟨ i.1 , hi ⟩),
+      apply le_add_right,
+      apply le_of_eq,
+      refl,
+    },
+    { rw [fin.val_eq_coe, hi, add_lt_add_iff_left],
+      exact k.2, }
+  }
+end
+
+def ith_chunk {α : Type*} {n m : ℕ} (i : fin n) (xs : dvector α (n * m)) :
+  dvector α m :=
+  of_fn (λ k, dvector.nth xs (i.1 * m + k) (dvector.ith_chunk_aux i k))
+
+lemma nth'_eq {α} {n} (ys : dvector α n) :
+  (λ (i : fin n), ys.nth i i.2) = ys.nth' :=
+begin
+  funext, rw dvector.nth', refl,
+end
+
+lemma ith_chunk_nth {α : Type*} {n m : ℕ} (i : fin n) (xs : dvector α (n * m))
+  (l : ℕ) (hl : l < m) :
+  dvector.nth (dvector.ith_chunk i xs) l hl =
+  xs.nth (i.1 * m + l) (dvector.ith_chunk_aux i ⟨ l , hl ⟩) :=
+by simpa only [dvector.ith_chunk, dvector.nth_of_fn]
+
+
 
 end dvector

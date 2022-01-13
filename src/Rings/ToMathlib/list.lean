@@ -190,3 +190,21 @@ end
 
 end list
 
+
+-- def list.ith_chunk {α : Type*} {n m : ℕ} (i : fin n)
+--   (xs : list α) (hlength : xs.length = n * m) :
+--   list α :=
+-- list.of_fn (λ k, list.nth_le xs (i.1 * m + k)
+--   (by rw hlength; exact dvector.ith_chunk_aux i k))
+
+-- lemma list.ith_chunk_length
+--   {α : Type*} {n m : ℕ} (i : fin n) (xs : list α) (hlength : xs.length = n * m)  :
+--   (list.ith_chunk i xs hlength).length = m :=
+-- by simp only [list.ith_chunk, list.length_of_fn]
+
+-- lemma list.ith_chunk_nth_le
+--   {α : Type*} {n m : ℕ} (i : fin n) (xs : list α) (hlength : xs.length = n * m)
+--   (l : ℕ) (hl : l < m) :
+--   list.nth_le (list.ith_chunk i xs hlength) l (by rw list.ith_chunk_length; exact hl) =
+--   xs.nth_le (i.1 * m + l) (by rw hlength; exact dvector.ith_chunk_aux i ⟨ l , hl ⟩) :=
+-- by simpa only [list.ith_chunk, list.nth_le_of_fn']
