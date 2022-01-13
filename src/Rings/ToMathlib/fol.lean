@@ -112,6 +112,17 @@ begin
   },
 end
 
+lemma all_realize_sentence_union {L} (S : Structure L) (T₁ T₂ : Theory L) :
+  S ⊨ T₁ ∪ T₂ ↔ S ⊨ T₁ ∧ S ⊨ T₂ :=
+by simp only [all_realize_sentence, set.mem_union_eq,
+  or_imp_distrib, forall_and_distrib]
+
+lemma all_realize_sentence_range {L} {α}
+  (S : Structure L) (fs : α → sentence L) :
+S ⊨ set.range fs ↔ ∀ a : α, S ⊨ fs a :=
+by simp only [all_realize_sentence, forall_apply_eq_imp_iff',
+  set.mem_range, exists_imp_distrib]
+
 
 
 end fol

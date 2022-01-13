@@ -253,8 +253,16 @@ namespace struc_to_ring_struc
   | [] := rfl
 
   @[simp] lemma realize_one {n} {vec : dvector A n} :
-    @realize_bounded_ring_term (struc_to_ring_struc.Structure A) n vec 0
+    @realize_bounded_ring_term (Structure A) n vec 0
       (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
+
+  lemma realize_nat : Π (n : ℕ),
+  @realize_bounded_term _ (Structure A) _ dvector.nil _ (n : bounded_ring_term 0) dvector.nil
+  = n
+  | 0 := rfl
+  | (n+1) :=
+  by simpa only [ring_signature.add, const_map, realize_bounded_term,
+      nat.cast_succ, realize_nat n]
 
   lemma apps_one {n} : Π {t_ : dvector (bounded_ring_term n) 0},
     bd_apps (@bd_func ring_signature _ 0 ring_consts.one) t_ = 1

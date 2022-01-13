@@ -1410,11 +1410,11 @@ local attribute [instance] prop_decidable
 
 variables {K : Type*} [field K] [is_alg_closed K]
 
-
+open Rings.struc_to_ring_struc
 
 lemma realize_Ax_Groth_formula_of_char_p
   {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) (n d : ℕ) :
-  struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
+  Structure K ⊨ Ax_Groth_formula n d :=
 begin
   simp only [Ax_Groth_formula],
   simp only [realize_sentence_bd_alls],
@@ -1432,20 +1432,20 @@ open Fields
 lemma ACFₚ_ssatisfied_Ax_Groth_formula (n d p : ℕ) (hp : nat.prime p) :
   (ACFₚ p) ⊨ Ax_Groth_formula n d :=
 sorry
--- completeness of ACFₚ
+-- ACFₚ is complete
 
 lemma ACF₀_ssatisfied_Ax_Groth_formula (n d : ℕ) :
   ACF₀ ⊨ Ax_Groth_formula n d :=
 sorry
--- lefschetz
+-- Lefschetz
 
 /-- The main result: algebraically closed fields of characteristic zero
-   satisfy Ax-Grothendieck formula -/
+   satisfy Ax-Grothendieck formula; follows from soundness -/
 lemma realize_Ax_Groth_formula_of_char_zero
   (h0 : char_zero K) (n d : ℕ) :
-  struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
-sorry
--- soundness of ACF₀
+  Structure K ⊨ Ax_Groth_formula n d :=
+@ACF₀_ssatisfied_Ax_Groth_formula n d (Structure K) ⟨ 0 ⟩
+    is_alg_closed_to.realize_ACF₀
 
 lemma Ax_Groth_aux
   (h0 : char_zero K) {n d : ℕ}

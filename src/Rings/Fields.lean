@@ -18,6 +18,7 @@ namespace Fields
 open fol
 open Rings
 open Rings.ring_signature
+open Rings.struc_to_ring_struc
 
 def mul_inv : sentence ring_signature :=
 ∀' (x_ 1 ≃ 0) ⊔ (∃' x_ 1 * x_ 0 ≃ 1)
@@ -43,7 +44,7 @@ namespace field_to
 open Rings.models_ring_theory_to_comm_ring
 
   lemma realize_field_theory :
-    (struc_to_ring_struc.Structure K) ⊨ field_theory := -- squeeze_simp, val_zero
+    Structure K ⊨ field_theory := -- squeeze_simp, val_zero
   begin
     intros ϕ h,
     cases h,
@@ -52,20 +53,27 @@ open Rings.models_ring_theory_to_comm_ring
      {
        intro,
        unfold fol.bd_or,
-       simp only [realize_one, ring_signature.mul, struc_to_ring_struc.func_map,
-         fin.val_zero', realize_bounded_formula_not, struc_to_ring_struc.binaries_map,
-         fin.val_eq_coe, dvector.last, realize_bounded_formula_ex, realize_bounded_term_bd_app,
-         realize_bounded_formula, realize_bounded_term, fin.val_one, dvector.nth,
-         realize_zero],
+       simp only [models_ring_theory_to_comm_ring.realize_one,
+         ring_signature.mul, struc_to_ring_struc.func_map,
+         fin.val_zero', realize_bounded_formula_not,
+         struc_to_ring_struc.binaries_map,
+         fin.val_eq_coe, dvector.last,
+         realize_bounded_formula_ex, realize_bounded_term_bd_app,
+         realize_bounded_formula, realize_bounded_term,
+         fin.val_one, dvector.nth,
+         models_ring_theory_to_comm_ring.realize_zero],
        apply is_field.mul_inv_cancel,
        apply K_is_field,
      },
-    {unfold fol.realize_sentence, simp},
+    { unfold fol.realize_sentence,
+      simp only [forall_false_left, ring_signature.one, realize_bounded_formula,
+        realize_bounded_term, struc_to_ring_struc.realize_one, func_map, const_map,
+        zero_ne_one, struc_to_ring_struc.realize_zero, ring_signature.zero] },
   end
 
   /-- Fields are models of the theory of fields -/
   def models_field_theory : Model field_theory.{u} :=
-  ⟨ struc_to_ring_struc.Structure K ,  realize_field_theory ⟩
+  ⟨ Structure K ,  realize_field_theory ⟩
 
 end field_to
 
@@ -216,38 +224,56 @@ def ACF : Theory ring_signature := field_theory ∪ (set.range all_gen_monic_pol
 def ACFₚ (p : ℕ) : Theory ring_signature := set.insert (p ≃ 0) ACF
 
 /-- ACF with p ≠ 0 chucked in for every natural p -/
-def ACF₀ : Theory ring_signature := ACF ∪ (set.range (λ p : ℕ, p ≄ 0))
+def ACF₀ : Theory ring_signature := ACF ∪ (set.range (λ p : ℕ, p + 1 ≄ 0))
 
 namespace is_alg_closed_to
 
-  variables {K : Type u} [field K] [is_alg_closed K] [decidable_eq K]
+variables {K : Type u} [field K] [is_alg_closed K] [decidable_eq K]
+
+open Rings.struc_to_ring_struc
 
   -- should be in the library
-  theorem is_alg_closed.exists_root (f : polynomial K) (h : f.degree ≠ 0) :
-    ∃ x : K, f.eval x = 0 := polynomial.exists_root_of_splits _ (is_alg_closed.splits f) h
+theorem is_alg_closed.exists_root (f : polynomial K) (h : f.degree ≠ 0) :
+  ∃ x : K, f.eval x = 0 :=
+polynomial.exists_root_of_splits _ (is_alg_closed.splits f) h
 
-  /-- Algebraically closed fields model the theory ACF-/
-  lemma realize_ACF : struc_to_ring_struc.Structure K ⊨ ACF :=
-  begin
-    intros ϕ h,
-    cases h,
-    {apply field_to.realize_field_theory h},
-    {
-      cases h with n hϕ,
-      rw ← hϕ,
-      unfold all_gen_monic_poly_has_root,
-      rw realize_sentence_bd_alls,
-      simp only [realize_bounded_formula_ex, realize_bounded_formula,
-        models_ring_theory_to_comm_ring.realize_zero, zero],
-      intro as,
-      have root := is_alg_closed.exists_root
-        (polynomial.term_evaluated_at_coeffs as (gen_monic_poly n)) gen_monic_poly_non_const,
-      cases root with x hx,
-      use x,
-      rw polynomial.eval_term_evaluated_at_coeffs_eq_realize_bounded_term at hx,
-      exact hx,
-    },
-  end
+/-- Algebraically closed fields model the theory ACF-/
+lemma realize_ACF : Structure K ⊨ ACF :=
+begin
+  intros ϕ h,
+  cases h,
+  {apply field_to.realize_field_theory h},
+  {
+    cases h with n hϕ,
+    rw ← hϕ,
+    unfold all_gen_monic_poly_has_root,
+    rw realize_sentence_bd_alls,
+    simp only [realize_bounded_formula_ex, realize_bounded_formula,
+      models_ring_theory_to_comm_ring.realize_zero, zero],
+    intro as,
+    have root := is_alg_closed.exists_root
+      (polynomial.term_evaluated_at_coeffs as (gen_monic_poly n)) gen_monic_poly_non_const,
+    cases root with x hx,
+    use x,
+    rw polynomial.eval_term_evaluated_at_coeffs_eq_realize_bounded_term at hx,
+    exact hx,
+  },
+end
+
+lemma realize_ACF₀ [char_zero K] : Structure K ⊨ ACF₀ :=
+begin
+  simp only [ACF₀, all_realize_sentence_union, all_realize_sentence_range,
+    bd_notequal, realize_sentence_not, realize_sentence_equal],
+  refine ⟨ realize_ACF , λ n hbot, _ ⟩,
+  delta realize_closed_term at hbot,
+  simp only [zero, one, dvector.last, add,
+    func_map, realize_bounded_term, models_ring_theory_to_comm_ring.realize_one,
+    binaries_map, models_ring_theory_to_comm_ring.realize_zero, dvector.nth,
+    realize_nat] at hbot,
+  have hbot1 : (n.succ : K) = ((0 : ℕ) : K) := hbot,
+  have hbot2 := char_zero.cast_injective hbot1,
+  exact nat.succ_ne_zero _ hbot2,
+end
 
 end is_alg_closed_to
 
