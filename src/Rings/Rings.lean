@@ -8,8 +8,6 @@ import Rings.ToMathlib.fin
 import data.polynomial.eval
 import data.mv_polynomial
 
-universe u
-
 local infix ` ≃ `:64 := fol.bounded_preformula.bd_equal
 
 namespace Rings
@@ -18,21 +16,21 @@ local notation h :: t  := dvector.cons h t
 local notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 
 /-- The constant symbols in RingSignature -/
-inductive ring_consts : Type u
+inductive ring_consts : Type*
 | zero : ring_consts
 | one : ring_consts
 
 /-- The unary function symbols in RingSignature-/
-inductive ring_unaries : Type u
+inductive ring_unaries : Type*
 | neg : ring_unaries
 
 /-- The binary function symbols in RingSignature-/
-inductive ring_binaries : Type u
+inductive ring_binaries : Type*
 | add : ring_binaries
 | mul : ring_binaries
 
 /-- All function symbols in RingSignature-/
-def ring_funcs : ℕ → Type u
+def ring_funcs : ℕ → Type*
 | 0 := ring_consts
 | 1 := ring_unaries
 | 2 := ring_binaries
@@ -109,7 +107,7 @@ example {n} : bounded_ring_term (n + 1) := x_ 0 + x_ 0
 -/
 
 /-- Part of the definition of ring_term_rec -/
-@[simp] def ring_func_rec {n} {C : bounded_term ring_signature n → Sort u}
+@[simp] def ring_func_rec {n} {C : bounded_term ring_signature n → Sort*}
   (cvar : Π (k : fin n), C (x_ k))
   (c0 : C 0) (c1 : C 1)
   (cneg : Π {t}, C t → C (- t))
@@ -125,7 +123,7 @@ example {n} : bounded_ring_term (n + 1) := x_ 0 + x_ 0
 | (n + 3) f ts h := pempty.elim f
 
 /-- An interface for mapping out of bounded_ring_term n (basically bounded_term.rec) -/
-def ring_term_rec {n : ℕ} {C : bounded_ring_term n → Sort u}
+def ring_term_rec {n : ℕ} {C : bounded_ring_term n → Sort*}
   (cvar : Π (k : fin n), C (x_ k))
   (c0 : C 0) (c1 : C 1)
   (cneg : Π {t}, C t → C (- t))
@@ -209,82 +207,83 @@ begin unfold ring_theory, iterate 7 {right}, exact set.mem_singleton _, end
 end ring_signature
 
 namespace struc_to_ring_struc
-  -- We make any (type theoretic) structure A,0,1,-,+,* into a
-  -- (model theoretic) Structure in ring_signature
+-- We make any (type theoretic) structure A,0,1,-,+,* into a
+-- (model theoretic) Structure in ring_signature
 
-  variable
-    {A : Type u}
+variable {A : Type*}
 
-  /-- Interpreting consant symbols from ring_signature -/
-  @[simp] def const_map [has_zero A] [has_one A] : ring_consts → (dvector A 0) → A
-  | ring_consts.zero _ := 0
-  | ring_consts.one  _ := 1
+/-- Interpreting consant symbols from ring_signature -/
+@[simp] def const_map [has_zero A] [has_one A] : ring_consts → (dvector A 0) → A
+| ring_consts.zero _ := 0
+| ring_consts.one  _ := 1
 
-  /-- Interpreting unary function symbols from ring_signature -/
-  @[simp] def unaries_map [has_neg A] : ring_unaries → (dvector A 1) → A
-  | ring_unaries.neg a := - (dvector.last a)
+/-- Interpreting unary function symbols from ring_signature -/
+@[simp] def unaries_map [has_neg A] : ring_unaries → (dvector A 1) → A
+| ring_unaries.neg a := - (dvector.last a)
 
-  /-- Interpreting binary function symbols from ring_signature -/
-  @[simp] def binaries_map [has_add A] [has_mul A] : ring_binaries → (dvector A 2) → A
-  | ring_binaries.add   (a :: b) := a + dvector.last b
-  | ring_binaries.mul  (a :: b) := a * dvector.last b
+/-- Interpreting binary function symbols from ring_signature -/
+@[simp] def binaries_map [has_add A] [has_mul A] : ring_binaries → (dvector A 2) → A
+| ring_binaries.add   (a :: b) := a + dvector.last b
+| ring_binaries.mul  (a :: b) := a * dvector.last b
 
-  variables [has_zero A] [has_one A] [has_neg A] [has_add A] [has_mul A]
+variables [has_zero A] [has_one A] [has_neg A] [has_add A] [has_mul A]
 
-  /-- Interpreting all symbols from ring_signature-/
-  @[simp] def func_map : Π (n : ℕ), (ring_funcs n) → (dvector A n) → A
-  | 0       := const_map
-  | 1       := unaries_map
-  | 2       := binaries_map
-  | (n + 3) := pempty.elim
+/-- Interpreting all symbols from ring_signature-/
+@[simp] def func_map : Π (n : ℕ), (ring_funcs n) → (dvector A n) → A
+| 0       := const_map
+| 1       := unaries_map
+| 2       := binaries_map
+| (n + 3) := pempty.elim
 
-  variable (A)
+variable (A)
 
-  /-- Interpreting the symbols -/
-  @[reducible] def Structure : Structure ring_signature :=
-  Structure.mk A func_map (λ n, pempty.elim)
+/-- Interpreting the symbols -/
+@[reducible] def Structure : Structure ring_signature :=
+Structure.mk A func_map (λ n, pempty.elim)
 
-  @[simp] lemma realize_zero {n} {vec : dvector A n} :
-    @realize_bounded_ring_term (struc_to_ring_struc.Structure A) n vec 0
-      (@bd_func ring_signature _ 0 ring_consts.zero) dvector.nil = 0 := rfl
+variable {A}
 
-  lemma apps_zero {n} : Π {t_ : dvector (bounded_ring_term n) 0},
-    bd_apps (@bd_func ring_signature _ 0 ring_consts.zero) t_ = 0
-  | [] := rfl
+@[simp] lemma realize_zero {n} {vec : dvector A n} :
+  @realize_bounded_ring_term (struc_to_ring_struc.Structure A) n vec 0
+    (@bd_func ring_signature _ 0 ring_consts.zero) dvector.nil = 0 := rfl
 
-  @[simp] lemma realize_one {n} {vec : dvector A n} :
-    @realize_bounded_ring_term (Structure A) n vec 0
-      (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
+lemma apps_zero {n} : Π {t_ : dvector (bounded_ring_term n) 0},
+  bd_apps (@bd_func ring_signature _ 0 ring_consts.zero) t_ = 0
+| [] := rfl
 
-  lemma realize_nat : Π (n : ℕ),
-  @realize_bounded_term _ (Structure A) _ dvector.nil _ (n : bounded_ring_term 0) dvector.nil
-  = n
-  | 0 := rfl
-  | (n+1) :=
-  by simpa only [ring_signature.add, const_map, realize_bounded_term,
+@[simp] lemma realize_one {n} {vec : dvector A n} :
+  @realize_bounded_ring_term (Structure A) n vec 0
+    (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
+
+lemma realize_nat {as} : Π (n : ℕ),
+@realize_bounded_term _ (Structure A) _ as _ (n : bounded_ring_term 0) dvector.nil
+= n
+| 0 := rfl
+| (n+1) :=
+by simpa only [ring_signature.add, const_map, realize_bounded_term,
       nat.cast_succ, realize_nat n]
 
-  lemma apps_one {n} : Π {t_ : dvector (bounded_ring_term n) 0},
-    bd_apps (@bd_func ring_signature _ 0 ring_consts.one) t_ = 1
-  | [] := rfl
+lemma apps_one {n} : Π {t_ : dvector (bounded_ring_term n) 0},
+  bd_apps (@bd_func ring_signature _ 0 ring_consts.one) t_ = 1
+| [] := rfl
 
-  lemma app_neg {n} {t : bounded_ring_term n} :
-    bd_app (@bd_func ring_signature _ 1 ring_unaries.neg) t = - t := rfl
+lemma app_neg {n} {t : bounded_ring_term n} :
+  bd_app (@bd_func ring_signature _ 1 ring_unaries.neg) t = - t := rfl
 
-  lemma apps_neg {n} {t : bounded_ring_term n} :
-     bd_apps (@bd_func ring_signature _ 1 ring_unaries.neg) ([t]) = - t := rfl
+lemma apps_neg {n} {t : bounded_ring_term n} :
+   bd_apps (@bd_func ring_signature _ 1 ring_unaries.neg) ([t]) = - t := rfl
 
-  lemma app_add {n} {s t : bounded_ring_term n} :
-    ((@bd_func ring_signature _ 2 ring_binaries.add).bd_app t).bd_app s = t + s := rfl
+lemma app_add {n} {s t : bounded_ring_term n} :
+  ((@bd_func ring_signature _ 2 ring_binaries.add).bd_app t).bd_app s = t + s := rfl
 
-  lemma apps_add {n} {s t : bounded_ring_term n} :
-     bd_apps (@bd_func ring_signature _ 2 ring_binaries.add) ([s,t]) = s + t := rfl
+lemma apps_add {n} {s t : bounded_ring_term n} :
+   bd_apps (@bd_func ring_signature _ 2 ring_binaries.add) ([s,t]) = s + t := rfl
 
-  lemma app_mul {n} {s t : bounded_ring_term n} :
-    ((@bd_func ring_signature _ 2 ring_binaries.mul).bd_app t).bd_app s = t * s := rfl
+lemma app_mul {n} {s t : bounded_ring_term n} :
+  ((@bd_func ring_signature _ 2 ring_binaries.mul).bd_app t).bd_app s = t * s := rfl
 
-  lemma apps_mul {n} {s t : bounded_ring_term n} :
-     bd_apps (@bd_func ring_signature _ 2 ring_binaries.mul) ([s,t]) = s * t := rfl
+lemma apps_mul {n} {s t : bounded_ring_term n} :
+   bd_apps (@bd_func ring_signature _ 2 ring_binaries.mul) ([s,t]) = s * t := rfl
 
   -- lemma preterm_upper_bound {n} : bounded_preterm ring_signature n 3 → false := _
 
@@ -292,8 +291,7 @@ end struc_to_ring_struc
 
 namespace comm_ring_to_model
 
-  variables
-    (A : Type u) [comm_ring A]
+  variables (A : Type*) [comm_ring A]
 
   lemma realize_ring_theory :
     (struc_to_ring_struc.Structure A) ⊨ ring_signature.ring_theory :=
@@ -361,7 +359,7 @@ namespace comm_ring_to_model
   end
 
   /-- Commutative rings model the theory of rings -/
-  def model : Model ring_signature.ring_theory.{u} :=
+  def model : Model ring_signature.ring_theory :=
   ⟨ struc_to_ring_struc.Structure A ,  realize_ring_theory A ⟩
 
 end comm_ring_to_model
@@ -392,7 +390,7 @@ namespace mv_polynomial
   @[simp] lemma term_mul {n} {s t : bounded_ring_term n} :
     term (s * t) = term s * term t := rfl
 
-  variables {A : Type u} [comm_ring A]
+  variables {A : Type*} [comm_ring A]
 
   @[reducible] private def AStruc := struc_to_ring_struc.Structure A
 
@@ -451,7 +449,7 @@ end mv_polynomial
 
 namespace polynomial
 
-  variables {A : Type u} [comm_ring A]
+  variables {A : Type*} [comm_ring A]
 
   @[reducible] private def AStruc := struc_to_ring_struc.Structure A
 
@@ -466,7 +464,7 @@ namespace polynomial
   /-- Evaluating the polynomial term_evaluated_at_coeffs at a₀ : A produces the same
     term in A as realising the term at a₀ a₁ ⋯ aₙ -/
   lemma eval_term_evaluated_at_coeffs_eq_realize_bounded_term
-    {n} {as : dvector A n} {x : A} (t : bounded_term.{u} ring_signature n.succ) :
+    {n} {as : dvector A n} {x : A} (t : bounded_term ring_signature n.succ) :
     (polynomial.eval x (term_evaluated_at_coeffs as t)
       = @realize_bounded_term _ AStruc n.succ (x::as) _ t dvector.nil) :=
   begin
@@ -483,7 +481,7 @@ namespace polynomial
   end
 
   lemma term_evaluated_at_coeffs_X {n} {as : dvector A n} :
-    term_evaluated_at_coeffs as (x_ 0) = polynomial.X :=
+    term_evaluated_at_coeffs as (x_ ⟨ 0 , nat.zero_lt_succ _ ⟩) = polynomial.X :=
   begin
     simp only [term_evaluated_at_coeffs],
     unfold_coes,
@@ -493,7 +491,8 @@ namespace polynomial
 
   lemma term_evaluated_at_coeffs_coeff
   {n} {as : dvector A n} {k : fin n} :
-    term_evaluated_at_coeffs as (x_ (k.succ)) = polynomial.C (dvector.nth' as k) :=
+    term_evaluated_at_coeffs as (x_ ⟨ k.1.succ , nat.succ_lt_succ k.2 ⟩)
+    = polynomial.C (dvector.nth' as k) :=
   begin
     simp only [term_evaluated_at_coeffs],
     unfold_coes,
@@ -547,23 +546,54 @@ namespace polynomial
   end
 
   lemma term_evaluated_at_coeffs_pow {n : ℕ} : Π {m : ℕ} {as : dvector A n},
-    polynomial.term_evaluated_at_coeffs as (npow_rec m x_ 0) = polynomial.X ^ m
+    polynomial.term_evaluated_at_coeffs as (npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)
+    = polynomial.X ^ m
   | 0       _ :=
   begin
     rw ring_signature.pow_zero,
     simp only [ring_signature.one, term_evaluated_at_coeffs_one],
     refl,
   end
-  | (n + 1) as :=
-  by rw [ring_signature.pow_succ, term_evaluated_at_coeffs_mul,
-     term_evaluated_at_coeffs_X, term_evaluated_at_coeffs_pow]; refl
+  | (m + 1) as :=
+  begin
+    rw [ring_signature.pow_succ,
+      term_evaluated_at_coeffs_mul,
+      @term_evaluated_at_coeffs_pow m as,
+      pow_succ,
+      term_evaluated_at_coeffs_X],
+  end
 
   lemma term_evaluated_at_coeffs_monomial {n : ℕ} {m : ℕ} {as : dvector A n} {k : fin n} :
-    polynomial.term_evaluated_at_coeffs as (x_ (k.succ) * npow_rec m x_ 0)
+    polynomial.term_evaluated_at_coeffs as
+      (x_ ⟨ k.1.succ , nat.succ_lt_succ k.2 ⟩ *
+      npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)
       = polynomial.monomial m (dvector.nth' as k) :=
   begin
     rw term_evaluated_at_coeffs_mul,
     rw term_evaluated_at_coeffs_coeff,
+    rw term_evaluated_at_coeffs_pow,
+    rw polynomial.monomial_eq_C_mul_X,
+  end
+
+  lemma term_evaluated_at_coeffs_monomial'
+    {n m k : ℕ} {as : dvector A n} (hk : k < n) :
+    polynomial.term_evaluated_at_coeffs as
+      (x_ ⟨ k.succ , nat.succ_lt_succ hk ⟩ *
+      npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)
+      = polynomial.monomial m (dvector.nth as k hk) :=
+  begin
+    rw term_evaluated_at_coeffs_mul,
+    have h : term_evaluated_at_coeffs as x_⟨k.succ, _⟩
+      =  polynomial.C (dvector.nth as k hk),
+    {
+      simp only [term_evaluated_at_coeffs],
+      unfold_coes,
+      simp only [mv_polynomial.eval_map,
+        mv_polynomial.term_x, mv_polynomial.eval_X, polynomial.C_inj,
+        ring_hom.to_fun_eq_coe, fin.cases_succ', mv_polynomial.map_X,
+        dvector.nth'],
+    },
+    rw h,
     rw term_evaluated_at_coeffs_pow,
     rw polynomial.monomial_eq_C_mul_X,
   end
@@ -655,6 +685,23 @@ namespace models_ring_theory_to_comm_ring
 
   @[simp] lemma realize_mul {a b : M.carrier} :
     @Structure.fun_map _ M 2 ring_binaries.mul ([a , b]) = a * b := rfl
+
+  lemma realize_pow {a : M.carrier} : ∀ {m n} {vec : dvector M.carrier n},
+  realize_bounded_term (a :: vec) (npow_rec m (x_ 0)) dvector.nil
+  = npow_rec m a
+  | 0 n vec := rfl
+  | (m+1) n vec :=
+  by simp only [npow_rec, ring_signature.mul, realize_bounded_term, realize_mul,
+        fin.val_zero, dvector.nth, @realize_pow m]
+
+  lemma realize_nat {M : fol.Structure ring_signature} {as : dvector M 0} :
+  Π (n : ℕ),
+  @realize_bounded_term _ M _ as _ (n : bounded_ring_term 0) dvector.nil
+  = n
+  | 0 := rfl
+  | (n+1) :=
+  by simpa only [ring_signature.add, ring_signature.one, realize_bounded_term,
+       nat.cast_succ, realize_nat n, realize_one]
 
   variable (h : M ⊨ ring_signature.ring_theory)
 
@@ -748,7 +795,7 @@ namespace importing_model_theory_results
  i.e. to use the model theory tech I need to show that
  A ≃+* comm_ring_to_model.model A -/
 
-variables (A : Type u) [comm_ring A]
+variables (A : Type*) [comm_ring A]
 
 lemma structure_eq_carrier : A = struc_to_ring_struc.Structure A := rfl
 

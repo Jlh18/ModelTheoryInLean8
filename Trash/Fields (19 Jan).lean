@@ -325,6 +325,96 @@ instance Field : field M :=
   exact hM.1.1,
 end)
 
+-- @[reducible] noncomputable def term_evaluated_at_coeffs {n} (as : dvector M n)
+--   (t : bounded_ring_term n.succ) : polynomial M :=
+-- let σ : fin n.succ → polynomial M :=
+-- @fin.cases n (λ _, polynomial M) polynomial.X (λ i, polynomial.C (dvector.nth' as i)) in
+-- mv_polynomial.eval σ (mv_polynomial.term t)
+
+-- /-- terms realized at values in A are the corresponding polynomials -/
+-- /- evaluated at those values -/
+-- lemma realized_term_is_evaluated_poly {n} {as : dvector M n} :
+-- Π (t : bounded_ring_term n),
+--   @realize_bounded_term _ M _ as _ t dvector.nil
+--   = mv_polynomial.eval (dvector.fin_val as) (mv_polynomial.term t) :=
+-- @ring_term_rec n (λ (t : bounded_ring_term n),
+--   @realize_bounded_term _ M _ as _ t dvector.nil
+--     = mv_polynomial.eval (dvector.fin_val as) (mv_polynomial.term t))
+--   (begin intro k, simpa, end) -- variables
+--   (begin -- zero
+--     simpa only [struc_to_ring_struc.apps_zero, dvector.fin_val,
+--       realize_bounded_term,
+--       struc_to_ring_struc.realize_zero, mv_polynomial.term_zero, zero],
+--   end)
+--   (by simp)
+--   -- simp only [struc_to_ring_struc.apps_one, dvector.fin_val, realize_bounded_term,
+--   --   struc_to_ring_struc.realize_one, term_one, one,
+--   --   mv_polynomial.coe_mv_poly_one, ring_hom.map_one],
+--   (begin -- neg
+--     intros t h,
+--     unfold_coes,
+--     unfold_coes at h,
+--     simp only [ring_hom.to_fun_eq_coe, mv_polynomial.eval_map] at h,
+--     rw mv_polynomial.term_neg,
+--     simp only [struc_to_ring_struc.unaries_map, struc_to_ring_struc.func_map,
+--       dvector.last, realize_bounded_term, neg, dvector.nth,
+--       mv_polynomial.coe_mv_poly_neg, h, ring_hom.to_fun_eq_coe,
+--       ring_hom.map_neg, models_ring_theory_to_comm_ring.realize_neg,
+--       mv_polynomial.eval_map, neg_inj, struc_to_ring_struc.apps_neg],
+--   end)
+--   (begin -- add
+--     intros s t hs ht,
+--     unfold_coes,
+--     rw mv_polynomial.term_add,
+--     simp only [add, struc_to_ring_struc.binaries_map, dvector.last, struc_to_ring_struc.func_map,
+--       dvector.last, realize_bounded_term, dvector.nth, mv_polynomial.coe_mv_poly_neg],
+--     rw [hs, ht],
+--     unfold_coes,
+--     simp,
+--   end)
+--   (begin -- mul
+--     intros s t hs ht,
+--     unfold_coes,
+--     rw mv_polynomial.term_mul,
+--     simp only [mul, struc_to_ring_struc.binaries_map, dvector.last, struc_to_ring_struc.func_map,
+--       dvector.last, realize_bounded_term, dvector.nth, mv_polynomial.coe_mv_poly_neg],
+--     rw [hs, ht],
+--     unfold_coes,
+--     simp,
+--   end)
+
+-- lemma eval_term_evaluated_at_coeffs_eq_realize_bounded_term
+--   {n} {as : dvector M n} {x : M} (t : bounded_term ring_signature n.succ) :
+--   (polynomial.eval x (term_evaluated_at_coeffs as t)
+--     = @realize_bounded_term _ M n.succ (x::as) _ t dvector.nil) :=
+-- begin
+--   rw realized_term_is_evaluated_poly,
+--   rw dvector.fin_val_eq_x_val,
+--   rw mv_polynomial.eval_eq_poly_eval_mv_coeffs,
+--   simp only [dvector.fin_val, function.comp_app, fin.x_val,
+--     mv_polynomial.to_polynomial, term_evaluated_at_coeffs],
+--   have hcoes : polynomial.C.comp (int.cast_ring_hom M) =
+--     int.cast_ring_hom (polynomial M) :=
+--   by simp,
+--   unfold_coes,
+--   rw ← hcoes,
+--   simp only [ring_hom.to_fun_eq_coe, mv_polynomial.eval₂_map,
+--     mv_polynomial.eval_map],
+-- end
+
+-- lemma idk {p : polynomial M} :
+--   p =
+--   (@mv_polynomial.eval
+--     (@fin.cases
+--       _
+--       (λ _, polynomial M)
+--       polynomial.X
+--       (λ (i : fin (p.nat_degree + 1)), polynomial.C (p.coeff i))
+--     )
+--   )
+--       (mv_polynomial.term (gen_monic_poly p.nat_degree))
+
+
 lemma realize_npow_rec
   {m n} {as : dvector M m} {t : bounded_term ring_signature m} :
   realize_bounded_term as (npow_rec n t) dvector.nil =
@@ -402,6 +492,8 @@ end
 
 end models_ACF_to
 
+
+
 variables {M : Structure ring_signature} {h : M ⊨ ACF} {p : ℕ}
 
 lemma models_ACFₚ_iff {hp : prime p} :
@@ -409,6 +501,8 @@ lemma models_ACFₚ_iff {hp : prime p} :
 by simp only [ACFₚ, all_realize_sentence_insert, realize_sentence_equal, zero,
     realize_closed_term, models_ring_theory_to_comm_ring.realize_nat,
     models_ring_theory_to_comm_ring.realize_zero]
+
+
 
 end Fields
 

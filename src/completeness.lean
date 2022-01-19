@@ -10,6 +10,8 @@ local attribute [instance, priority 0] classical.prop_decidable
 
 open fol fol.Lhom
 
+namespace fol
+
 lemma satisfied_of_provable {L : Language} (T : Theory L) (ψ : sentence L) : T ⊢' ψ → T ⊨ ψ :=
 λ _, soundness $ classical.choice ‹_›
 
@@ -59,3 +61,5 @@ theorem compactness {L : Language} {T : Theory L} {f : sentence L} :
 begin
   rw [<-(completeness T f), theory_proof_compactness_iff], simp only [completeness]
 end
+
+end fol

@@ -159,7 +159,7 @@ begin
   }
 end
 
-def ith_chunk {α : Type*} {n m : ℕ} (i : fin n) (xs : dvector α (n * m)) :
+def ith_chunk {n m : ℕ} (i : fin n) (xs : dvector α (n * m)) :
   dvector α m :=
   of_fn (λ k, dvector.nth xs (i.1 * m + k) (dvector.ith_chunk_aux i k))
 
@@ -169,12 +169,117 @@ begin
   funext, rw dvector.nth', refl,
 end
 
-lemma ith_chunk_nth {α : Type*} {n m : ℕ} (i : fin n) (xs : dvector α (n * m))
+lemma ith_chunk_nth {n m : ℕ} (i : fin n) (xs : dvector α (n * m))
   (l : ℕ) (hl : l < m) :
   dvector.nth (dvector.ith_chunk i xs) l hl =
   xs.nth (i.1 * m + l) (dvector.ith_chunk_aux i ⟨ l , hl ⟩) :=
 by simpa only [dvector.ith_chunk, dvector.nth_of_fn]
 
+lemma nth_remove_mth_big_m : Π {n m} (xs : dvector α (n+1)) {k : ℕ}
+  (hk : k < n) (hm : k < m),
+  (dvector.remove_mth m xs).nth k hk
+  =
+  xs.nth k (lt_trans hk (nat.lt_succ_self _))
+| 0 _ _ k hk hm := false.elim (nat.not_lt_zero _ hk)
+| n 0 (dvector.cons y ys) k hk hm := false.elim (nat.not_lt_zero _ hm)
+| (n+1) (m+1) (dvector.cons y ys) 0 hk hm :=
+begin
+  simp only [dvector.remove_mth, dvector.nth],
+end
+| (n+1) (m+1) (dvector.cons y ys) (k+1) hk hm :=
+begin
+  rw [dvector.remove_mth,
+    dvector.nth_cons y (dvector.remove_mth m ys) _ (nat.succ_lt_succ_iff.mp hk),
+    dvector.nth_cons y ys _ (lt_trans (nat.lt_succ_self _) hk)],
+  apply nth_remove_mth_big_m,
+  rw ← nat.succ_lt_succ_iff,
+  exact hm,
+end
 
+lemma ext : Π {as bs : dvector α n},
+  as = bs ↔ ∀ (i : fin n), as.nth' i = bs.nth' i :=
+begin
+  intros as bs,
+  induction as with n a as hind, cases bs,
+  { simp only [implies_true_iff, eq_self_iff_true] },
+  {
+    cases bs with _ b bs,
+    split,
+    {
+      intros heq i, rw heq,
+    },
+    {
+      intros heq,
+      simp only,
+      split,
+      {
+        specialize heq 0,
+        simp [dvector.nth', fin.val_zero', dvector.nth] at heq,
+        exact heq,
+      },
+      {
+        rw hind,
+        intro i,
+        specialize heq ⟨ i + 1 , nat.succ_lt_succ i.2 ⟩,
+        simp [dvector.nth', dvector.nth] at heq,
+        simp only [dvector.nth'],
+        convert heq,
+      },
+    },
+  },
+end
+
+
+lemma of_fn_eq_cons_of_fn_succ {f : ℕ → α} :
+  of_fn (λ i : fin (n+1), f i) =
+  cons (f 0) (of_fn (λ (i : fin n), f (i + 1))) :=
+begin
+  rw ext,
+  intro i,
+  cases i with i hi,
+  cases i with i hind,
+  { simp only [nth'_of_fn, fin.mk_zero, fin.coe_eq_cast_succ,
+      fin.coe_succ_eq_succ],
+    simpa only [dvector.nth', fin.val_zero', dvector.nth], },
+  {
+    simp only [nth'_of_fn, dvector.nth', dvector.nth, nth_of_fn],
+    congr1,
+  },
+end
+
+lemma remove_mth_of_fn_last_aux (i : fin n) :
+  ((i : fin n.succ) : fin n.succ.succ) = (i : fin n.succ.succ) :=
+begin
+  cases i with i hi,
+  simp only [fin.coe_eq_cast_succ, fin.cast_succ_mk, fin.coe_mk, coe_coe],
+  ext1,
+  simp only [fin.coe_of_nat_eq_mod],
+  rw nat.mod_eq_of_lt (lt_trans hi (nat.lt_succ_self _)),
+end
+
+lemma remove_mth_of_fn_last {n : ℕ} : Π {f : ℕ → α},
+  dvector.remove_mth n (of_fn (λ (i : fin (n+1)), f i))
+  =
+  dvector.of_fn (λ i : fin n, f i) :=
+begin
+  induction n with n hn,
+  {intro f, refl},
+  {
+    intro f,
+    have hrw : (of_fn (λ (i : fin (n+2)), f i))
+      = cons (f 0) (of_fn (λ i : fin n.succ, f (i + 1))) :=
+    of_fn_eq_cons_of_fn_succ,
+    have hrw1 : of_fn (λ (i : fin n.succ), f i)
+      = cons (f 0) (of_fn (λ i : fin n, f (i + 1))) :=
+    of_fn_eq_cons_of_fn_succ,
+    rw hrw,
+    rw [dvector.remove_mth],
+    rw hrw1,
+    congr1,
+    rw @hn (λ n, f (n + 1)),
+  },
+end
+
+-- #check list.of_fn
 
 end dvector

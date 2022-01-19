@@ -3,6 +3,7 @@ import to_mathlib
 import Rings.Notation
 import data.fin
 import Rings.ToMathlib.fin
+import Rings.ToMathlib.dvector
 
 namespace fol
 
@@ -123,26 +124,54 @@ S ⊨ set.range fs ↔ ∀ a : α, S ⊨ fs a :=
 by simp only [all_realize_sentence, forall_apply_eq_imp_iff',
   set.mem_range, exists_imp_distrib]
 
-
+lemma all_realize_sentence_insert {L} {s : Theory L} (ϕ : sentence L)
+  (S : Structure L) :
+  S ⊨ set.insert ϕ s ↔ S ⊨ ϕ ∧ S ⊨ s :=
+⟨ (λ h, ⟨ h (set.mem_insert _ _) , λ f hf, h (set.mem_insert_of_mem _ hf) ⟩)
+  ,
+  ( λ h f hf,
+  begin
+    cases hf with hf hf,
+    { rw hf, exact h.1 },
+    { exact h.2 hf },
+  end ) ⟩
 
 end fol
 
-
 namespace fol.bounded_preterm
 
+open fol
+
 -- I don't know if this is already in fol but
-  @[simp] def lift_succ {L} {n : ℕ} : Π {l},
-    fol.bounded_preterm L n l → fol.bounded_preterm L n.succ l
-  | l (fol.bounded_preterm.bd_var k) := x_ k
-  | l (fol.bounded_preterm.bd_func f) := fol.bounded_preterm.bd_func f
-  | l (fol.bounded_preterm.bd_app t s) :=
-    fol.bounded_preterm.bd_app (@lift_succ l.succ t) (@lift_succ 0 s)
+@[simp] def lift_succ {L} {n : ℕ} : Π {l},
+  fol.bounded_preterm L n l → fol.bounded_preterm L n.succ l
+| l (bd_var k) := x_ k
+| l (bd_func f) := fol.bounded_preterm.bd_func f
+| l (bd_app t s) :=
+  fol.bounded_preterm.bd_app (@lift_succ l.succ t) (@lift_succ 0 s)
 
   -- instance has_lift_succ {L} {n : ℕ} : Π l,
   --   has_lift (fol.bounded_preterm L n l) (fol.bounded_preterm L n.succ l) :=
   --   λ l, ⟨ lift_succ ⟩
 
-  lemma lift_succ_x_k {L} {n : ℕ} {k : fin n} :
-    lift_succ (x_ k : fol.bounded_preterm L n 0) = x_ k := rfl
+lemma lift_succ_x_k {L} {n : ℕ} {k : fin n} :
+  lift_succ (x_ k : fol.bounded_preterm L n 0) = x_ k := rfl
+
+
+lemma realize_lift_succ {L} {n : ℕ} {S : Structure L} :
+  Π {l} {t : bounded_preterm L n l} {as : dvector S (n+1)} {bs},
+  realize_bounded_term as (lift_succ t) bs
+  = realize_bounded_term (dvector.remove_mth n as) t bs
+| l (bd_var k) as bs :=
+begin
+  simp only [lift_succ, realize_bounded_term],
+  rw dvector.nth_remove_mth_big_m _ k.2 k.2,
+  simp only [fin.val_eq_coe, fin.coe_eq_cast_succ, fin.coe_cast_succ],
+end
+| l (bd_func f) as bs := by simp only [lift_succ, realize_bounded_term]
+| l (bd_app t s) as bs :=
+by simp only [lift_succ, realize_bounded_term, realize_lift_succ]
+
+
 
 end fol.bounded_preterm
