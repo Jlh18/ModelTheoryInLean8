@@ -1412,48 +1412,20 @@ variables {K : Type*} [field K] [is_alg_closed K]
 
 open Rings.struc_to_ring_struc
 
-theorem realize_Ax_Groth_formula {n : ℕ} :
-  (∀ d : ℕ, Structure K ⊨ Ax_Groth_formula n d)
-  ↔
-  (∀ (ps : poly_map_data K n),
-    function.injective (poly_map ps) → function.surjective (poly_map ps)) :=
-begin
-  split,
-  {
-    intros H ps hinj,
-    set d := max_total_deg ps,
-    specialize H d,
-    let coeffs := poly_map_data.coeffs_dvector' d ps,
-    simp only [realize_sentence_bd_alls, Ax_Groth_formula] at H,
-    -- injective -> realize inj_formula
-    have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
-      (poly_map_data.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
-    {
-      rw realize_inj_formula_iff_injective ps (total_deg_le_max_total_deg ps),
-      exact hinj,
-    },
-  rw ← realize_surj_formula_iff_surjective ps (total_deg_le_max_total_deg ps),
-  -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
-  exact H coeffs hInj,
-  },
-  {
-    intros H d,
-    simp only [Ax_Groth_formula],
-    simp only [realize_sentence_bd_alls],
-    intro coeffs,
-    simp only [realize_bounded_formula_imp],
-    intro hinj,
-    rw ← surjective_iff_realize_surj_formula,
-    apply H,
-    rw injective_iff_realize_inj_formula,
-    exact hinj,
-  },
-end
-
 lemma realize_Ax_Groth_formula_of_char_p
   {p : ℕ} (hprime : prime p) (hchar : char_p K p) (n d : ℕ) :
   Structure K ⊨ Ax_Groth_formula n d :=
-realize_Ax_Groth_formula.mpr (Ax_Groth_of_locally_finite hprime hchar) d
+begin
+  simp only [Ax_Groth_formula],
+  simp only [realize_sentence_bd_alls],
+  intro coeffs,
+  simp only [realize_bounded_formula_imp],
+  intro hinj,
+  rw ← surjective_iff_realize_surj_formula,
+  apply Ax_Groth_of_locally_finite hprime hchar,
+  rw injective_iff_realize_inj_formula,
+  exact hinj,
+end
 
 open Fields
 
@@ -1475,12 +1447,32 @@ lemma realize_Ax_Groth_formula_of_char_zero
 @ACF₀_ssatisfied_Ax_Groth_formula n d (Structure K) ⟨ 0 ⟩
     is_alg_closed_to.realize_ACF₀
 
+lemma Ax_Groth_aux
+  (h0 : char_zero K) {n d : ℕ}
+  (ps : poly_map_data K n)
+  (hdeg : ∀ (i : fin n), mv_polynomial.total_degree (ps i) ≤ d)
+  (hinj : function.injective (poly_map ps)) :
+  function.surjective (poly_map ps) :=
+begin
+  let coeffs := poly_map_data.coeffs_dvector' d ps,
+  have hAG := realize_Ax_Groth_formula_of_char_zero h0 n d,
+  simp only [realize_sentence_bd_alls, Ax_Groth_formula] at hAG,
+  -- injective -> realize inj_formula
+  have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
+    (poly_map_data.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
+  {rw realize_inj_formula_iff_injective ps hdeg, exact hinj},
+  rw ← realize_surj_formula_iff_surjective ps hdeg,
+  -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
+  exact hAG coeffs hInj,
+end
+
+
+
 theorem Ax_Groth
   (h0 : char_zero K) {n : ℕ}
-  {ps : poly_map_data K n} (hinj : function.injective (poly_map ps)) :
+  (ps : poly_map_data K n) (hinj : function.injective (poly_map ps)) :
   function.surjective (poly_map ps) :=
-realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
-  _ hinj
+Ax_Groth_aux h0 ps (total_deg_le_max_total_deg ps) hinj
 
 end alg_closed_field
 end AxGroth

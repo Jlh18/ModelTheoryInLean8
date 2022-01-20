@@ -179,7 +179,5 @@ begin
    sorry,
 end
 
-#check @finset.filter_subset
-
 
 end Lefschetz
