@@ -47,6 +47,16 @@ cons_eq_insert _ _ h ▸ to_list_cons _
 
 end to_list
 
+lemma filter_mem_set_of_subset_set {α} {s : set α} [decidable_pred (λ x, x ∈ s)]
+  {fs : finset α} (h : ↑fs ⊆ s) :
+  filter (λ x, x ∈ s) fs = fs :=
+begin
+  ext x,
+  split,
+  { apply filter_subset },
+  { intro hmem, rw mem_filter, exact ⟨ hmem , h hmem ⟩ },
+end
+
 end finset
 
 namespace finsupp

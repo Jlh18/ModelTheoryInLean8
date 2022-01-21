@@ -136,11 +136,10 @@ lemma all_realize_sentence_insert {L} {s : Theory L} (ϕ : sentence L)
     { exact h.2 hf },
   end ) ⟩
 
-end fol
 
-namespace fol.bounded_preterm
 
-open fol
+namespace bounded_preterm
+
 
 -- I don't know if this is already in fol but
 @[simp] def lift_succ {L} {n : ℕ} : Π {l},
@@ -174,4 +173,66 @@ by simp only [lift_succ, realize_bounded_term, realize_lift_succ]
 
 
 
-end fol.bounded_preterm
+end bounded_preterm
+
+
+
+variables {L : Language}
+
+namespace bounded_preformula
+
+lemma bd_not.inj {n} {f0 f1 : bounded_formula L n} :
+  ∼ f0 = ∼ f1 → f0 = f1 := λ h, (bd_imp.inj h).1
+
+lemma bd_notequal.inj {n} {t0 t1 s0 s1 : bounded_term L n} :
+  t0 ≄ s0 = t1 ≄ s1 → t0 = t1 ∧ s0 = s1 :=
+bd_equal.inj ∘ bd_not.inj
+
+end bounded_preformula
+
+
+-- not to be confused with is_complete
+/-- A theory is_complete' if it deduces any sentence or its complement -/
+def is_complete' (T : Theory L) : Prop :=
+∀ (ϕ : sentence L), T ⊨ ϕ ∨ T ⊨ ∼ ϕ
+
+/-- A theory is_complete'' if deductions for the model transfer to deductions for the theory-/
+def is_complete'' (T : Theory L) : Prop :=
+∀ (M : Structure L) (hM : nonempty M) (ϕ : sentence L), M ⊨ T → M ⊨ ϕ → T ⊨ ϕ
+
+/-- Note fewer assumptions than the if and only if -/
+lemma is_complete''_to_is_complete' {T : Theory L} :
+  is_complete' T → is_complete'' T :=
+begin
+  intros H M hM ϕ hMT hMϕ,
+  cases H ϕ with hTϕ hTϕ,
+  { exact hTϕ },
+  {
+    have hbot := hTϕ hM hMT,
+    rw realize_sentence_not at hbot,
+    exfalso,
+    exact hbot hMϕ,
+  },
+end
+
+/-- When T is satisfied by some model then two notions of complete coincide -/
+lemma is_complete''_iff_is_complete' {T : Theory L} (M : Structure L)
+  (hM : nonempty M) (hMT : M ⊨ T) :
+  is_complete' T ↔ is_complete'' T :=
+begin
+  split,
+  { exact is_complete''_to_is_complete' },
+  {
+    intros H ϕ,
+    by_cases hMϕ : M ⊨ ϕ,
+    { left, exact H M hM ϕ hMT hMϕ },
+    {
+      right,
+      rw ← realize_sentence_not at hMϕ,
+      exact H M hM _ hMT hMϕ
+    },
+  },
+end
+
+
+end fol

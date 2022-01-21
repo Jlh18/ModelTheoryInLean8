@@ -7,7 +7,7 @@ import Rings.ToMathlib.mv_polynomial
 import Rings.RealizeThings
 import algebra.big_operators.finprod
 import data.finset.basic
-
+import Rings.Lefschetz
 
 
 namespace AxGroth
@@ -46,7 +46,7 @@ equiv.to_embedding finsupp.equiv_fun_on_fintype.symm
 begin
   simp only [finsupp_of_fin_dom],
   funext k,
-  simpa,
+  refl,
 end
 
 @[simp] lemma finsupp_of_fin_dom_to_fun {A : Type*} [has_zero A] {n : ℕ}
@@ -55,7 +55,7 @@ begin
   simp only [finsupp_of_fin_dom],
   apply finsupp.ext,
   intro k,
-  simpa,
+  refl,
 end
 
 lemma to_fun_finsupp_of_fin_dom_emb {A : Type*} [has_zero A] {n : ℕ}
@@ -129,7 +129,7 @@ begin
   simp only [list.length_map, list.length,
     list.nth_le, monom_deg_le₀, list.map, finsupp_of_fin_dom_emb,
     finsupp_of_fin_dom],
-  simp,
+  simp only [equiv.to_embedding_apply, list.nth_le_map', equiv.inv_fun_as_coe],
 end
 
 lemma index_of_monom_deg_le_lt_length {n d : ℕ} (f : fin n → ℕ) :
@@ -223,8 +223,7 @@ begin
   rw realize_ring_term.nat_non_comm_prod,
   congr,
   funext i,
-  rw realize_ring_term.pow,
-  simp,
+  simp only [realize_ring_term.pow, realize_bounded_term],
 end
 
 lemma inj_formula_aux0 {n d : ℕ} {j : fin n} :
@@ -367,7 +366,7 @@ def poly_map {K : Type*} [comm_semiring K] {n : ℕ} :
 /-- Any injective polynomial map over an algerbaically closed field of char p is surjective -/
 axiom Ax_Groth_of_locally_finite
   {K : Type*} [field K] [is_alg_closed K]
-  {p : ℕ} (hprime : prime p) (hchar : char_p K p) {n : ℕ}
+  {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) {n : ℕ}
   (ps : poly_map_data K n) (hinj : function.injective (poly_map ps)) :
   function.surjective (poly_map ps)
 -- not the focus of the project so we take it as an axiom
@@ -443,8 +442,8 @@ begin
       simp only [n_var_bd_monom, monom_of_bd_monom, finset.mem_map,
         finset.mem_univ],
       refine ⟨ λ k, ⟨ f k, hf_img_lt k⟩, _ , _ ⟩,
-      {simp},
-      {funext, simpa},
+      {simp only [finset.mem_univ]},
+      {funext, refl},
     },
     {
       apply le_trans _ hdeg,
@@ -1451,36 +1450,52 @@ begin
 end
 
 lemma realize_Ax_Groth_formula_of_char_p
-  {p : ℕ} (hprime : prime p) (hchar : char_p K p) (n d : ℕ) :
+  {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) (n d : ℕ) :
   Structure K ⊨ Ax_Groth_formula n d :=
 realize_Ax_Groth_formula.mpr (Ax_Groth_of_locally_finite hprime hchar) d
 
 open Fields
 
-lemma ACFₚ_ssatisfied_Ax_Groth_formula (n d p : ℕ) (hp : prime p) :
-  (ACFₚ hp) ⊨ Ax_Groth_formula n d :=
-sorry
--- ACFₚ is complete
+/-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete') and the axiom-/
+lemma ACFₚ_ssatisfied_Ax_Groth_formula {p : ℕ} (hp : nat.prime p) (n : ℕ) :
+  ∀ d, (ACFₚ hp) ⊨ Ax_Groth_formula.{0} n d :=
+begin
+  have h : ∀ d, (instances.algebraic_closure_of_zmod hp) ⊨ Ax_Groth_formula.{0} n d,
+  {
+    rw realize_Ax_Groth_formula,
+    apply Ax_Groth_of_locally_finite hp
+      (@algebraic_closure.of_zmod.char_p p ⟨ hp ⟩),
+  },
+  intro d,
+  exact Lefschetz.is_complete''_ACFₚ hp
+    (instances.algebraic_closure_of_zmod hp) ⟨ 0 ⟩ (Ax_Groth_formula n d)
+    (instances.algebraic_closure_of_zmod_models_ACFₚ hp) (h d),
+end
 
+/-- Ax_Groth_formula is true in ACF₀, corollary of Lefschetz part 3. and char_p case -/
 lemma ACF₀_ssatisfied_Ax_Groth_formula (n d : ℕ) :
-  ACF₀ ⊨ Ax_Groth_formula n d :=
-sorry
--- Lefschetz
+  ACF₀ ⊨ Ax_Groth_formula.{0} n d :=
+begin
+  rw Lefschetz.characteristic_change,
+  use 0,
+  intros _ _ _,
+  apply ACFₚ_ssatisfied_Ax_Groth_formula,
+end
 
 /-- The main result: algebraically closed fields of characteristic zero
    satisfy Ax-Grothendieck formula; follows from soundness -/
-lemma realize_Ax_Groth_formula_of_char_zero
-  (h0 : char_zero K) (n d : ℕ) :
-  Structure K ⊨ Ax_Groth_formula n d :=
-@ACF₀_ssatisfied_Ax_Groth_formula n d (Structure K) ⟨ 0 ⟩
-    is_alg_closed_to.realize_ACF₀
+-- lemma realize_Ax_Groth_formula_of_char_zero
+--   (h0 : char_zero K) (n d : ℕ) :
+--   Rings.struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
+-- @ACF₀_ssatisfied_Ax_Groth_formula n d (Structure K) ⟨ 0 ⟩
+--     is_alg_closed_to.realize_ACF₀
 
-theorem Ax_Groth
-  (h0 : char_zero K) {n : ℕ}
-  {ps : poly_map_data K n} (hinj : function.injective (poly_map ps)) :
-  function.surjective (poly_map ps) :=
-realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
-  _ hinj
+-- theorem Ax_Groth
+--   (h0 : char_zero K) {n : ℕ}
+--   {ps : poly_map_data K n} (hinj : function.injective (poly_map ps)) :
+--   function.surjective (poly_map ps) :=
+-- realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
+--   _ hinj
 
 end alg_closed_field
 end AxGroth

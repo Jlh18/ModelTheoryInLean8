@@ -805,5 +805,51 @@ lemma structure_eq_carrier : A = struc_to_ring_struc.Structure A := rfl
 
 end importing_model_theory_results
 
+namespace instances
+
+def nat_ring_consts :
+  ring_consts → dvector ℕ 0 → ℕ
+| zero as := 0
+-- | one as := 1
+
+def nat_ring_structure_funcs :
+  Π {n}, ring_signature.functions n → dvector ℕ n → ℕ
+| 0 ring_consts.zero as := 0
+| 0 ring_consts.one as := 1
+| 1 ring_unaries.neg as := 0
+| 2 ring_binaries.add (dvector.cons a (dvector.cons b nil)) := a + b
+| 2 ring_binaries.mul (dvector.cons a (dvector.cons b nil)) := a * b
+| (n+3) f as := pempty.elim f
+
+def nat_ring_structure : fol.Structure ring_signature :=
+⟨ ℕ , λ _, nat_ring_structure_funcs , λ _, pempty.elim ⟩
+
+lemma nat_ring_structure_realize_nat :
+  Π (n : ℕ) {k : ℕ} (v : dvector nat_ring_structure k),
+  realize_bounded_ring_term v
+    (n : fol.bounded_preterm ring_signature k 0) dvector.nil = n
+| 0 _ _ := rfl
+| (n+1) k v :=
+begin
+  have h := @nat_ring_structure_realize_nat n k v,
+  rw [realize_bounded_ring_term] at h,
+  simpa only [nat.cast_succ, ring_signature.add, realize_bounded_ring_term,
+    fol.realize_bounded_term, h],
+end
+
+lemma nat_cast_bd_ring_term_inj {k n m : ℕ} :
+  (n : fol.bounded_preterm.{0} ring_signature k 0) = ↑m → n = m :=
+begin
+  let v : dvector nat_ring_structure k := dvector.of_fn (λ i, 0),
+  intro hnm,
+  rw ← nat_ring_structure_realize_nat n v,
+  rw ← nat_ring_structure_realize_nat m v,
+  exact @congr_arg (fol.bounded_preterm ring_signature k 0)
+    nat_ring_structure n m
+    (λ t : fol.bounded_preterm ring_signature k 0,
+      realize_bounded_ring_term v t dvector.nil) hnm,
+end
+
+end instances
 
 end Rings

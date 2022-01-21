@@ -3,6 +3,7 @@ import Rings.Notation
 import Rings.Rings
 import field_theory.algebraic_closure
 import Rings.ToMathlib.algebraic_closure
+import Rings.ToMathlib.char_p
 
 universe u
 
@@ -39,11 +40,11 @@ begin intros f hf, left, exact hf end
 
 namespace field_to
   variables
-    {K : Type u} [field K]
+    (K : Type u) [field K]
 
   lemma K_is_field : is_field K := field.to_is_field K
 
-open Rings.models_ring_theory_to_comm_ring
+  open Rings.models_ring_theory_to_comm_ring
 
   lemma realize_field_theory :
     Structure K ⊨ field_theory := -- squeeze_simp, val_zero
@@ -75,7 +76,7 @@ open Rings.models_ring_theory_to_comm_ring
 
   /-- Fields are models of the theory of fields -/
   def models_field_theory : Model field_theory.{u} :=
-  ⟨ Structure K ,  realize_field_theory ⟩
+  ⟨ Structure K ,  realize_field_theory _ ⟩
 
 end field_to
 
@@ -235,16 +236,25 @@ field_theory ∪ (set.range all_gen_monic_poly_has_root)
 
 /-- The theory of algebraically closed fields of prime characteristic -/
 
-def ACFₚ {p : ℕ} (h : prime p) : Theory ring_signature :=
+def ACFₚ {p : ℕ} (h : nat.prime p) : Theory ring_signature :=
 set.insert (p ≃ 0) ACF
 
 @[reducible] def plus_one_ne_zero (p : ℕ) : sentence ring_signature :=
 p + 1 ≄ 0
 
+lemma injective_plus_one_ne_zero : function.injective plus_one_ne_zero.{0} :=
+begin
+  intros n m himage,
+  simp only [plus_one_ne_zero, ring_signature.one,
+    ring_signature.add, ring_signature.zero] at himage,
+  have h := (bd_app.inj (bd_app.inj (bd_notequal.inj himage).1).1).2,
+  apply instances.nat_cast_bd_ring_term_inj h,
+end
+
 /-- The theory of algebraically closed fields of characterstic zero -/
 def ACF₀ : Theory ring_signature := ACF ∪ (set.range plus_one_ne_zero)
 
-lemma ACF_subset_ACFₚ {p} {h : prime p} : ACF ⊆ ACFₚ h :=
+lemma ACF_subset_ACFₚ {p} {h : nat.prime p} : ACF ⊆ ACFₚ h :=
 set.subset_insert _ _
 
 lemma ACF_subset_ACF₀ : ACF ⊆ ACF₀ :=
@@ -279,7 +289,7 @@ lemma realize_ACF : Structure K ⊨ ACF :=
 begin
   intros ϕ h,
   cases h,
-  {apply field_to.realize_field_theory h},
+  {apply field_to.realize_field_theory _ h},
   {
     cases h with n hϕ,
     rw ← hϕ,
@@ -368,8 +378,8 @@ end
 
 instance is_alg_closed : is_alg_closed M :=
 begin
-  apply is_alg_closed.of_monic_nat_degree_ne_zero_exists_root,
-  intros p hmonic hdeg,
+  apply is_alg_closed.of_exists_root_nat_degree,
+  intros p hmonic hirr hdeg,
   simp only [ACF, all_realize_sentence_union, all_realize_sentence_range,
     all_gen_monic_poly_has_root, realize_sentence_bd_alls,
     realize_bounded_formula, models_ring_theory_to_comm_ring.realize_zero, zero,
@@ -400,15 +410,58 @@ begin
   rw ← nat.one_lt_bit0_iff, exact nat.one_lt_bit0 hdeg,
 end
 
+variables {p : ℕ}
+
 end models_ACF_to
 
-variables {M : Structure ring_signature} {h : M ⊨ ACF} {p : ℕ}
+variables {M : Structure ring_signature} {p : ℕ}
 
-lemma models_ACFₚ_iff {hp : prime p} :
+lemma models_ACFₚ_iff {hp : nat.prime p} :
   M ⊨ ACFₚ hp ↔ (p : M) = 0 ∧ M ⊨ ACF :=
 by simp only [ACFₚ, all_realize_sentence_insert, realize_sentence_equal, zero,
     realize_closed_term, models_ring_theory_to_comm_ring.realize_nat,
     models_ring_theory_to_comm_ring.realize_zero]
+
+lemma models_ACFₚ_char [hM : fact (M ⊨ ACF)] {hp : nat.prime p} :
+  M ⊨ ACFₚ hp → ring_char M = p :=
+begin
+  rw models_ACFₚ_iff,
+  intro hmodel,
+  apply ring_char.of_prime_eq_zero hp hmodel.1,
+end
+
+
+
+
+namespace instances
+
+@[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
+  Structure ring_signature :=
+Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)
+
+theorem algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
+  algebraic_closure_of_zmod hp ⊨ ACFₚ hp :=
+begin
+  rw models_ACFₚ_iff,
+  split,
+  {
+    have h := @algebraic_closure.of_zmod.char_p p ⟨ hp ⟩,
+    rw ← ring_char.eq_iff at h,
+    rw ring_char.spec,
+    have hrw : ring_char (@algebraic_closure.of_zmod p ⟨ hp ⟩) =
+      ring_char ↥(Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)),
+    { refl },
+    rw hrw at h,
+    rw h,
+  },
+  {
+    classical,
+    apply @is_alg_closed_to.realize_ACF _ _ (algebraic_closure.is_alg_closed _),
+  },
+end
+
+end instances
+
 
 end Fields
 
