@@ -433,13 +433,13 @@ end
 
 namespace instances
 
--- @[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
---   Structure ring_signature :=
--- Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)
-
 @[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
   Structure ring_signature :=
-Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩)
+Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)
+
+-- @[reducible] def ulift_algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
+--   Structure.{u} ring_signature :=
+-- ulift_Structure (Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩))
 
 theorem algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
   algebraic_closure_of_zmod hp ⊨ ACFₚ hp :=
@@ -447,18 +447,18 @@ begin
   rw models_ACFₚ_iff,
   split,
   {
-    have h := @algebraic_closure.of_ulift_zmod.char_p p ⟨ hp ⟩,
+    have h := @algebraic_closure.of_zmod.char_p p ⟨ hp ⟩,
     rw ← ring_char.eq_iff at h,
     rw ring_char.spec,
-    have hrw : ring_char (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩) =
-      ring_char ↥(Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩)),
+    have hrw : ring_char (@algebraic_closure.of_zmod p ⟨ hp ⟩) =
+      ring_char ↥(Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)),
     { refl },
     rw hrw at h,
     rw h,
   },
   {
     classical,
-    apply is_alg_closed_to.realize_ACF,
+    apply @is_alg_closed_to.realize_ACF _ _ (algebraic_closure.is_alg_closed _),
   },
 end
 

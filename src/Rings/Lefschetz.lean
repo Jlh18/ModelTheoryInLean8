@@ -31,7 +31,7 @@ theorem is_complete''_ACFₚ {p : ℕ} (hp : nat.prime p) :
 is_complete''_to_is_complete' (is_complete'_ACFₚ hp)
 
 /-- Lefchetz part 2. A sentence holds for ACF₀ if and only if it holds for ACFₚ for large enough p -/
-theorem characteristic_change_left (ϕ : sentence ring_signature.{0}) :
+theorem characteristic_change_left (ϕ : sentence ring_signature) :
 ACF₀ ⊨ ϕ → ∃ (n : ℕ), ∀ {p : ℕ} (hp : nat.prime p), n < p → ACFₚ hp ⊨ ϕ :=
 begin
   rw compactness,
@@ -40,7 +40,7 @@ begin
   classical,
   obtain ⟨ fsACF , fsrange , hunion, hACF , hrange ⟩ :=
     finset.subset_union_elim hsub,
-  set fsnat : finset ℕ := finset.preimage fsrange plus_one_ne_zero.{0}
+  set fsnat : finset ℕ := finset.preimage fsrange plus_one_ne_zero
       (set.inj_on_of_injective injective_plus_one_ne_zero _) with hfsnat,
   use fsnat.sup id + 1,
   intros p hp hlt M hMx hmodel,
@@ -93,7 +93,7 @@ begin
 end
 
 /-- Any ring fact holds in ACF₀ if and only if for all large p it holds for all ACFₚ-/
-theorem characteristic_change (ϕ : sentence ring_signature.{0}) :
+theorem characteristic_change (ϕ : sentence ring_signature) :
 ACF₀ ⊨ ϕ ↔ (∃ (n : ℕ), ∀ {p : ℕ} (hp : nat.prime p), n < p → ACFₚ hp ⊨ ϕ) :=
 begin
   split,
@@ -103,7 +103,7 @@ begin
     cases is_complete'_ACF₀ ϕ with hsatis hsatis,
     { exact hsatis },
     {
-      have hm := characteristic_change_left (∼ ϕ) hsatis, clear hsatis, --R
+      have hm := characteristic_change_left (∼ ϕ) hsatis,
       cases hn with n hn,
       cases hm with m hm,
       obtain ⟨ p , hle , hp ⟩ := nat.exists_infinite_primes (max n m).succ,

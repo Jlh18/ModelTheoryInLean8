@@ -8,6 +8,8 @@ import Rings.ToMathlib.fin
 import data.polynomial.eval
 import data.mv_polynomial
 
+universe u
+
 local infix ` ≃ `:64 := fol.bounded_preformula.bd_equal
 
 namespace Rings
@@ -788,46 +790,105 @@ namespace models_ring_theory_to_comm_ring
 
 end models_ring_theory_to_comm_ring
 
-namespace importing_model_theory_results
+-- namespace importing_model_theory_results
 
-/- I am interested in showing that a ring has a property
- using model theory tech.
- i.e. to use the model theory tech I need to show that
- A ≃+* comm_ring_to_model.model A -/
+-- /- I am interested in showing that a ring has a property
+--  using model theory tech.
+--  i.e. to use the model theory tech I need to show that
+--  A ≃+* comm_ring_to_model.model A -/
 
-variables (A : Type*) [comm_ring A]
+-- variables (A : Type*) [comm_ring A]
 
-lemma structure_eq_carrier : A = struc_to_ring_struc.Structure A := rfl
+-- lemma structure_eq_carrier : A = struc_to_ring_struc.Structure A := rfl
 
--- example : has_one (struc_to_ring_struc.Structure A) := by apply_instance
+-- -- example : has_one (struc_to_ring_struc.Structure A) := by apply_instance
 
--- need to check how this works with inj -> surj thing
+-- -- need to check how this works with inj -> surj thing
 
-end importing_model_theory_results
+-- end importing_model_theory_results
+
+
+-- section ulift
+
+-- def ulift_Structure.carrier (S : Structure.{0} ring_signature) : Type u :=
+--   ulift S.carrier
+
+-- def ring_signature_functions_ulift_down : Π {n},
+--   Rings.ring_signature.{u}.functions n → Rings.ring_signature.{0}.functions n
+-- | 0 ring_consts.zero := ring_consts.zero
+-- | 0 ring_consts.one := ring_consts.one
+-- | 1 ring_unaries.neg := ring_unaries.neg
+-- | 2 ring_binaries.add := ring_binaries.add
+-- | 2 ring_binaries.mul := ring_binaries.mul
+-- | (n + 3) f := pempty.elim f
+
+-- def ulift_Structure (S : Structure.{0} ring_signature) :
+--   Structure.{u} ring_signature :=
+-- ⟨ ulift_Structure.carrier S ,
+--   (λ n f as , ulift.up $
+--     S.fun_map (ring_signature_functions_ulift_down f) (dvector.ulift_down as)),
+--   λ n, pempty.elim ⟩
+
+-- def ulift_down
+
+-- def ulift_down_Theory {T : Theory.{u} ring_signature} : Theory.{0} ring_signature :=
+-- sorry
+
+-- variable {S : Structure.{0} ring_signature}
+
+-- lemma ulift_Structure_realize_sentence {ϕ : sentence ring_signature} :
+--   ulift_Structure S ⊨ ϕ ↔ S ⊨ ϕ := sorry
+
+-- lemma ulift_Structure_all_realize_sentence {T : Theory ring_signature} :
+--   ulift_Structure.{u} S ⊨ T ↔ S ⊨ T :=
+-- begin
+--   split,
+--   {
+--     intros hST ϕ hϕ,
+--     rw ← ulift_Structure_realize_sentence,
+--     exact hST hϕ,
+--   },
+--   {
+--     intros hST ϕ hϕ,
+--     rw ulift_Structure_realize_sentence,
+--     exact hST hϕ,
+--   },
+-- end
+
+-- #check ulift_Structure_realize_sentence
+
+-- end ulift
+
 
 namespace instances
 
+open ulift
+
+def pℕ : Type* := ulift ℕ
+
 def nat_ring_consts :
-  ring_consts → dvector ℕ 0 → ℕ
-| zero as := 0
--- | one as := 1
+  ring_consts → dvector pℕ 0 → pℕ
+| ring_consts.zero as := up 0
+| ring_consts.one as := up 1
 
 def nat_ring_structure_funcs :
-  Π {n}, ring_signature.functions n → dvector ℕ n → ℕ
-| 0 ring_consts.zero as := 0
-| 0 ring_consts.one as := 1
-| 1 ring_unaries.neg as := 0
-| 2 ring_binaries.add (dvector.cons a (dvector.cons b nil)) := a + b
-| 2 ring_binaries.mul (dvector.cons a (dvector.cons b nil)) := a * b
+  Π {n}, ring_signature.functions n → dvector pℕ n → pℕ
+| 0 ring_consts.zero as := up 0
+| 0 ring_consts.one as := up 1
+| 1 ring_unaries.neg as := up 0
+| 2 ring_binaries.add (dvector.cons a (dvector.cons b nil)) :=
+  up ( down a + down b)
+| 2 ring_binaries.mul (dvector.cons a (dvector.cons b nil)) :=
+  up ( down a * down b)
 | (n+3) f as := pempty.elim f
 
 def nat_ring_structure : fol.Structure ring_signature :=
-⟨ ℕ , λ _, nat_ring_structure_funcs , λ _, pempty.elim ⟩
+⟨ pℕ , λ _, nat_ring_structure_funcs , λ _, pempty.elim ⟩
 
 lemma nat_ring_structure_realize_nat :
   Π (n : ℕ) {k : ℕ} (v : dvector nat_ring_structure k),
   realize_bounded_ring_term v
-    (n : fol.bounded_preterm ring_signature k 0) dvector.nil = n
+    (n : fol.bounded_preterm ring_signature k 0) dvector.nil = up n
 | 0 _ _ := rfl
 | (n+1) k v :=
 begin
@@ -838,10 +899,13 @@ begin
 end
 
 lemma nat_cast_bd_ring_term_inj {k n m : ℕ} :
-  (n : fol.bounded_preterm.{0} ring_signature k 0) = ↑m → n = m :=
+  (n : fol.bounded_preterm ring_signature.{u} k 0) = m → n = m :=
 begin
   let v : dvector nat_ring_structure k := dvector.of_fn (λ i, 0),
   intro hnm,
+  rw ← down_up n,
+  rw ← down_up m,
+  apply congr_arg down.{u},
   rw ← nat_ring_structure_realize_nat n v,
   rw ← nat_ring_structure_realize_nat m v,
   exact @congr_arg (fol.bounded_preterm ring_signature k 0)

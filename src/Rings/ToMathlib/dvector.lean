@@ -280,6 +280,17 @@ begin
   },
 end
 
+section ulift
+
+def ulift_up {α} {n} : dvector α n → dvector (ulift α) n :=
+  dvector.map ulift.up
+
+def ulift_down {α} {n} : dvector (ulift α) n → dvector α n :=
+  dvector.map ulift.down
+
+end ulift
+
+
 -- #check list.of_fn
 
 end dvector
