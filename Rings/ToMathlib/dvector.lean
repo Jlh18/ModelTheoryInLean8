@@ -290,16 +290,7 @@ def ulift_down {α} {n} : dvector (ulift α) n → dvector α n :=
 
 end ulift
 
-@[simp] protected lemma map_id' : ∀{n : ℕ} (xs : dvector α n), xs.map id = xs
-| _ dvector.nil      := rfl
-| _ (dvector.cons x xs) := by { dsimp, simp* }
 
-@[simp] protected lemma map_comp {β γ : Type*} :
-∀{n : ℕ} (xs : dvector α n) (g : α → β) (f : β → γ),
-  xs.map (f ∘ g) = (xs.map g).map f
-| _ dvector.nil  g f    := rfl
-| _ (dvector.cons x xs) g f := by simp
-
-
+-- #check list.of_fn
 
 end dvector
