@@ -20,7 +20,7 @@ variables
 | (list.cons t ts) :=
 begin
   simp only [list.map, models_ring_theory_to_comm_ring.realize_add,
-    ring_signature.add, list.sumr, realize_bounded_term],
+    list.sumr, realize_bounded_term],
   simp only [struc_to_ring_struc.func_map, dvector.last,
     struc_to_ring_struc.binaries_map, add_right_inj, dvector.nth],
   rw list_sumr,
@@ -56,7 +56,7 @@ end
 begin
   simp only [nat.non_comm_prod, struc_to_ring_struc.func_map,
     dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
-    ring_signature.mul, dvector.nth],
+    dvector.nth],
   rw nat_non_comm_prod n,
 end
 
@@ -66,9 +66,9 @@ lemma pow (t : bounded_ring_term c) : Π (n : ℕ),
   (realize_bounded_term xs t dvector.nil) ^ n
 | nat.zero := by simp only [nat.nat_zero_eq_zero, ring_signature.pow_zero,
     realize_bounded_term, models_ring_theory_to_comm_ring.realize_one,
-    ring_signature.one, models_ring_theory_to_comm_ring.realize_one, pow_zero]
+    models_ring_theory_to_comm_ring.realize_one, pow_zero]
 | (nat.succ n) := by simp only [struc_to_ring_struc.func_map,
   dvector.last, ring_signature.pow_succ, struc_to_ring_struc.binaries_map,
-  realize_bounded_term, ring_signature.mul, dvector.nth, pow n, pow_succ]
+  realize_bounded_term, dvector.nth, pow n, pow_succ]
 
 end realize_ring_term

@@ -1499,3 +1499,6 @@ realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
 
 end alg_closed_field
 end AxGroth
+
+
+#check prod

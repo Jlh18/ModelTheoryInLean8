@@ -57,21 +57,18 @@ namespace field_to
        intro,
        unfold fol.bd_or,
        simp only [models_ring_theory_to_comm_ring.realize_one,
-         ring_signature.mul, struc_to_ring_struc.func_map,
-         fin.val_zero', realize_bounded_formula_not,
-         struc_to_ring_struc.binaries_map,
-         fin.val_eq_coe, dvector.last,
+         struc_to_ring_struc.func_map, fin.val_zero', realize_bounded_formula_not,
+         struc_to_ring_struc.binaries_map, fin.val_eq_coe, dvector.last,
          realize_bounded_formula_ex, realize_bounded_term_bd_app,
          realize_bounded_formula, realize_bounded_term,
-         fin.val_one, dvector.nth,
-         models_ring_theory_to_comm_ring.realize_zero],
+         fin.val_one, dvector.nth, models_ring_theory_to_comm_ring.realize_zero],
        apply is_field.mul_inv_cancel,
        apply K_is_field,
      },
     { unfold fol.realize_sentence,
-      simp only [forall_false_left, ring_signature.one, realize_bounded_formula,
-        realize_bounded_term, struc_to_ring_struc.realize_one, func_map, const_map,
-        zero_ne_one, struc_to_ring_struc.realize_zero, ring_signature.zero] },
+      simp only [forall_false_left, realize_bounded_formula,
+        realize_bounded_term, struc_to_ring_struc.realize_one,
+        func_map, const_map, zero_ne_one, struc_to_ring_struc.realize_zero] },
   end
 
   /-- Fields are models of the theory of fields -/
@@ -106,17 +103,10 @@ namespace models_theory_of_fields_to_is_field
   let hmulinv := h mul_inv_in_field_theory in by simpa using hmulinv a ha
 
   lemma is_field : @is_field M (models_theory_of_fields_to_is_field.ring h) :=
-  begin
-    split,
-    {exact ⟨ 0 , 1 , zero_ne_one h ⟩},
-    {exact (models_theory_of_fields_to_is_field.comm_ring h).mul_comm},
-    {exact mul_inv h},
-  end
-  -- ⟨
-  --   ⟨ 0 , 1 , zero_ne_one ⟩,
-  --   models_ring_theory_to_comm_ring.mul_comm,
-  --   mul_inv
-  -- ⟩
+  { exists_pair_ne := ⟨ 0 , 1 , zero_ne_one h ⟩,
+    mul_comm := (models_theory_of_fields_to_is_field.comm_ring h).mul_comm,
+    mul_inv_cancel := mul_inv h }
+
   noncomputable instance field : field M :=
   @is_field.to_field M (models_theory_of_fields_to_is_field.ring h)
   (models_theory_of_fields_to_is_field.is_field h)
@@ -126,8 +116,8 @@ end models_theory_of_fields_to_is_field
 /-- GenPoly n is the polynomial aₙ₊₁ xⁿ + ⋯ + a₂ x + a₁
  where aₖ = x_ k and x = x_ 0, i.e. we are seeing the variables x_ k with 0 < k as coefficients
  and x_ 0 as the indeterminate -/
-@[simp] def gen_poly : Π (n : ℕ), bounded_term ring_signature (n + 2)
-| 0       := x_ ⟨ 1 , by exact dec_trivial ⟩
+@[simp] def gen_poly : Π (n : ℕ), bounded_ring_term (n + 2)
+| 0       := x_ ⟨ 1 , dec_trivial ⟩
 | (n + 1) :=
   (x_ ⟨ n + 2 , add_lt_add_right (nat.lt_succ_self _) _ ⟩)
   * (npow_rec (n + 1) (x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)) +
@@ -148,8 +138,7 @@ include hcomm hnt hde
 /-- xᵐ has degree m -/
 lemma deg_pow {n m : ℕ} {as : dvector A (n + 1)} :
   (polynomial.term_evaluated_at_coeffs as
-    (npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)).degree
-  = m :=
+    (npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)).degree = m :=
 begin
   rw polynomial.term_evaluated_at_coeffs_pow,
   apply polynomial.degree_X_pow,
@@ -166,60 +155,43 @@ begin
   {rw ← polynomial.term_evaluated_at_coeffs_coeff, simp only [fin.val_zero'] },
   rw h,
   by_cases h0 : as.nth' 0 = 0,
-  {
-    rw h0,
-    rw polynomial.C_0,
-    rw polynomial.degree_zero,
-    exact dec_trivial,
-  },
-  {
-    rw polynomial.degree_C h0,
-    exact dec_trivial,
-  }
+  { rw [h0, polynomial.C_0, polynomial.degree_zero],
+    dec_trivial },
+  { rw polynomial.degree_C h0,
+    dec_trivial }
 end
 | (nat.succ n) as :=
 begin
-  simp only [gen_poly, polynomial.term_evaluated_at_coeffs_add],
-  rw polynomial.term_evaluated_at_coeffs_monomial' (nat.lt_succ_self _),
-  rw polynomial.lift_succ_remove_last,
-  -- have am : dvector A n.succ := dvector.remove_mth (n + 2) as,
+  simp only [gen_poly, polynomial.term_evaluated_at_coeffs_add,
+    polynomial.term_evaluated_at_coeffs_monomial' (nat.lt_succ_self _),
+    polynomial.lift_succ_remove_last],
   apply has_le.le.trans_lt (polynomial.degree_add_le _ _),
   apply max_lt,
-  {
-    apply has_le.le.trans_lt (polynomial.degree_monomial_le _ _),
-    exact with_bot.succ_lt_succ_succ,
-  },
-  {
-    apply lt_trans (@gen_poly_degree n (dvector.remove_mth (n.succ + 2) as)),
-    exact with_bot.succ_lt_succ_succ,
-  },
+  { apply has_le.le.trans_lt (polynomial.degree_monomial_le _ _),
+    exact with_bot.succ_lt_succ_succ },
+  { apply lt_trans (@gen_poly_degree n (dvector.remove_mth (n.succ + 2) as)),
+    exact with_bot.succ_lt_succ_succ },
 end
 
 /-- gen_monic_poly has non-zero degree -/
 lemma gen_monic_poly_non_const {n} {as : dvector A (n + 1)} :
   polynomial.degree (polynomial.term_evaluated_at_coeffs as (gen_monic_poly n)) ≠ 0 :=
 begin
-  unfold gen_monic_poly,
   apply ne_of_gt,
   have hp : (polynomial.term_evaluated_at_coeffs as (npow_rec (n + 1) x_ 0)).degree = n + 1,
   {apply deg_pow},
   have hq : (polynomial.term_evaluated_at_coeffs as (gen_poly n)).degree < (n + 1),
-  {
-    apply lt_of_lt_of_le gen_poly_degree,
-    {
-      rw le_iff_eq_or_lt,
-      left, refl,
-    },
-    exact hnt, -- why??
-    exact hde, -- why??
-  },
+  { apply lt_of_lt_of_le gen_poly_degree,
+    { rw le_iff_eq_or_lt,
+      left, refl },
+    exact hnt,
+    exact hde },
   have hle : (polynomial.term_evaluated_at_coeffs as (gen_poly n)).degree
     < (polynomial.term_evaluated_at_coeffs as (npow_rec (n + 1) x_ 0)).degree,
   { rw hp, exact hq },
-  rw polynomial.term_evaluated_at_coeffs_add,
-  rw (polynomial.degree_add_eq_left_of_degree_lt hle),
-  rw hp,
-  exact dec_trivial,
+  rw [gen_monic_poly, polynomial.term_evaluated_at_coeffs_add,
+    (polynomial.degree_add_eq_left_of_degree_lt hle), hp],
+  dec_trivial,
 end
 
 end poly_lemmas
@@ -229,7 +201,7 @@ end poly_lemmas
   sentence ring_signature :=
 fol.bd_alls (n + 1) (∃' gen_monic_poly n ≃ 0)
 
-/-- The thoery of algebraically closed fields -/
+/-- The theory of algebraically closed fields -/
 def ACF : Theory ring_signature :=
 field_theory ∪ (set.range all_gen_monic_poly_has_root)
 -- the latter stands for {gen_monic_polyHasSolution n | n : ℕ}
@@ -245,8 +217,7 @@ p + 1 ≄ 0
 lemma injective_plus_one_ne_zero : function.injective plus_one_ne_zero :=
 begin
   intros n m himage,
-  simp only [plus_one_ne_zero, ring_signature.one,
-    ring_signature.add, ring_signature.zero] at himage,
+  simp only [plus_one_ne_zero] at himage,
   have h := (bd_app.inj (bd_app.inj (bd_notequal.inj himage).1).1).2,
   apply instances.nat_cast_bd_ring_term_inj h,
 end
@@ -262,16 +233,14 @@ set.subset_union_left _ _
 
 lemma realize_plus_one_ne_zero {M : Structure ring_signature} {p} :
   (M ⊨ plus_one_ne_zero p) ↔ (p.succ : M) ≠ 0 :=
-begin
-  simp only [plus_one_ne_zero],
-  have hrw : add (p : bounded_ring_term 0) one = ↑(p.succ) := rfl,
-  rw hrw,
-  simp only [bd_notequal, realize_sentence_not,
+by simpa only [plus_one_ne_zero, bd_notequal, realize_sentence_not,
     realize_sentence_equal, realize_closed_term,
     models_ring_theory_to_comm_ring.realize_nat,
-    not_iff_not],
-  refl,
-end
+    not_iff_not, Rings.models_ring_theory_to_comm_ring.realize_zero,
+    models_ring_theory_to_comm_ring.realize_one,
+    realize_bounded_term_bd_app, nat.cast_succ,
+    realize_bounded_term.equations._eqn_2,
+    models_ring_theory_to_comm_ring.realize_add]
 
 namespace is_alg_closed_to
 
@@ -289,21 +258,18 @@ lemma realize_ACF : Structure K ⊨ ACF :=
 begin
   intros ϕ h,
   cases h,
-  {apply field_to.realize_field_theory _ h},
-  {
-    cases h with n hϕ,
+  { apply field_to.realize_field_theory _ h },
+  { cases h with n hϕ,
     rw ← hϕ,
     simp only [all_gen_monic_poly_has_root, realize_sentence_bd_alls,
       realize_bounded_formula_ex, realize_bounded_formula,
-      models_ring_theory_to_comm_ring.realize_zero, zero],
+      models_ring_theory_to_comm_ring.realize_zero],
     intro as,
     have root := is_alg_closed.exists_root
       (polynomial.term_evaluated_at_coeffs as (gen_monic_poly n)) gen_monic_poly_non_const,
     cases root with x hx,
-    use x,
     rw polynomial.eval_term_evaluated_at_coeffs_eq_realize_bounded_term at hx,
-    exact hx,
-  },
+    exact ⟨ x , hx ⟩ },
 end
 
 lemma realize_ACF₀ [char_zero K] : Structure K ⊨ ACF₀ :=
@@ -341,9 +307,9 @@ lemma realize_npow_rec
   (realize_bounded_term as t dvector.nil) ^ n :=
 begin
   induction n with n hn,
-  { simpa only [npow_rec, one, realize_one, realize_bounded_term,
+  { simpa only [npow_rec, realize_one, realize_bounded_term,
     _root_.pow_zero] },
-  { simpa only [npow_rec, mul, models_ring_theory_to_comm_ring.realize_mul,
+  { simpa only [npow_rec, models_ring_theory_to_comm_ring.realize_mul,
       realize_bounded_term, hn] },
 end
 
@@ -355,25 +321,20 @@ realize_bounded_term
      :=
 begin
   induction n with n hn,
-  {
-    simp only [finset.sum_range_one, _root_.pow_zero, mul_one,
+  { simpa only [finset.sum_range_one, _root_.pow_zero, mul_one,
       gen_poly, dvector.nth_of_fn,
-      realize_bounded_term, dvector.nth_cons _ _ _ (nat.zero_lt_one)],
-    refl,
-  },
-  {
-    simp only [finset.sum_range_add, hn, finset.sum_range_one, mul_one,
+      realize_bounded_term, dvector.nth_cons _ _ _ (nat.zero_lt_one)] },
+  { simp only [finset.sum_range_add, hn, finset.sum_range_one, mul_one,
       gen_poly, dvector.nth_of_fn, add_zero, fin.mk_zero, fin.val_zero',
-      models_ring_theory_to_comm_ring.realize_add, add,
+      models_ring_theory_to_comm_ring.realize_add,
       models_ring_theory_to_comm_ring.realize_mul, realize_bounded_term,
-      dvector.nth, realize_lift_succ, dvector.remove_mth],
-    rw [dvector.remove_mth_of_fn_last, hn,
+      dvector.nth, realize_lift_succ, dvector.remove_mth,
+      dvector.remove_mth_of_fn_last, hn,
       add_comm ((finset.range (n + 1)).sum (λ (x : ℕ), c x * root ^ x))],
     congr1,
-    simp only [mul, fin.val_zero', models_ring_theory_to_comm_ring.realize_mul,
+    simp only [fin.val_zero', models_ring_theory_to_comm_ring.realize_mul,
       realize_bounded_term, dvector.nth, dvector.nth_of_fn,
-      fin.coe_mk, realize_npow_rec],
-  }
+      fin.coe_mk, realize_npow_rec] }
 end
 
 instance is_alg_closed : is_alg_closed M :=
@@ -382,7 +343,7 @@ begin
   intros p hmonic hirr hdeg,
   simp only [ACF, all_realize_sentence_union, all_realize_sentence_range,
     all_gen_monic_poly_has_root, realize_sentence_bd_alls,
-    realize_bounded_formula, models_ring_theory_to_comm_ring.realize_zero, zero,
+    realize_bounded_formula, models_ring_theory_to_comm_ring.realize_zero,
     realize_bounded_formula_ex] at hM,
   obtain ⟨ _ , halg_closed ⟩ := hM.1,
   set n := polynomial.nat_degree p - 1 with hn,
@@ -391,23 +352,20 @@ begin
   use root,
   convert hroot,
   rw polynomial.eval_eq_finset_sum,
-  simp only [gen_monic_poly],
-  simp only [mul, fin.val_zero',
-    models_ring_theory_to_comm_ring.realize_add, add,
-    models_ring_theory_to_comm_ring.realize_mul,
-    realize_bounded_term, dvector.nth,
-    models_ring_theory_to_comm_ring.realize_pow],
+  simp only [
+    gen_monic_poly, models_ring_theory_to_comm_ring.realize_add,
+    fin.val_zero', models_ring_theory_to_comm_ring.realize_mul,
+    realize_bounded_term, dvector.nth, models_ring_theory_to_comm_ring.realize_pow],
   simp only [polynomial.monic, polynomial.leading_coeff] at hmonic,
-  simp only [finset.sum_range_add, finset.sum_range_one, add_zero, hmonic,
-    one_mul],
   have hpow : npow_rec (n + 1) root = root ^ p.nat_degree,
   { simp only [pow, hn], rw nat.sub_add_cancel, refl,
     rw ← nat.one_lt_bit0_iff, exact nat.one_lt_bit0 hdeg },
-  rw [add_comm _ (root ^ p.nat_degree), hpow, hxs, hn],
+  simp only [finset.sum_range_add, finset.sum_range_one,
+    add_zero, hmonic, one_mul, add_comm _ (root ^ p.nat_degree), hpow, hxs, hn],
   congr,
-  rw realize_gen_poly,
-  rw nat.sub_add_cancel,
-  rw ← nat.one_lt_bit0_iff, exact nat.one_lt_bit0 hdeg,
+  rw [realize_gen_poly, nat.sub_add_cancel],
+  rw ← nat.one_lt_bit0_iff,
+  exact nat.one_lt_bit0 hdeg,
 end
 
 variables {p : ℕ}
@@ -418,7 +376,7 @@ variables {M : Structure ring_signature} {p : ℕ}
 
 lemma models_ACFₚ_iff {hp : nat.prime p} :
   M ⊨ ACFₚ hp ↔ (p : M) = 0 ∧ M ⊨ ACF :=
-by simp only [ACFₚ, all_realize_sentence_insert, realize_sentence_equal, zero,
+by simp only [ACFₚ, all_realize_sentence_insert, realize_sentence_equal,
     realize_closed_term, models_ring_theory_to_comm_ring.realize_nat,
     models_ring_theory_to_comm_ring.realize_zero]
 
@@ -433,10 +391,6 @@ end
 
 namespace instances
 
--- @[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
---   Structure ring_signature :=
--- Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_zmod p ⟨ hp ⟩)
-
 @[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
   Structure ring_signature :=
 Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩)
@@ -446,33 +400,17 @@ theorem algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
 begin
   rw models_ACFₚ_iff,
   split,
-  {
-    have h := @algebraic_closure.of_ulift_zmod.char_p p ⟨ hp ⟩,
+  { have h := @algebraic_closure.of_ulift_zmod.char_p p ⟨ hp ⟩,
     rw ← ring_char.eq_iff at h,
     rw ring_char.spec,
     have hrw : ring_char (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩) =
       ring_char ↥(Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩)),
     { refl },
     rw hrw at h,
-    rw h,
-  },
-  {
-    classical,
-    apply is_alg_closed_to.realize_ACF,
-  },
+    rw h },
+  { classical,
+    apply is_alg_closed_to.realize_ACF },
 end
-
--- theorem ulift_algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
---   ulift_algebraic_closure_of_zmod hp ⊨ ACFₚ hp :=
--- begin
---   have h := @ulift_Structure_all_realize_sentence (algebraic_closure_of_zmod hp) (ACFₚ hp),
---   -- rw h,
---   have h' := h.mpr (algebraic_closure_of_zmod_models_ACFₚ hp),
---   unfold ulift_algebraic_closure_of_zmod,
---   unfold algebraic_closure_of_zmod at h',
---   exact h',
-
--- end
 
 end instances
 

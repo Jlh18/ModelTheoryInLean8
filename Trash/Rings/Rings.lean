@@ -447,8 +447,7 @@ namespace polynomial
     simp,
   end
 
-
-lemma term_evaluated_at_coeffs_coeff
+  lemma term_evaluated_at_coeffs_coeff
   {n} {as : dvector A n} {k : fin n} :
     term_evaluated_at_coeffs as (x_ ⟨ k.1.succ , nat.succ_lt_succ k.2 ⟩)
     = polynomial.C (dvector.nth' as k) :=

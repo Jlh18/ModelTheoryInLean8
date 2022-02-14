@@ -218,7 +218,7 @@ begin
   simp only [realize_ring_term.add_zero_hom, function.comp_app],
   simp only [struc_to_ring_struc.func_map, fin.val_eq_coe, dvector.last,
     struc_to_ring_struc.binaries_map, realize_bounded_term,
-    ring_signature.mul, dvector.nth],
+    dvector.nth],
   congr,
   rw realize_ring_term.nat_non_comm_prod,
   congr,
@@ -637,18 +637,16 @@ lemma eval_poly_map_data_xs
     (monom_deg_le n d))
   :=
 begin
-  rw mv_polynomial.eval_eq',
-  rw mv_polynomial_sum_eq_finset_map_monom_deg_le_finset_sum (ps j) (hdeg j),
-  rw finset.sum_map,
-  rw list.sumr_eq_sum,
+  rw [mv_polynomial.eval_eq',
+    mv_polynomial_sum_eq_finset_map_monom_deg_le_finset_sum (ps j) (hdeg j),
+    finset.sum_map, list.sumr_eq_sum],
   delta monom_deg_le,
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
   rw eval_poly_map_data_xs_aux_prod xs ys f,
   congr,
-  rw mv_polynomial.coeff,
-  rw dvector.nth_append_big,
+  rw [mv_polynomial.coeff, dvector.nth_append_big],
   {
     rw dvector.nth_append_big,
     {
