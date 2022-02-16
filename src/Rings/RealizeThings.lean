@@ -64,11 +64,7 @@ lemma pow (t : bounded_ring_term c) : Π (n : ℕ),
   realize_bounded_term xs (npow_rec n t) dvector.nil
   =
   (realize_bounded_term xs t dvector.nil) ^ n
-| nat.zero := by simp only [nat.nat_zero_eq_zero, ring_signature.pow_zero,
-    realize_bounded_term, models_ring_theory_to_comm_ring.realize_one,
-    models_ring_theory_to_comm_ring.realize_one, pow_zero]
-| (nat.succ n) := by simp only [struc_to_ring_struc.func_map,
-  dvector.last, ring_signature.pow_succ, struc_to_ring_struc.binaries_map,
-  realize_bounded_term, dvector.nth, pow n, pow_succ]
+| nat.zero := by simpa
+| (nat.succ n) := by simp [npow_rec, pow n, pow_succ]
 
 end realize_ring_term
