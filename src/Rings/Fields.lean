@@ -39,77 +39,65 @@ lemma ring_theory_sub_field_theory : ring_theory ⊆ field_theory :=
 begin intros f hf, left, exact hf end
 
 namespace field_to
-  variables
-    (K : Type u) [field K]
 
-  lemma K_is_field : is_field K := field.to_is_field K
+variables (K : Type u) [field K]
 
-  open Rings.models_ring_theory_to_comm_ring
+lemma K_is_field : is_field K := field.to_is_field K
 
-  lemma realize_field_theory :
-    Structure K ⊨ field_theory := -- squeeze_simp, val_zero
-  begin
-    intros ϕ h,
-    cases h,
-    {apply (comm_ring_to_model.realize_ring_theory K h)},
-    repeat {cases h},
-     {
-       intro,
-       unfold fol.bd_or,
-       simp only [models_ring_theory_to_comm_ring.realize_one,
-         struc_to_ring_struc.func_map, fin.val_zero', realize_bounded_formula_not,
-         struc_to_ring_struc.binaries_map, fin.val_eq_coe, dvector.last,
-         realize_bounded_formula_ex, realize_bounded_term_bd_app,
-         realize_bounded_formula, realize_bounded_term,
-         fin.val_one, dvector.nth, models_ring_theory_to_comm_ring.realize_zero],
-       apply is_field.mul_inv_cancel,
-       apply K_is_field,
-     },
-    { unfold fol.realize_sentence,
-      simp only [forall_false_left, realize_bounded_formula,
-        realize_bounded_term, struc_to_ring_struc.realize_one,
-        func_map, const_map, zero_ne_one, struc_to_ring_struc.realize_zero] },
-  end
+open Rings.models_ring_theory_to_comm_ring
 
-  /-- Fields are models of the theory of fields -/
-  def models_field_theory : Model field_theory.{u} :=
-  ⟨ Structure K ,  realize_field_theory _ ⟩
+lemma realize_field_theory :
+  Structure K ⊨ field_theory :=
+begin
+  intros ϕ h,
+  cases h,
+  {apply (comm_ring_to_model.realize_ring_theory K h)},
+  repeat {cases h},
+   { intro,
+     simp only [fol.bd_or, models_ring_theory_to_comm_ring.realize_one,
+       struc_to_ring_struc.func_map, fin.val_zero', realize_bounded_formula_not,
+       struc_to_ring_struc.binaries_map, fin.val_eq_coe, dvector.last,
+       realize_bounded_formula_ex, realize_bounded_term_bd_app,
+       realize_bounded_formula, realize_bounded_term,
+       fin.val_one, dvector.nth, models_ring_theory_to_comm_ring.realize_zero],
+     apply is_field.mul_inv_cancel (K_is_field K) },
+  { simp [fol.realize_sentence] },
+end
+
+/-- Fields are models of the theory of fields -/
+def models_field_theory : Model field_theory.{u} :=
+⟨ Structure K ,  realize_field_theory _ ⟩
 
 end field_to
 
 namespace models_theory_of_fields_to_is_field
 
-  variables {M : Structure ring_signature} (h : M ⊨ field_theory)
-  -- M inherits instances of 0 1 - + * from Rings.ModelTo
+variables {M : Structure ring_signature} (h : M ⊨ field_theory)
+-- M inherits instances of 0 1 - + * from Rings.ModelTo
 
-  include h
+include h
 
-  lemma ring_model : M ⊨ ring_theory :=
-  begin
-    intros f hf,
-    apply h,
-    apply ring_theory_sub_field_theory,
-    exact hf
-  end
+lemma ring_model : M ⊨ ring_theory :=
+all_realize_sentence_of_subset h ring_theory_sub_field_theory
 
-  instance comm_ring : comm_ring M :=
-  models_ring_theory_to_comm_ring.comm_ring (ring_model h)
+instance comm_ring : comm_ring M :=
+models_ring_theory_to_comm_ring.comm_ring (ring_model h)
 
-  instance ring : ring M := @comm_ring.to_ring M (models_theory_of_fields_to_is_field.comm_ring h)
+instance ring : ring M := @comm_ring.to_ring M (models_theory_of_fields_to_is_field.comm_ring h)
 
-  lemma zero_ne_one : (0 : M) ≠ 1 := by simpa using (h non_triv_in_field_theory)
+lemma zero_ne_one : (0 : M) ≠ 1 := by simpa using h non_triv_in_field_theory
 
-  lemma mul_inv (a : M) (ha : a ≠ 0) : (∃ (b : M), a * b = 1) :=
-  let hmulinv := h mul_inv_in_field_theory in by simpa using hmulinv a ha
+lemma mul_inv (a : M) (ha : a ≠ 0) : (∃ (b : M), a * b = 1) :=
+let hmulinv := h mul_inv_in_field_theory in by simpa using hmulinv a ha
 
-  lemma is_field : @is_field M (models_theory_of_fields_to_is_field.ring h) :=
-  { exists_pair_ne := ⟨ 0 , 1 , zero_ne_one h ⟩,
-    mul_comm := (models_theory_of_fields_to_is_field.comm_ring h).mul_comm,
-    mul_inv_cancel := mul_inv h }
+lemma is_field : @is_field M (models_theory_of_fields_to_is_field.ring h) :=
+{ exists_pair_ne := ⟨ 0 , 1 , zero_ne_one h ⟩,
+  mul_comm := (models_theory_of_fields_to_is_field.comm_ring h).mul_comm,
+  mul_inv_cancel := mul_inv h }
 
-  noncomputable instance field : field M :=
-  @is_field.to_field M (models_theory_of_fields_to_is_field.ring h)
-  (models_theory_of_fields_to_is_field.is_field h)
+noncomputable instance field : field M :=
+@is_field.to_field M (models_theory_of_fields_to_is_field.ring h)
+(models_theory_of_fields_to_is_field.is_field h)
 
 end models_theory_of_fields_to_is_field
 
@@ -248,8 +236,7 @@ variables {K : Type u} [field K] [is_alg_closed K] [decidable_eq K]
 
 open Rings.struc_to_ring_struc
 
-  -- should be in the library
-theorem is_alg_closed.exists_root (f : polynomial K) (h : f.degree ≠ 0) :
+lemma is_alg_closed.exists_root (f : polynomial K) (h : f.degree ≠ 0) :
   ∃ x : K, f.eval x = 0 :=
 polynomial.exists_root_of_splits _ (is_alg_closed.splits f) h
 

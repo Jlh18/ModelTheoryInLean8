@@ -48,57 +48,54 @@ open fol
 def ring_signature : Language :=
 (Language.mk) (ring_funcs) (λ n, pempty)
 
-@[reducible] def bounded_ring_formula (n : ℕ) := bounded_formula ring_signature n
-@[reducible] def bounded_ring_term (n : ℕ) := bounded_term ring_signature n
+/-- Shorter name for bounded_term ring_signature -/
+@[reducible] def bounded_ring_term := bounded_term ring_signature
+
+/-- Shorter name for bounded_preterm ring_signature n 0 -/
 @[reducible] def bounded_ring_term' (n : ℕ) := bounded_preterm ring_signature n 0
+
+/-- Shorter name for bounded_formula ring_signature -/
+@[reducible] def bounded_ring_formula := bounded_formula ring_signature
+
+/-- Shorter name for realize_bounded_term ring_signature -/
 @[reducible] def realize_bounded_ring_term := @realize_bounded_term ring_signature
 
 namespace ring_signature
 
-/- The following instances allow us to use symbols 0 1 - + *-/
-/- to write down terms in the language-/
+/- The following instances allow us to use symbols 0 1 - + * ^ -/
+/- to write terms in the language-/
 
--- @[simp] def zero {n} : bounded_ring_term n := bd_func ring_consts.zero
 @[reducible] instance bounded_ring_term_has_zero {n} :
   has_zero (bounded_ring_term n) := ⟨ bd_func ring_consts.zero ⟩
 @[reducible] instance bounded_ring_term_has_zero' {n} :
   has_zero (bounded_ring_term' n) := ⟨ bd_func ring_consts.zero ⟩
 
--- @[simp] def one {n} : bounded_ring_term n := bd_func ring_consts.one
 @[reducible] instance bounded_ring_term_has_one {n} :
   has_one (bounded_ring_term n) := ⟨ bd_func ring_consts.one ⟩
 @[reducible] instance bounded_ring_term_has_one' {n} :
   has_one (bounded_ring_term' n) := ⟨ bd_func ring_consts.one ⟩
 
--- @[simp] def neg {n} : bounded_ring_term n → bounded_ring_term n := bd_app (bd_func ring_unaries.neg)
 @[reducible] instance bounded_ring_term_has_neg {n} : has_neg (bounded_ring_term n) :=
 ⟨ bd_app (bd_func ring_unaries.neg) ⟩
 @[reducible] instance bounded_ring_term_has_neg' {n} : has_neg (bounded_ring_term' n) :=
 ⟨ bd_app (bd_func ring_unaries.neg) ⟩
 
--- @[simp] def add {n} (x : bounded_ring_term n) : bounded_ring_term n → bounded_ring_term n :=
---   bd_app (bd_app (bd_func ring_binaries.add) x)
 @[reducible] instance bounded_ring_term_has_add {n} : has_add (bounded_ring_term n) :=
 ⟨ λ x, bd_app (bd_app (bd_func ring_binaries.add) x) ⟩
 @[reducible] instance bounded_ring_term_has_add' {n} : has_add (bounded_ring_term'  n) :=
 ⟨ λ x, bd_app (bd_app (bd_func ring_binaries.add) x) ⟩
 
--- @[simp] def mul {n} (x : bounded_ring_term n) : bounded_ring_term n → bounded_ring_term n :=
---   bd_app (bd_app (bd_func ring_binaries.mul) x)
 @[reducible] instance bounded_ring_term_has_mul {n} : has_mul (bounded_ring_term n) :=
 ⟨ λ x, bd_app (bd_app (bd_func ring_binaries.mul) x) ⟩
 @[reducible] instance bounded_ring_term_has_mul' {n} : has_mul (bounded_ring_term' n) :=
 ⟨ λ x, bd_app (bd_app (bd_func ring_binaries.mul) x) ⟩
 
--- has_pow comes for free by having instances of mul and 1 (see ToMathlib) -- input x ^ n
+@[reducible] instance bounded_ring_term_has_pow {n} : has_pow (bounded_ring_term n) ℕ :=
+⟨ λ t n, npow_rec n t ⟩
 
-@[simp] lemma pow_zero {n} (t : bounded_ring_term n) : npow_rec 0 t = 1 := rfl
+@[simp] lemma pow_zero {n} (t : bounded_ring_term n) : t ^ 0 = 1 := rfl
 @[simp] lemma pow_succ {n m} (t : bounded_ring_term m) :
-  npow_rec (n + 1) t = t * npow_rec n t := rfl
-
-
--- with has_one and has_add you can write any natural and lean will know what term you mean
--- with has_neg you can write any integer etc.
+  t ^ (n + 1) = t * t ^ n := rfl
 
 /-
 -- variables x0 , x1 in the signature
@@ -193,28 +190,28 @@ def ring_theory : Theory ring_signature :=
 {add_assoc, add_id, add_inv, add_comm, mul_assoc, mul_id, mul_comm, add_mul}
 
 lemma add_assoc_in_ring_theory : add_assoc ∈ ring_theory :=
-begin unfold ring_theory, left, refl end
+begin left, refl end
 
 lemma add_id_in_ring_theory : add_id ∈ ring_theory :=
-begin unfold ring_theory, iterate 1 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma add_inv_in_ring_theory : add_inv ∈ ring_theory :=
-begin unfold ring_theory, iterate 2 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma add_comm_in_ring_theory : add_comm ∈ ring_theory :=
-begin unfold ring_theory, iterate 3 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma mul_assoc_in_ring_theory : mul_assoc ∈ ring_theory :=
-begin unfold ring_theory, iterate 4 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma mul_id_in_ring_theory : mul_id ∈ ring_theory :=
-begin unfold ring_theory, iterate 5 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma mul_comm_in_ring_theory : mul_comm ∈ ring_theory :=
-begin unfold ring_theory, iterate 6 {right}, left, refl end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem] end
 
 lemma add_mul_in_ring_theory : add_mul ∈ ring_theory :=
-begin unfold ring_theory, iterate 7 {right}, exact set.mem_singleton _, end
+begin apply_rules [set.mem_insert, set.mem_insert_of_mem, set.mem_singleton] end
 
 end ring_signature
 
@@ -224,7 +221,7 @@ namespace struc_to_ring_struc
 
 variable {A : Type*}
 
--- Interpreting consant symbols from ring_signature -/
+/-- Interpreting consant symbols from ring_signature -/
 @[simp] def const_map [has_zero A] [has_one A] : ring_consts → (dvector A 0) → A
 | ring_consts.zero _ := 0
 | ring_consts.one  _ := 1
@@ -303,106 +300,106 @@ end struc_to_ring_struc
 
 namespace comm_ring_to_model
 
-  variables (A : Type*) [comm_ring A]
+variables (A : Type*) [comm_ring A]
 
-  lemma realize_ring_theory :
-    (struc_to_ring_struc.Structure A) ⊨ ring_signature.ring_theory :=
-  begin
-    intros ϕ h,
-    repeat {cases h},
-    { intros a b c,
-      simp[add_assoc] },
-    { intro a,
-      simp },
-    { intro a,
-      simp },
-    { intros a b,
-      simp [add_comm] },
-    { intros a b c,
-      simp [mul_assoc] },
-    { intro a,
-      simp [mul_one] },
-    { intros a b,
-      simp [mul_comm] },
-    { intros a b c,
-      simp [add_mul] }
-  end
+lemma realize_ring_theory :
+  (struc_to_ring_struc.Structure A) ⊨ ring_signature.ring_theory :=
+begin
+  intros ϕ h,
+  repeat {cases h},
+  { intros a b c,
+    simp [add_assoc] },
+  { intro a,
+    simp },
+  { intro a,
+    simp },
+  { intros a b,
+    simp [add_comm] },
+  { intros a b c,
+    simp [mul_assoc] },
+  { intro a,
+    simp [mul_one] },
+  { intros a b,
+    simp [mul_comm] },
+  { intros a b c,
+    simp [add_mul] }
+end
 
-  /-- Commutative rings model the theory of rings -/
-  def model : Model ring_signature.ring_theory :=
-  ⟨ struc_to_ring_struc.Structure A ,  realize_ring_theory A ⟩
+/-- Commutative rings model the theory of rings -/
+def model : Model ring_signature.ring_theory :=
+⟨ struc_to_ring_struc.Structure A ,  realize_ring_theory A ⟩
 
 end comm_ring_to_model
 
 namespace mv_polynomial
 
-  variable {σ : Type}
+variable {σ : Type}
 
-  open ring_signature
+open ring_signature
 
-  /-- Terms in the ring_signature are multivariable polynomials over ℤ -/
-  noncomputable def term {n} :
-    bounded_ring_term n → mv_polynomial (fin n) ℤ :=
-  @ring_term_rec n (λ _, mv_polynomial (fin n) ℤ)
-    mv_polynomial.X 0 1
-    (λ _ p, - p)
-    (λ _ _ p q, p + q)
-    (λ _ _ p q, p * q)
+/-- Terms in the ring_signature are multivariable polynomials over ℤ -/
+noncomputable def term {n} :
+  bounded_ring_term n → mv_polynomial (fin n) ℤ :=
+@ring_term_rec n (λ _, mv_polynomial (fin n) ℤ)
+  mv_polynomial.X 0 1
+  (λ _ p, - p)
+  (λ _ _ p q, p + q)
+  (λ _ _ p q, p * q)
 
-  @[simp] lemma term_x {n} {k : fin n} : term (x_ k) = mv_polynomial.X k := rfl
-  @[simp] lemma term_zero {n} : @term n (bd_func ring_consts.zero) = 0 := rfl
-  @[simp] lemma term_one {n} : @term n (bd_func ring_consts.one) = 1 := rfl
-  @[simp] lemma term_neg {n} {t : bounded_ring_term n} :
-    term (- t) = - term t := rfl
-  @[simp] lemma term_add {n} {s t : bounded_ring_term n} :
-    term (s + t) = term s + term t := rfl
-  @[simp] lemma term_mul {n} {s t : bounded_ring_term n} :
-    term (s * t) = term s * term t := rfl
+@[simp] lemma term_x {n} {k : fin n} : term (x_ k) = mv_polynomial.X k := rfl
+@[simp] lemma term_zero {n} : @term n (bd_func ring_consts.zero) = 0 := rfl
+@[simp] lemma term_one {n} : @term n (bd_func ring_consts.one) = 1 := rfl
+@[simp] lemma term_neg {n} {t : bounded_ring_term n} :
+  term (- t) = - term t := rfl
+@[simp] lemma term_add {n} {s t : bounded_ring_term n} :
+  term (s + t) = term s + term t := rfl
+@[simp] lemma term_mul {n} {s t : bounded_ring_term n} :
+  term (s * t) = term s * term t := rfl
 
-  variables {A : Type*} [comm_ring A]
+variables {A : Type*} [comm_ring A]
 
-  @[reducible] private def AStruc := struc_to_ring_struc.Structure A
+@[reducible] private def AStruc := struc_to_ring_struc.Structure A
 
-  /-- terms realized at values in A are the corresponding polynomials -/
-  /- evaluated at those values -/
-  lemma realized_term_is_evaluated_poly {n} {as : dvector A n} :
-  Π (t : bounded_ring_term n),
-    @realize_bounded_term _ AStruc _ as _ t dvector.nil
-    = mv_polynomial.eval (dvector.fin_val as) (term t) :=
-  @ring_term_rec n (λ (t : bounded_ring_term n),
-    @realize_bounded_term _ AStruc _ as _ t dvector.nil
-      = mv_polynomial.eval (dvector.fin_val as) (term t))
-    (begin intro k, simpa, end) -- variables
-    (by simpa)
-    (by simp)
-    (begin -- neg
-      intros t h,
-      unfold_coes,
-      simp only [struc_to_ring_struc.unaries_map, struc_to_ring_struc.func_map,
-        dvector.last, realize_bounded_term, dvector.nth, mv_polynomial.coe_mv_poly_neg],
-      unfold_coes at h,
-      simp only [ring_hom.to_fun_eq_coe, mv_polynomial.eval_map] at h,
-      simp only [term_neg, h, ring_hom.to_fun_eq_coe, ring_hom.map_neg,
-        mv_polynomial.eval_map, neg_inj, struc_to_ring_struc.apps_neg],
-    end)
-    (begin -- add
-      intros s t hs ht,
-      unfold_coes,
-      simp only [term_add, struc_to_ring_struc.binaries_map, dvector.last,
-        struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
-        dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
-      unfold_coes,
-      simp,
-    end)
-    (begin -- mul
-      intros s t hs ht,
-      unfold_coes,
-      simp only [term_mul, struc_to_ring_struc.binaries_map, dvector.last,
-        struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
-        dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
-      unfold_coes,
-      simp,
-    end)
+/-- terms realized at values in A are the corresponding polynomials -/
+/- evaluated at those values -/
+lemma realized_term_is_evaluated_poly {n} {as : dvector A n} :
+Π (t : bounded_ring_term n),
+  @realize_bounded_term _ AStruc _ as _ t dvector.nil
+  = mv_polynomial.eval (dvector.fin_val as) (term t) :=
+@ring_term_rec n (λ (t : bounded_ring_term n),
+  @realize_bounded_term _ AStruc _ as _ t dvector.nil
+    = mv_polynomial.eval (dvector.fin_val as) (term t))
+  (begin intro k, simpa, end) -- variables
+  (by simpa)
+  (by simp)
+  (begin -- neg
+    intros t h,
+    unfold_coes,
+    simp only [struc_to_ring_struc.unaries_map, struc_to_ring_struc.func_map,
+      dvector.last, realize_bounded_term, dvector.nth, mv_polynomial.coe_mv_poly_neg],
+    unfold_coes at h,
+    simp only [ring_hom.to_fun_eq_coe, mv_polynomial.eval_map] at h,
+    simp only [term_neg, h, ring_hom.to_fun_eq_coe, ring_hom.map_neg,
+      mv_polynomial.eval_map, neg_inj, struc_to_ring_struc.apps_neg],
+  end)
+  (begin -- add
+    intros s t hs ht,
+    unfold_coes,
+    simp only [term_add, struc_to_ring_struc.binaries_map, dvector.last,
+      struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
+      dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
+    unfold_coes,
+    simp,
+  end)
+  (begin -- mul
+    intros s t hs ht,
+    unfold_coes,
+    simp only [term_mul, struc_to_ring_struc.binaries_map, dvector.last,
+      struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
+      dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
+    unfold_coes,
+    simp,
+  end)
 
 end mv_polynomial
 
@@ -499,10 +496,10 @@ lemma term_evaluated_at_coeffs_coeff
   end
 
   lemma term_evaluated_at_coeffs_pow {n : ℕ} : Π {m : ℕ} {as : dvector A n},
-    polynomial.term_evaluated_at_coeffs as (npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)
+    polynomial.term_evaluated_at_coeffs as (x_ ⟨ 0 , nat.zero_lt_succ _ ⟩ ^ m)
     = polynomial.X ^ m
   | 0       _ :=
-  by simpa only [ring_signature.pow_zero, term_evaluated_at_coeffs_one]
+  by simp [npow_rec, ring_signature.pow_zero, term_evaluated_at_coeffs_one]
   | (m + 1) as :=
   by rw [ring_signature.pow_succ, term_evaluated_at_coeffs_mul,
       @term_evaluated_at_coeffs_pow m as, pow_succ, term_evaluated_at_coeffs_X]
@@ -519,12 +516,12 @@ lemma term_evaluated_at_coeffs_coeff
     {n m k : ℕ} {as : dvector A n} (hk : k < n) :
     polynomial.term_evaluated_at_coeffs as
       (x_ ⟨ k.succ , nat.succ_lt_succ hk ⟩ *
-      npow_rec m x_ ⟨ 0 , nat.zero_lt_succ _ ⟩)
+      x_ ⟨ 0 , nat.zero_lt_succ _ ⟩ ^ m)
       = polynomial.monomial m (dvector.nth as k hk) :=
   begin
     rw term_evaluated_at_coeffs_mul,
     have h : term_evaluated_at_coeffs as x_⟨k.succ, _⟩
-      =  polynomial.C (dvector.nth as k hk),
+      = polynomial.C (dvector.nth as k hk),
     { unfold_coes,
       simp [term_evaluated_at_coeffs, dvector.nth'] },
     rw [h, term_evaluated_at_coeffs_pow, polynomial.monomial_eq_C_mul_X],
@@ -568,142 +565,142 @@ end polynomial
 
 namespace models_ring_theory_to_comm_ring
 
-  variable {M : Structure ring_signature}
+variable {M : Structure ring_signature}
 
-  def zero : ↥ M := @Structure.fun_map _ M 0 ring_consts.zero dvector.nil
-  def one : ↥ M := @Structure.fun_map _ M 0 ring_consts.one dvector.nil
-  def neg (a : M.carrier) : M.carrier := @Structure.fun_map _ M 1 ring_unaries.neg ([a])
-  def add (a b : M.carrier) : M.carrier := @Structure.fun_map _ M 2 ring_binaries.add ([a , b])
-  def mul (a b : M.carrier) : M.carrier := @Structure.fun_map _ M 2 ring_binaries.mul ([a , b])
+def zero : ↥ M := @Structure.fun_map _ M 0 ring_consts.zero dvector.nil
+def one : ↥ M := @Structure.fun_map _ M 0 ring_consts.one dvector.nil
+def neg (a : M.carrier) : M.carrier := @Structure.fun_map _ M 1 ring_unaries.neg ([a])
+def add (a b : M.carrier) : M.carrier := @Structure.fun_map _ M 2 ring_binaries.add ([a , b])
+def mul (a b : M.carrier) : M.carrier := @Structure.fun_map _ M 2 ring_binaries.mul ([a , b])
 
-  instance : has_zero M := ⟨ zero ⟩
-  instance : has_one M := ⟨ one ⟩
-  instance : has_neg M := ⟨ neg ⟩
-  instance : has_add M := ⟨ add ⟩
-  instance : has_mul M := ⟨ mul ⟩
+instance : has_zero M := ⟨ zero ⟩
+instance : has_one M := ⟨ one ⟩
+instance : has_neg M := ⟨ neg ⟩
+instance : has_add M := ⟨ add ⟩
+instance : has_mul M := ⟨ mul ⟩
 
-  @[simp] lemma realize_zero {n} {vec : dvector M.carrier n} :
-    realize_bounded_term vec (@bd_func ring_signature _ 0 ring_consts.zero) dvector.nil = 0 := rfl
+@[simp] lemma realize_zero {n} {vec : dvector M.carrier n} :
+  realize_bounded_term vec (@bd_func ring_signature _ 0 ring_consts.zero) dvector.nil = 0 := rfl
 
-  @[simp] lemma realize_one {n} {vec : dvector M.carrier n} :
-    realize_bounded_term vec (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
+@[simp] lemma realize_one {n} {vec : dvector M.carrier n} :
+  realize_bounded_term vec (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
 
-  @[simp] lemma realize_neg {a : M.carrier} :
-    @Structure.fun_map _ M 1 ring_unaries.neg ([a]) = - a := rfl
+@[simp] lemma realize_neg {a : M.carrier} :
+  @Structure.fun_map _ M 1 ring_unaries.neg ([a]) = - a := rfl
 
-  @[simp] lemma realize_add {a b : M.carrier} :
-    @Structure.fun_map _ M 2 ring_binaries.add ([a , b]) = a + b := rfl
+@[simp] lemma realize_add {a b : M.carrier} :
+  @Structure.fun_map _ M 2 ring_binaries.add ([a , b]) = a + b := rfl
 
-  @[simp] lemma realize_mul {a b : M.carrier} :
-    @Structure.fun_map _ M 2 ring_binaries.mul ([a , b]) = a * b := rfl
+@[simp] lemma realize_mul {a b : M.carrier} :
+  @Structure.fun_map _ M 2 ring_binaries.mul ([a , b]) = a * b := rfl
 
-  lemma realize_pow {a : M.carrier} : ∀ {m n} {vec : dvector M.carrier n},
-  realize_bounded_term (a :: vec) (npow_rec m (x_ 0)) dvector.nil
-  = npow_rec m a
-  | 0 n vec := rfl
-  | (m+1) n vec :=
-  by simp only [npow_rec, realize_bounded_term, realize_mul,
-        fin.val_zero, dvector.nth, @realize_pow m]
+lemma realize_pow {a : M.carrier} : ∀ {m n} {vec : dvector M.carrier n},
+realize_bounded_term (a :: vec) (npow_rec m (x_ 0)) dvector.nil
+= npow_rec m a
+| 0 n vec := rfl
+| (m+1) n vec :=
+by simp only [npow_rec, realize_bounded_term, realize_mul,
+      fin.val_zero, dvector.nth, @realize_pow m]
 
-  lemma realize_nat {M : fol.Structure ring_signature} {as : dvector M 0} :
-  Π (n : ℕ),
-  @realize_bounded_term _ M _ as _ (n : bounded_ring_term 0) dvector.nil
-  = n
-  | 0 := rfl
-  | (n+1) :=
-  by simpa only [realize_bounded_term, nat.cast_succ, realize_nat n, realize_one]
+lemma realize_nat {M : fol.Structure ring_signature} {as : dvector M 0} :
+Π (n : ℕ),
+@realize_bounded_term _ M _ as _ (n : bounded_ring_term 0) dvector.nil
+= n
+| 0 := rfl
+| (n+1) :=
+by simpa only [realize_bounded_term, nat.cast_succ, realize_nat n, realize_one]
 
-  variable (h : M ⊨ ring_signature.ring_theory)
+variable (h : M ⊨ ring_signature.ring_theory)
 
-  include h
+include h
 
-  lemma add_assoc (a b c : M) : (a + b) + c = a + (b + c) :=
-  begin
-    have hAssoc := h ring_signature.add_assoc_in_ring_theory,
-    have habc := hAssoc c b a,
-    simpa [habc]
-  end
+lemma add_assoc (a b c : M) : (a + b) + c = a + (b + c) :=
+begin
+  have hAssoc := h ring_signature.add_assoc_in_ring_theory,
+  have habc := hAssoc c b a,
+  simpa [habc]
+end
 
-  lemma add_comm (a b : M) : a + b = b + a :=
-  begin
-    have hId := h ring_signature.add_comm_in_ring_theory,
-    have hab := hId b a,
-    simpa [hab]
-  end
+lemma add_comm (a b : M) : a + b = b + a :=
+begin
+  have hId := h ring_signature.add_comm_in_ring_theory,
+  have hab := hId b a,
+  simpa [hab]
+end
 
-  lemma add_zero (a : M) : a + 0 = a :=
-  begin
-    have hId := h ring_signature.add_id_in_ring_theory,
-    have ha := hId a,
-    simpa [ha]
-  end
+lemma add_zero (a : M) : a + 0 = a :=
+begin
+  have hId := h ring_signature.add_id_in_ring_theory,
+  have ha := hId a,
+  simpa [ha]
+end
 
-  lemma zero_add (a : M) : 0 + a = a :=
-  begin
-    rw add_comm h, apply add_zero h,
-  end
+lemma zero_add (a : M) : 0 + a = a :=
+begin
+  rw add_comm h, apply add_zero h,
+end
 
-  lemma left_neg (a : M) : - a + a = 0 :=
-  begin
-    have hInv := h ring_signature.add_inv_in_ring_theory,
-    have ha := hInv a,
-    simpa [ha]
-  end
+lemma left_neg (a : M) : - a + a = 0 :=
+begin
+  have hInv := h ring_signature.add_inv_in_ring_theory,
+  have ha := hInv a,
+  simpa [ha]
+end
 
-  lemma mul_assoc (a b c : M) : (a * b) * c = a * (b * c) :=
-  begin
-    have hAssoc := h ring_signature.mul_assoc_in_ring_theory,
-    have habc := hAssoc c b a,
-    simpa [habc]
-  end
+lemma mul_assoc (a b c : M) : (a * b) * c = a * (b * c) :=
+begin
+  have hAssoc := h ring_signature.mul_assoc_in_ring_theory,
+  have habc := hAssoc c b a,
+  simpa [habc]
+end
 
-  lemma mul_comm (a b : M) : a * b = b * a :=
-  begin
-    have hId := h ring_signature.mul_comm_in_ring_theory,
-    have hab := hId b a,
-    simpa [hab]
-  end
+lemma mul_comm (a b : M) : a * b = b * a :=
+begin
+  have hId := h ring_signature.mul_comm_in_ring_theory,
+  have hab := hId b a,
+  simpa [hab]
+end
 
-  lemma mul_one (a : M) : a * 1 = a :=
-  begin
-    have hId := h ring_signature.mul_id_in_ring_theory, have ha := hId a, simpa using ha
-  end
+lemma mul_one (a : M) : a * 1 = a :=
+begin
+  have hId := h ring_signature.mul_id_in_ring_theory, have ha := hId a, simpa using ha
+end
 
-  lemma one_mul (a : M) : 1 * a = a :=
-  by rw [mul_comm h, mul_one h]
+lemma one_mul (a : M) : 1 * a = a :=
+by rw [mul_comm h, mul_one h]
 
-  lemma add_mul (a b c : M) : (a + b) * c = a * c + b * c :=
-  begin
-    have hAM := h ring_signature.add_mul_in_ring_theory,
-    have habc := hAM c b a,
-    simpa [habc]
-  end
+lemma add_mul (a b c : M) : (a + b) * c = a * c + b * c :=
+begin
+  have hAM := h ring_signature.add_mul_in_ring_theory,
+  have habc := hAM c b a,
+  simpa [habc]
+end
 
-  lemma mul_add (c a b : M) : c * (a + b) = c * a + c * b :=
-  begin
-    rw [mul_comm h c (a + b), mul_comm h c a, mul_comm h c b],
-    exact add_mul h a b c,
-  end
+lemma mul_add (c a b : M) : c * (a + b) = c * a + c * b :=
+begin
+  rw [mul_comm h c (a + b), mul_comm h c a, mul_comm h c b],
+  exact add_mul h a b c,
+end
 
-  instance comm_ring : comm_ring M :=
-  {
-    add            := add,
-    add_assoc      := add_assoc h,
-    zero           := zero,
-    zero_add       := zero_add h,
-    add_zero       := add_zero h,
-    neg            := neg,
-    add_left_neg   := left_neg h,
-    add_comm       := add_comm h,
-    mul            := mul,
-    mul_assoc      := mul_assoc h,
-    one            := one,
-    one_mul        := one_mul h,
-    mul_one        := mul_one h,
-    left_distrib   := mul_add h,
-    right_distrib  := add_mul h,
-    mul_comm       := mul_comm h,
-  }
+instance comm_ring : comm_ring M :=
+{
+  add            := add,
+  add_assoc      := add_assoc h,
+  zero           := zero,
+  zero_add       := zero_add h,
+  add_zero       := add_zero h,
+  neg            := neg,
+  add_left_neg   := left_neg h,
+  add_comm       := add_comm h,
+  mul            := mul,
+  mul_assoc      := mul_assoc h,
+  one            := one,
+  one_mul        := one_mul h,
+  mul_one        := mul_one h,
+  left_distrib   := mul_add h,
+  right_distrib  := add_mul h,
+  mul_comm       := mul_comm h,
+}
 
 end models_ring_theory_to_comm_ring
 
