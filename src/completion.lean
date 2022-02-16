@@ -105,10 +105,10 @@ lemma in_chain_of_union {α : Type u} (T : set α) (A_i : set $ set α)
 begin
 dedup,
 unfold has_union.union set.union has_mem.mem set.mem,
-unfold chain set.pairwise_on at h_chain,
+unfold chain set.pairwise at h_chain,
 by_cases A1 = A2,
   simp*, finish,
-  have := h_chain A1 H A2 H_1 h, cases this,
+  have := h_chain H H_1 h, cases this,
   {fapply or.inr, apply funext, intro x, apply propext, split,
   intro h1, have : A1 x ∨ A2 x, by assumption, fapply or.elim, exact A1 x, exact A2 x, assumption,
   intro hx, dedup, unfold set.subset at this, exact this hx, finish,
@@ -125,8 +125,8 @@ noncomputable def max_in_chain {α : Type u} {R : α → α → Prop} {Ts : set 
   {nonempty_Ts : nonempty Ts} (h_chain : chain R Ts) (S1 S2 : α) (h_S1 : S1 ∈ Ts) (h_S2 : S2 ∈ Ts) :
   Σ' (S : α), (S = S1 ∧ (R S2 S1 ∨ S1 = S2)) ∨ (S = S2 ∧ (R S1 S2 ∨ S1 = S2)) :=
 begin
-  unfold chain set.pairwise_on at h_chain,
-  have := h_chain S1 h_S1 S2 h_S2,
+  unfold chain set.pairwise at h_chain,
+  have := h_chain h_S1 h_S2,
   by_cases S1 = S2,
 
     refine ⟨S1, _ ⟩, fapply or.inl, fapply and.intro, exact rfl, exact or.inr h,
@@ -144,20 +144,20 @@ noncomputable def max_of_list_in_chain {α : Type u} {R : α → α → Prop} {t
 (h_fs : ∀ S ∈ Ss, S ∈ Ts) : Σ' (S : α), S ∈ Ts ∧ (∀ S' ∈ Ss, S' = S ∨ R S' S) :=
 begin
   induction Ss,
-
   {tactic.unfreeze_local_instances, have := (classical.choice nonempty_Ts),
    from ⟨this.1, ⟨this.2, by finish⟩⟩},
-
   specialize Ss_ih (by simp at h_fs; from h_fs.right),
   rcases Ss_ih with ⟨S,H_mem,H_s⟩,
   by_cases (R S Ss_hd),
     {use Ss_hd, use (by simp*), intros S' HS', cases HS',
-      from or.inl ‹_›, right, by_cases S' = S, rwa[h], finish},
+      from or.inl ‹_›, right, by_cases S' = S, rwa[h],
+      apply trans (or.resolve_left (H_s _ HS') h), assumption },
     {use S, use H_mem, intros S' HS', cases HS',
       {subst HS', by_cases S' = S, from or.inl ‹_›,
-       unfold chain pairwise_on at h_chain,
-        specialize h_chain S' (by simp at h_fs; from h_fs.left) S ‹_› ‹_›, finish},
-     finish}
+       unfold chain pairwise at h_chain,
+        specialize @h_chain S' (by simp at h_fs; from h_fs.left) S ‹_› ‹_›,
+        right, apply or.resolve_right h_chain, assumption },
+      apply H_s _ HS' }
 end
 
 /-- Given a xs : list α, it is naturally a list {x ∈ α | x ∈ xs} --/
@@ -190,8 +190,7 @@ begin
   intro h_inconsis,
   by_cases nonempty Ts, swap,
   { simp at h, simp[*, -h_inconsis] at h_inconsis, unfold is_consistent at hT, apply hT,
-    rw [←union_empty T], convert h_inconsis,
-    rw [set.eq_empty_of_is_empty_coe Ts h, bUnion_empty] },
+    rw [←union_empty T], convert h_inconsis, simp },
 
   have Γpair := theory_proof_compactness' (T ∪ ⋃₀(subtype.val '' Ts)) ⊥ h_inconsis,
   have h_bad : ∃ T' : (Theory L), (T' ∈ (subtype.val '' Ts)) ∧ {ψ | ψ ∈ Γpair.fst} ⊆ T',
@@ -219,13 +218,11 @@ have witness_property := witness.property, cases witness_property with case1 cas
   let T_list : list (Theory_over T hT) :=
     begin fapply list.map F, exact fs_list_subtype.fst end,
   have T_list_subset_Ts : (∀ (S : Theory_over T hT), S ∈ T_list → S ∈ Ts),
-  {
-    intro S, simp only [-sigma.exists, -sigma.forall, and_imp, bex_imp_distrib,
+  { intro S, simp only [-sigma.exists, -sigma.forall, and_imp, bex_imp_distrib,
     list.mem_map, set_coe.exists, mem_set_of_eq, list.map],
-    intros x h1 h2, simp only [*,-h2] at h2,
-    rw[<-h2.right],
-    exact (dSs x h1).snd.left,
-  },
+    intros x h1 h2 h3,
+    rw ← h3,
+    exact (dSs x h1).snd.left },
 
   have max_of_list := max_of_list_in_chain h_chain T_list T_list_subset_Ts,
   split, swap,
