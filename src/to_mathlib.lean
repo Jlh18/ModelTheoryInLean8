@@ -145,14 +145,18 @@ protected lemma concat_nth : ∀{n : ℕ} (xs : dvector α n) (x : α) (m : ℕ)
 | 0 x k xs := (x::xs)
 | (n+1) x (k+1) (y::ys) := (y::insert x k ys)
 
-@[simp] protected lemma insert_at_zero : ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) := by {intros, induction n; refl} -- why doesn't {intros, refl} work?
+@[simp] protected lemma insert_at_zero :
+  ∀{n : ℕ} (x : α) (xs : dvector α n), dvector.insert x 0 xs = (x::xs) :=
+by {intros, induction n; refl} -- why doesn't {intros, refl} work?
 
-@[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1), (dvector.insert x k xs).nth k h = x
+@[simp] protected lemma insert_nth : ∀{n : ℕ} (x : α) (k : ℕ) (xs : dvector α n) (h : k < n+1),
+  (dvector.insert x k xs).nth k h = x
 | 0 x k xs h := by {cases h, refl, exfalso, apply nat.not_lt_zero, assumption }
 | n x 0 xs h := by {induction n, refl, simp*}
 | (n+1) x (k+1) (y::ys) h := by simp*
 
-protected lemma insert_cons {n k} {x y : α} {v : dvector α n} : (x::(v.insert y k)) = (x::v).insert y (k+1) :=
+protected lemma insert_cons {n k} {x y : α} {v : dvector α n} :
+  (x::(v.insert y k)) = (x::v).insert y (k+1) :=
 by {induction v, refl, simp*}
 
 /- Given a proof that n ≤ m, return the nth initial segment of -/
@@ -168,28 +172,33 @@ by {induction v, refl, simp*}
 @[simp]protected lemma trunc_0_n {n : ℕ} {h : 0 ≤ n} {v : dvector α n} : dvector.trunc 0 h v = [] :=
   by {induction v, refl, simp}
 
-@[simp]protected lemma trunc_nth {n m l: ℕ} {h : n ≤ m} {h' : l < n} {v : dvector α m} : (v.trunc n h).nth l h' = v.nth l (lt_of_lt_of_le h' h) :=
+@[simp]protected lemma trunc_nth {n m l: ℕ} {h : n ≤ m} {h' : l < n} {v : dvector α m} :
+  (v.trunc n h).nth l h' = v.nth l (lt_of_lt_of_le h' h) :=
 begin
   induction m generalizing n l, have : n = 0, by cases h; simp, subst this, cases h',
   cases n; cases l, {cases h'}, {cases h'}, {cases v, refl},
   cases v, simp only [m_ih, dvector.nth, dvector.trunc]
 end
 
-protected lemma nth_irrel1 : ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
+protected lemma nth_irrel1 :
+  ∀{n k : ℕ} {h : k < n + 1} {h' : k < n + 1 + 1} (v : dvector α (n+1)) (x : α),
   (x :: (v.trunc n (nat.le_succ n))).nth k h = (x::v).nth k h' :=
 by {intros, apply @dvector.trunc_nth _ _ _ _ (by simp) h (x::v)}
 
 protected def cast {n m} (p : n = m) : dvector α n → dvector α m :=
 by { subst p, exact id }
 
-@[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} : v.cast p = v.cast p' := by refl
+@[simp] protected lemma cast_irrel {n m} {p p' : n = m} {v : dvector α n} :
+  v.cast p = v.cast p' := by refl
 
-@[simp] protected lemma cast_rfl {n m} {p : n = m} {q : m = n} {v : dvector α n} : (v.cast p).cast q = v := by {subst p, refl}
+@[simp] protected lemma cast_rfl {n m} {p : n = m} {q : m = n} {v : dvector α n} :
+  (v.cast p).cast q = v := by {subst p, refl}
 
 protected lemma cast_hrfl {n m} {p : n = m} {v : dvector α n} : v.cast p == v :=
 by { subst p, refl }
 
-@[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} : (v.cast p).cast q = v.cast (trans p q) :=
+@[simp] protected lemma cast_trans {n m o} {p : n = m} {q : m = o} {v : dvector α n} :
+  (v.cast p).cast q = v.cast (trans p q) :=
 by { subst p, subst q, refl }
 
 @[simp] lemma cast_cons {α} : ∀{n m} (h : n + 1 = m + 1) (x : α) (v : dvector α n),
@@ -240,7 +249,8 @@ protected lemma insert_nth_gt' {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α
   xs.nth (l-1) ((tsub_lt_iff_right (nat.one_le_of_lt h2)).mpr h') :=
 λ n k l x xs h' h2, dvector.insert_nth_gt' x xs _ h' h2
 
-protected lemma insert_nth_gt {α} : ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
+protected lemma insert_nth_gt {α} :
+  ∀{n k l : ℕ} (x : α) (xs : dvector α n) (h : l < n) (h' : l + 1 < n + 1)
   (h2 : k < l + 1), (xs.insert x k).nth (l+1) h' = xs.nth l h :=
 λ n k l x xs h h' h2, dvector.insert_nth_gt' x xs h h' h2
 
@@ -423,7 +433,8 @@ section cardinal_lemmas
 
 local prefix `#`:65 := cardinal.mk
 
-lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) : ∃ x : α, x ∈ Pᶜ :=
+lemma exists_mem_compl_of_mk_lt_mk {α} (P : set α) (H_lt : cardinal.mk P  < cardinal.mk α) :
+  ∃ x : α, x ∈ Pᶜ :=
 begin
   haveI : decidable (∃ (x : α), x ∈ Pᶜ) := classical.prop_decidable _,
   by_contra a, push_neg at a,
@@ -451,10 +462,13 @@ begin
   rw cardinal.out_embedding at H_le,
   have := classical.choice H_le,
   cases this with f Hf,
-  suffices : ∃ g₁ : α → quotient.out (#α), function.injective g₁ ∧ ∃ g₂ : quotient.out (#β) → β, function.injective g₂,
+  suffices : ∃ g₁ : α → quotient.out (#α), function.injective g₁ ∧
+    ∃ g₂ : quotient.out (#β) → β, function.injective g₂,
     by {rcases this with ⟨g₁,Hg₁,g₂,Hg₂⟩, use g₂ ∘ f ∘ g₁, exact Hg₂.comp (Hf.comp Hg₁) },
-  have this₁ : #(quotient.out (#α)) = #α := mk_out _, have this₂ : #(quotient.out _) = #β := mk_out _,
-  erw quotient.eq' at this₁ this₂, replace this₁ := classical.choice this₁, replace this₂ := classical.choice this₂,
+  have this₁ : #(quotient.out (#α)) = #α := mk_out _,
+  have this₂ : #(quotient.out _) = #β := mk_out _,
+  erw quotient.eq' at this₁ this₂, replace this₁ := classical.choice this₁,
+  replace this₂ := classical.choice this₂,
   cases this₁, cases this₂,
   refine ⟨this₁_inv_fun, function.left_inverse.injective this₁_right_inv,
     this₂_to_fun, function.left_inverse.injective this₂_left_inv⟩
@@ -516,7 +530,8 @@ lemma or_not_iff_true (p : Prop) : (p ∨ ¬ p) ↔ true :=
 lemma nonempty_of_not_empty {α : Type u} (s : set α) (h : ¬ s = ∅) : set.nonempty s :=
 set.ne_empty_iff_nonempty.mp h
 
-lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) : set.nonempty (s : set α) :=
+lemma nonempty_of_not_empty_finset {α : Type u} (s : finset α) (h : ¬ s = ∅) :
+  set.nonempty (s : set α) :=
 finset.nonempty_iff_ne_empty.mpr h
 
 end classical
@@ -563,14 +578,15 @@ variables {α : Type u} {β : Type v} {γ : Type w}
 lemma ne_empty_of_exists_mem {s : set α} : ∀(h : ∃x, x ∈ s), s ≠ ∅ :=
 ne_empty_iff_nonempty.mpr
 
-lemma inter_sUnion_ne_empty_of_exists_mem {b : set α} {𝓕 : set $ set α} (H : ∃ f ∈ 𝓕, b ∩ f ≠ ∅) : b ∩ ⋃₀ 𝓕 ≠ ∅ :=
+lemma inter_sUnion_ne_empty_of_exists_mem
+  {b : set α} {𝓕 : set $ set α} (H : ∃ f ∈ 𝓕, b ∩ f ≠ ∅) : b ∩ ⋃₀ 𝓕 ≠ ∅ :=
 begin
   simp_rw ne_empty_iff_nonempty at H ⊢,
   obtain ⟨f, hf, x, hx, hxf⟩ := H,
   exact ⟨x, hx, f, hf, hxf⟩
 end
 
-@[simp]lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
+@[simp] lemma mem_image_univ {f : α → β} {x} : f x ∈ f '' set.univ := ⟨x, ⟨trivial, rfl⟩⟩
 
 -- todo: only use image_preimage_eq_of_subset
 lemma image_preimage_eq_of_subset_image {f : α → β} {s : set β}
@@ -745,14 +761,14 @@ namespace lattice
 class nontrivial_complete_boolean_algebra (α : Type*) extends complete_boolean_algebra α :=
   {bot_lt_top : (⊥ : α) < (⊤ : α)}
 
-@[simp]lemma nontrivial.bot_lt_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] : (⊥ : α) < ⊤ :=
-H.bot_lt_top
+@[simp]lemma nontrivial.bot_lt_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] :
+  (⊥ : α) < ⊤ := H.bot_lt_top
 
-@[simp]lemma nontrivial.bot_neq_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] : ¬ (⊥ = (⊤ : α)) :=
-by {change _ ≠ _, rw[lt_top_iff_ne_top.symm], simp}
+@[simp]lemma nontrivial.bot_neq_top {α : Type*} [H : nontrivial_complete_boolean_algebra α] :
+  ¬ (⊥ = (⊤ : α)) := by {change _ ≠ _, rw[lt_top_iff_ne_top.symm], simp}
 
-@[simp]lemma nontrivial.top_neq_bot {α : Type*} [H : nontrivial_complete_boolean_algebra α] : ¬ (⊤ = (⊥ : α)) :=
-λ _, nontrivial.bot_neq_top $ eq.symm ‹_›
+@[simp]lemma nontrivial.top_neq_bot {α : Type*} [H : nontrivial_complete_boolean_algebra α] :
+  ¬ (⊤ = (⊥ : α)) := λ _, nontrivial.bot_neq_top $ eq.symm ‹_›
 
 def antichain {β : Type*} [lattice β] [bounded_order β] (s : set β) :=
   ∀ x ∈ s, ∀ y ∈ s, x ≠ y → x ⊓ y = (⊥ : β)
@@ -796,7 +812,8 @@ by {rw[sup_comm], conv{to_rhs, simp[sup_comm]}, apply sup_infi_eq}
 lemma bot_lt_iff_not_le_bot {α} [lattice α] [bounded_order α] {a : α} : ⊥ < a ↔ (¬ a ≤ ⊥) :=
 by rw[le_bot_iff]; exact bot_lt_iff_ne_bot
 
-lemma false_of_bot_lt_and_le_bot {α} [lattice α] [bounded_order α] {a : α} (H_lt : ⊥ < a) (H_le : a ≤ ⊥) : false :=
+lemma false_of_bot_lt_and_le_bot
+  {α} [lattice α] [bounded_order α] {a : α} (H_lt : ⊥ < a) (H_le : a ≤ ⊥) : false :=
 absurd H_le (bot_lt_iff_not_le_bot.mp ‹_›)
 
 lemma lt_top_iff_not_top_le {α} [lattice α] [bounded_order α] {a : α} : a < ⊤ ↔ (¬ ⊤ ≤ a) :=
@@ -818,7 +835,8 @@ by { rw bot_lt_iff_not_le_bot, tauto! }
 /--
   Given an indexed supremum (⨆i, s i) and (H : Γ ≤ ⨆i, s i), there exists some i such that ⊥ < Γ ⊓ s i.
 -/
-lemma nonzero_inf_of_nonzero_le_supr {α : Type*} [complete_distrib_lattice α] {ι : Type*} {s : ι → α} {Γ : α} (H_nonzero : ⊥ < Γ) (H : Γ ≤ ⨆i, s i) : ∃ i, ⊥ < Γ ⊓ s i :=
+lemma nonzero_inf_of_nonzero_le_supr {α : Type*} [complete_distrib_lattice α]
+  {ι : Type*} {s : ι → α} {Γ : α} (H_nonzero : ⊥ < Γ) (H : Γ ≤ ⨆i, s i) : ∃ i, ⊥ < Γ ⊓ s i :=
 begin
   haveI := classical.prop_decidable, by_contra H', push_neg at H',
   simp [bot_lt_iff_not_le_bot, -le_bot_iff] at H', replace H' := supr_le_iff.mpr H',
@@ -851,14 +869,16 @@ lemma biimp_mpr {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a
 lemma biimp_comm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⇔ a₂) = (a₂ ⇔ a₁) :=
 by {unfold biimp, rw inf_comm}
 
-lemma biimp_symm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} {Γ : α} : Γ ≤ (a₁ ⇔ a₂) ↔ Γ ≤ (a₂ ⇔ a₁) :=
+lemma biimp_symm {α : Type*} [boolean_algebra α] {a₁ a₂ : α} {Γ : α} :
+  Γ ≤ (a₁ ⇔ a₂) ↔ Γ ≤ (a₂ ⇔ a₁) :=
 by rw biimp_comm
 
-@[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} : a ⟹ a₁ ≤ (a ⟹ a₂) :=
--- sup_le (le_sup_left) $ le_sup_right_of_le h
+@[simp]lemma imp_le_of_right_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₁ ≤ a₂} :
+  a ⟹ a₁ ≤ (a ⟹ a₂) :=
 sup_le (le_sup_left) (le_sup_of_le_right h)
 
-@[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} : a₁ ⟹ a ≤ (a₂ ⟹ a) :=
+@[simp]lemma imp_le_of_left_le {α : Type*} [boolean_algebra α] {a a₁ a₂ : α} {h : a₂ ≤ a₁} :
+  a₁ ⟹ a ≤ (a₂ ⟹ a) :=
 sup_le (le_sup_of_le_left (compl_le_compl h)) (le_sup_right)
 
 @[simp]lemma imp_le_of_left_right_le {α : Type*} [boolean_algebra α] {a₁ a₂ b₁ b₂ : α}
@@ -907,7 +927,8 @@ lemma inf_eq_bot_of_le_neg {α : Type*} [boolean_algebra α] {a b : α} (h : a �
 by { rw [←compl_compl b], exact sub_eq_bot_of_le h }
 
 /-- the deduction theorem in β -/
-@[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} : (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
+@[simp]lemma imp_top_iff_le {α : Type*} [boolean_algebra α] {a₁ a₂ : α} :
+  (a₁ ⟹ a₂ = ⊤) ↔ a₁ ≤ a₂ :=
 begin
   unfold imp, refine ⟨_,_⟩; intro H,
     { have := congr_arg (λ x, x ⊓ a₁) H, rw[sup_comm] at this,
@@ -1068,9 +1089,11 @@ end
 @[simp]lemma top_le_imp_top {β : Type*} {b : β} [boolean_algebra β] : ⊤ ≤ b ⟹ ⊤ :=
 by rw[<-deduction]; apply le_top
 
-lemma poset_yoneda_iff {β : Type*} [partial_order β] {a b : β} : a ≤ b ↔ (∀ {Γ : β}, Γ ≤ a → Γ ≤ b) := ⟨λ _, by finish, λ H, by specialize @H a; finish⟩
+lemma poset_yoneda_iff {β : Type*} [partial_order β] {a b : β} :
+  a ≤ b ↔ (∀ {Γ : β}, Γ ≤ a → Γ ≤ b) := ⟨λ _, by finish, λ H, by specialize @H a; finish⟩
 
-lemma poset_yoneda_top {β : Type*} [lattice β] [bounded_order β] {b : β} : ⊤ ≤ b ↔ (∀ {Γ : β}, Γ ≤ b) := ⟨λ _, by finish, λ H, by apply H⟩
+lemma poset_yoneda_top {β : Type*} [lattice β] [bounded_order β] {b : β} :
+  ⊤ ≤ b ↔ (∀ {Γ : β}, Γ ≤ b) := ⟨λ _, by finish, λ H, by apply H⟩
 
 lemma poset_yoneda {β : Type*} [partial_order β] {a b : β} (H : ∀ Γ : β, Γ ≤ a → Γ ≤ b) : a ≤ b :=
 by rwa poset_yoneda_iff
@@ -1078,8 +1101,8 @@ by rwa poset_yoneda_iff
 lemma poset_yoneda_inv {β : Type*} [partial_order β] {a b : β} (Γ : β) (H : a ≤ b) :
   Γ ≤ a → Γ ≤ b := by rw poset_yoneda_iff at H; apply H
 
-lemma split_context {β : Type*} [lattice β] {a₁ a₂ b : β} {H : ∀ Γ : β, Γ ≤ a₁ ∧ Γ ≤ a₂ → Γ ≤ b} : a₁ ⊓ a₂ ≤ b :=
-by {apply poset_yoneda, intros Γ H', apply H, finish}
+lemma split_context {β : Type*} [lattice β] {a₁ a₂ b : β} {H : ∀ Γ : β, Γ ≤ a₁ ∧ Γ ≤ a₂ → Γ ≤ b} :
+  a₁ ⊓ a₂ ≤ b := by {apply poset_yoneda, intros Γ H', apply H, finish}
 
 example {β : Type*} [lattice β] [bounded_order β] : ⊤ ⊓ (⊤ : β) ⊓ ⊤ ≤ ⊤ :=
 begin
@@ -1106,18 +1129,19 @@ le_trans le_top $ by rw [sup_compl_eq_top]
 lemma bv_em {β : Type*} [complete_boolean_algebra β] {Γ : β} (b : β) : Γ ≤ b ⊔ bᶜ :=
 bv_em_aux _ _
 
-lemma diagonal_supr_le_supr {α} [complete_lattice α] {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨆ i, s i i) : Γ ≤ ⨆ i j, s i j :=
- le_trans H $ supr_le $ λ i,  le_supr_of_le i $ le_supr_of_le i $ by refl
+lemma diagonal_supr_le_supr {α} [complete_lattice α]
+  {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨆ i, s i i) : Γ ≤ ⨆ i j, s i j :=
+le_trans H $ supr_le $ λ i,  le_supr_of_le i $ le_supr_of_le i $ by refl
 
-lemma diagonal_infi_le_infi {α} [complete_lattice α] {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨅ i j, s i j) : Γ ≤ ⨅ i, s i i :=
-  le_trans H $ le_infi $ λ i, infi_le_of_le i $ infi_le_of_le i $ by refl
+lemma diagonal_infi_le_infi {α} [complete_lattice α]
+  {ι} {s : ι → ι → α} {Γ : α} (H : Γ ≤ ⨅ i j, s i j) : Γ ≤ ⨅ i, s i i :=
+le_trans H $ le_infi $ λ i, infi_le_of_le i $ infi_le_of_le i $ by refl
 
 lemma context_and_intro {β : Type*} [lattice β] {Γ} {a₁ a₂ : β}
   (H₁ : Γ ≤ a₁) (H₂ : Γ ≤ a₂) : Γ ≤ a₁ ⊓ a₂ := le_inf ‹_› ‹_›
 
-lemma specialize_context {β : Type*} [partial_order β] {Γ b : β} (Γ' : β) {H_le : Γ' ≤ Γ} (H : Γ ≤ b)
-  : Γ' ≤ b :=
-_root_.le_trans H_le H
+lemma specialize_context {β : Type*} [partial_order β]
+  {Γ b : β} (Γ' : β) {H_le : Γ' ≤ Γ} (H : Γ ≤ b) : Γ' ≤ b := _root_.le_trans H_le H
 
 lemma context_specialize_aux {β : Type*} [complete_boolean_algebra β] {ι : Type*} {s : ι → β}
   (j : ι) {Γ : β} {H : Γ ≤ (⨅ i, s i)} : Γ ≤ (⨅i, s i) ⟹ s j :=
@@ -1135,26 +1159,30 @@ begin
   apply lt_of_le_of_lt, show β, from Γ, rw[H'], apply infi_le, from ‹_›
 end
 
-lemma context_split_inf_left {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) : Γ ≤ a₁ :=
-by {rw[le_inf_iff] at H, finish}
+lemma context_split_inf_left {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) :
+  Γ ≤ a₁ := by {rw[le_inf_iff] at H, finish}
 
 lemma context_split_inf_right {β : Type*} [complete_lattice β] {a₁ a₂ Γ: β} (H : Γ ≤ a₁ ⊓ a₂) :
   Γ ≤ a₂ :=
 by {rw[le_inf_iff] at H, finish}
 
-lemma context_imp_elim {β : Type*} [complete_boolean_algebra β] {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
+lemma context_imp_elim {β : Type*} [complete_boolean_algebra β]
+  {a b Γ: β} (H₁ : Γ ≤ a ⟹ b) (H₂ : Γ ≤ a) : Γ ≤ b :=
 begin
   apply le_trans' H₁, apply le_trans, apply inf_le_inf H₂, refl,
   rw[inf_comm], simp [imp, inf_sup_right, inf_le_left],
 end
 
-lemma context_imp_intro {β : Type*} [complete_boolean_algebra β] {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
+lemma context_imp_intro {β : Type*} [complete_boolean_algebra β]
+  {a b Γ : β} (H : a ⊓ Γ ≤ a → a ⊓ Γ ≤ b) : Γ ≤ a ⟹ b :=
 by {rw[<-deduction, inf_comm], from H (inf_le_left)}
 
-instance imp_to_pi {β } [complete_boolean_algebra β] {Γ a b : β} : has_coe_to_fun (Γ ≤ a ⟹ b) (λ x, Γ ≤ a → Γ ≤ b) :=
+instance imp_to_pi {β } [complete_boolean_algebra β] {Γ a b : β} :
+  has_coe_to_fun (Γ ≤ a ⟹ b) (λ x, Γ ≤ a → Γ ≤ b) :=
 { coe := λ H₁ H₂, by {apply context_imp_elim; from ‹_›}}
 
-instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι → β} : has_coe_to_fun (Γ ≤ infi ϕ) (λ x, Π i : ι, Γ ≤ ϕ i):=
+instance infi_to_pi {ι β} [complete_boolean_algebra β] {Γ : β} {ϕ : ι → β} :
+  has_coe_to_fun (Γ ≤ infi ϕ) (λ x, Π i : ι, Γ ≤ ϕ i):=
 { 
   coe := λ H₁ i, by {change Γ ≤ ϕ i, change Γ ≤ _ at H₁, finish}}
 
@@ -1194,9 +1222,11 @@ def CCC (𝔹 : Type u) [boolean_algebra 𝔹] : Prop :=
 @[reducible]noncomputable def Prop_to_bot_top {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] : Prop → 𝔹 :=
 λ p, by {haveI : decidable p := classical.prop_decidable _, by_cases p, from ⊤, from ⊥}
 
-@[simp]lemma Prop_to_bot_top_true {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : p} : Prop_to_bot_top p = (⊤ : 𝔹) := by simp[*, Prop_to_bot_top]
+@[simp]lemma Prop_to_bot_top_true {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : p} :
+  Prop_to_bot_top p = (⊤ : 𝔹) := by simp[*, Prop_to_bot_top]
 
-@[simp]lemma Prop_to_bot_top_false {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : ¬ p} : Prop_to_bot_top p = (⊥ : 𝔹) := by simp[*, Prop_to_bot_top]
+@[simp]lemma Prop_to_bot_top_false {𝔹 : Type u} [has_bot 𝔹] [has_top 𝔹] {p : Prop} {H : ¬ p} :
+  Prop_to_bot_top p = (⊥ : 𝔹) := by simp[*, Prop_to_bot_top]
 
 lemma bv_by_contra {𝔹} [boolean_algebra 𝔹] {Γ b : 𝔹} (H : Γ ≤ bᶜ ⟹ ⊥) : Γ ≤ b := by simpa using H
 
@@ -1205,7 +1235,8 @@ lemma bv_by_contra {𝔹} [boolean_algebra 𝔹] {Γ b : 𝔹} (H : Γ ≤ bᶜ 
 
 run_cmd mk_simp_attr `bv_push_neg
 
-attribute [bv_push_neg] compl_infi compl_supr compl_Inf compl_Sup compl_inf compl_sup compl_top compl_bot compl_compl lattice.neg_imp
+attribute [bv_push_neg] compl_infi compl_supr compl_Inf compl_Sup compl_inf
+  compl_sup compl_top compl_bot compl_compl lattice.neg_imp
 
 end lattice
 
