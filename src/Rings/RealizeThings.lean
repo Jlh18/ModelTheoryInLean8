@@ -47,18 +47,8 @@ lemma nat_non_comm_prod :
   realize_bounded_term xs (nat.non_comm_prod _ ts) dvector.nil
   =
   nat.non_comm_prod n (λ i, realize_bounded_term xs (ts i) dvector.nil)
-| nat.zero ts :=
-begin
-  simp only [nat.non_comm_prod],
-  refl,
-end
-| (nat.succ n) ts :=
-begin
-  simp only [nat.non_comm_prod, struc_to_ring_struc.func_map,
-    dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
-    dvector.nth],
-  rw nat_non_comm_prod n,
-end
+| nat.zero ts := by simp [nat.non_comm_prod]
+| (nat.succ n) ts := by simp [nat_non_comm_prod n]
 
 lemma pow (t : bounded_ring_term c) : Π (n : ℕ),
   realize_bounded_term xs (npow_rec n t) dvector.nil
