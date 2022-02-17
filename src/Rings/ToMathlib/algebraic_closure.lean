@@ -1,6 +1,8 @@
 import field_theory.is_alg_closed.algebraic_closure
 import data.zmod.basic
+import data.equiv.transfer_instance
 import Rings.ToMathlib.char_p
+
 
 namespace is_alg_closed
 
@@ -13,7 +15,7 @@ begin
   intros p hmonic hirr,
   by_cases hdeg : nat_degree p = 0,
   {
-    rw monic.degree_eq_zero_iff_eq_one hmonic at hdeg,
+    rw monic.nat_degree_eq_zero_iff_eq_one hmonic at hdeg,
     rw hdeg at hirr,
     exfalso,
     apply hirr.1,

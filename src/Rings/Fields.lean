@@ -372,7 +372,7 @@ lemma models_ACFₚ_char [hM : fact (M ⊨ ACF)] {hp : nat.prime p} :
 begin
   rw models_ACFₚ_iff,
   intro hmodel,
-  apply ring_char.of_prime_eq_zero hp hmodel.1,
+  apply char_p.ring_char_of_prime_eq_zero hp hmodel.1,
 end
 
 
