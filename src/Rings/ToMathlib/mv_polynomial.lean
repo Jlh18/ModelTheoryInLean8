@@ -29,17 +29,17 @@ finset.induction_on s (zero_le _)
     ( by rw [max_le_iff, finset.sup_insert];
       exact ⟨ le_sup_iff.mpr $ or.inl (le_of_eq rfl) , le_sup_iff.mpr $ or.inr hind ⟩))
 
-lemma total_degree_monomial
-  {A : Type*} [comm_semiring A] [decidable_eq A]
-  {σ : Type*} (f : σ →₀ ℕ) (a : A) :
-  (mv_polynomial.monomial f a).total_degree
-  =
-  ite (a = 0) ⊥ (f.sum (λ _ n, n)) :=
-dite (a = 0)
-(λ h, by rw [mv_polynomial.total_degree, mv_polynomial.support_monomial,
-  if_pos h, if_pos h, finset.sup_empty])
-(λ h, by rw [mv_polynomial.total_degree, mv_polynomial.support_monomial,
-  if_neg h, if_neg h, finset.sup_singleton])
+-- lemma total_degree_monomial
+--   {A : Type*} [comm_semiring A] [decidable_eq A]
+--   {σ : Type*} (f : σ →₀ ℕ) (a : A) :
+--   (mv_polynomial.monomial f a).total_degree
+--   =
+--   ite (a = 0) ⊥ (f.sum (λ _ n, n)) :=
+-- dite (a = 0)
+-- (λ h, by rw [mv_polynomial.total_degree, mv_polynomial.support_monomial,
+--   if_pos h, if_pos h, finset.sup_empty])
+-- (λ h, by rw [mv_polynomial.total_degree, mv_polynomial.support_monomial,
+--   if_neg h, if_neg h, finset.sup_singleton])
 
 noncomputable def finsupp_coeff_add_zero_hom
   (A : Type*) [comm_semiring A] {σ} (f : σ →₀ ℕ) :

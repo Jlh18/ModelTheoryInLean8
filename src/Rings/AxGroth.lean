@@ -103,17 +103,12 @@ begin
     finset.length_to_list, finset.card_map,
     monom_deg_le_finset],
   apply finset.card_ne_zero_of_mem _,
-  {exact λ i, 0},
+  {exact λ _, 0},
   {
     simp only [finset.mem_univ, finset.sum_const_zero,
       finset.mem_filter, n_var_bd_monom, and_true, finset.mem_map,
-      zero_le', exists_true_left],
-    exact ⟨ (λ _, 0), by simp only [finset.mem_univ],
-    (begin
-      simp only [monom_of_bd_monom],
-      funext,
-      refl,
-    end)⟩,
+      zero_le', exists_true_left, monom_of_bd_monom],
+    exact ⟨ (λ _, 0) , rfl ⟩,
   },
 end
 
@@ -441,9 +436,7 @@ begin
     {
       simp only [n_var_bd_monom, monom_of_bd_monom, finset.mem_map,
         finset.mem_univ],
-      refine ⟨ λ k, ⟨ f k, hf_img_lt k⟩, _ , _ ⟩,
-      {simp only [finset.mem_univ]},
-      {funext, refl},
+      exact ⟨ λ k, ⟨ f k, hf_img_lt k⟩, trivial , rfl ⟩,
     },
     {
       apply le_trans _ hdeg,
@@ -919,18 +912,17 @@ begin
   simp only [mv_polynomial_of_coeffs,
     list.sumr_eq_sum, monom_deg_le, finset.sum_to_list],
   apply le_trans (mv_polynomial.total_degree_sum _ _),
+  work_on_goal 1 { apply_instance }, --why?
   simp only [finset.sup_le_iff],
   intros f hf,
   simp only [function.comp],
-  rw [mv_polynomial.total_degree_monomial],
   by_cases h :
     coeffs.nth (list.index_of' f (monom_deg_le_finset n d).to_list)
-    (index_of_monom_deg_le_lt_length _) = 0,
-  { simp only [if_pos h, bot_eq_zero, zero_le'] },
-  { simp only [if_neg h, finsupp.sum],
+      (index_of_monom_deg_le_lt_length _) = 0,
+  { rw h, simp, },
+  { simp only [mv_polynomial.total_degree_monomial _ h, finsupp.sum],
     simp only [monom_deg_le_finset, finset.mem_filter] at hf,
     exact hf.2 },
-  apply_instance, -- why??
 end
 
 lemma realize_surj_formula_aux {n d : ℕ}
