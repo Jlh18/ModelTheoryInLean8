@@ -1044,8 +1044,11 @@ end
 /- henkin_theory_chain satisfies the chain condition -/
 lemma chain_henkin_theory_chain {L} (T : Theory L) (hT : is_consistent T) : zorn.chain Theory_over_subset (henkin_theory_schain T hT) :=
 begin
-  tidy, rename H_1_w i, rename H_w j,
-  by_cases i ≤ j, apply or.inr, apply iota_inclusion_of_le, exact h,
+  intros x H y H_1 ᾰ, cases H_1 with H_1_w, cases y, cases H with H_w,
+  cases x, cases x_property, cases y_property,
+  dsimp only at *, induction H_1_h, induction H_h,
+  rename H_1_w i, rename H_w j,
+  by_cases h : i ≤ j, apply or.inr, apply iota_inclusion_of_le, exact h,
   apply or.inl, suffices : j ≤ i, by {apply iota_inclusion_of_le, exact this},
   revert h, simp only [not_le], apply nat.le_of_lt
 end

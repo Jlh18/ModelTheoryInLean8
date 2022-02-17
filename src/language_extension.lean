@@ -53,7 +53,11 @@ symbols_in_term_lift_at n 0 t
 
 lemma symbols_in_term_subst (s : term L) (n) : ∀{l} (t : preterm L l),
   symbols_in_term (t[s // n]) ⊆ symbols_in_term t ∪ symbols_in_term s
-| _ &k          := by apply lt_by_cases n k; intro h; simp [h]
+| _ &k          :=
+by apply lt_by_cases n k; intro h;
+   simp only [set.empty_subset, fol.symbols_in_term.equations._eqn_1,
+     fol.subst_term_var_gt, set.empty_union, fol.lift_term_def, fol.subst_term_var_eq,
+     fol.symbols_in_term_lift, h, fol.subst_term_var_lt, set.empty_union]
 | _ (func f)    := subset_union_left _ _
 | _ (app t₁ t₂) :=
   by { simp; split; refine subset.trans (symbols_in_term_subst _) _;
@@ -176,7 +180,8 @@ attribute [instance] has_decidable_range.on_function has_decidable_range.on_rela
 
 @[simp] lemma on_term_subst : ∀{l} (t : preterm L l) (s : term L) (n : ℕ),
   ϕ.on_term (t[s // n]) = ϕ.on_term t[ϕ.on_term s // n]
-| _ &k          s n := by apply lt_by_cases k n; intro h; simp [h]
+| _ &k          s n := by apply lt_by_cases k n; intro h; simp only [h,
+  subst_term_var_lt, on_term, subst_term_var_eq, on_term_lift, subst_term_var_gt]
 | _ (func f)    s n := rfl
 | _ (app t₁ t₂) s n := by simp*
 
@@ -581,24 +586,27 @@ begin
   refine term.rec _ _ t; clear t; intros,
   { simp [-lift_term_at, -add_comm, -add_assoc],
     apply lt_by_cases k n; intro h,
-    { have h₂ : ¬(m + n ≤ k), from λh', not_le_of_gt h (le_trans (le_add_left n m) h'),
+    { have h₂ : ¬(m + n ≤ k), from λh', not_le_of_gt h (le_trans (nat.le_add_left n m) h'),
       have h₃ : ¬(m + n + 1 ≤ k), from λh', h₂ $ le_trans (le_succ _) h',
       simp [h, h₂, h₃, -add_comm, -add_assoc] },
-    { have h₂ : ¬(m + n + 1 ≤ n), from not_le_of_gt (lt_of_le_of_lt (le_add_left n m) (lt.base _)) ,
+    { have h₂ : ¬(m + n + 1 ≤ n), from not_le_of_gt (lt_of_le_of_lt (nat.le_add_left n m) (lt.base _)) ,
       simp [h, h₂, reflect_term_lift hϕ, -add_comm, -add_assoc] },
     { have hk := one_le_of_lt h,
       have h₄ : n < k + 1, from lt_trans h (lt.base k),
       by_cases h₂' : m + n + 1 ≤ k,
       { have h₂ : m + n + 1 ≤ k, from h₂',
-        have h₃ : m + n ≤ k - 1, from (nat.le_sub_right_iff_add_le hk).mpr h₂,
-        simp [h, h₂, h₃, h₄, -add_comm, -add_assoc],
-        rw [sub_add_eq_max, max_eq_left hk] },
+        have h₃ : m + n ≤ k - 1, from (le_tsub_iff_right hk).mpr h₂,
+        simp only [h, h₂, h₃, h₄,
+          subst_term_var_gt, add_zero, if_true, add_succ_sub_one, lift_term_at, reflect_term_var],
+        rw [tsub_add_eq_max, max_eq_left hk] },
       { have h₂ : ¬(m + n + 1 ≤ k), from h₂',
-        have h₃ : ¬(m + n ≤ k - 1), from λh', h₂ $ (nat.le_sub_right_iff_add_le hk).mp h',
-        simp [h, h₂, h₃, -add_comm, -add_assoc] }}},
+        have h₃ : ¬(m + n ≤ k - 1), from λh', h₂ $ (le_tsub_iff_right hk).mp h',
+        simp only [h, h₂, h₃, subst_term_var_gt, lift_term_at, if_false, reflect_term_var] }}},
   { have h : n < m + n + 1, from nat.lt_succ_of_le (nat.le_add_left n m),
-    by_cases h' : f ∈ range (@on_function _ _ ϕ l); simp [reflect_term_apps_pos,
-      reflect_term_apps_neg, h, h', dvector.map_congr_pmem ih_ts, -add_comm, -add_assoc] }
+    by_cases h' : f ∈ range (@on_function _ _ ϕ l);
+    simp only [reflect_term_apps_pos, reflect_term_apps_neg, h, h',
+      dvector.map_congr_pmem ih_ts, dvector.map_map, subst_term_apps,
+      subst_term_func, add_zero, subst_term_var_gt, add_succ_sub_one, not_false_iff] }
 end
 
 variable (ϕ)
@@ -876,7 +884,7 @@ notation S`[[`:95 ϕ`]]`:90 := reduct ϕ S
 
 variable {ϕ}
 
-@[simp] def reduct_coe (S : Structure L') : ↥(reduct ϕ S) = S :=
+@[simp] def reduct_coe (S : Structure L') : (reduct ϕ S : Type*) = S :=
 rfl
 
 def reduct_id {S : Structure L'} : S → S[[ϕ]] := id
@@ -962,7 +970,8 @@ begin
   have hs₀' := subset.trans hs₀ (diff_subset _ _),
   rcases finset.subset_image_iff.mp hs₀' with ⟨s₀, hs₀x, rfl⟩,
   apply lem s₀, refine h₀.map _, apply sweakening,
-  simp only [finset.coe_union],
+  simp only [finset.coe_union]
+  ,
   apply union_subset_union ht₀,
   rw finset.coe_image,
 end
