@@ -136,7 +136,8 @@ namespace mv_polynomial
   -- in
   -- { to_fun    := eval₂ C (λ s, X (hequiv.to_fun s)),
   --   inv_fun   := eval₂ C (λ t, X (hequiv.inv_fun t)),
-  --   left_inv  :=
+  --
+  --left_inv  :=
   --   begin
   --     show ∀ p, g.comp f p = p,
   --     apply is_id,
@@ -182,131 +183,131 @@ end mv_polynomial
 
 namespace zorn
 
-open classical
-local attribute [instance] prop_decidable
+-- open classical
+-- local attribute [instance] prop_decidable
 
-  lemma fin_range_sub_mem_chain_of_sub_union
-    {α : Type u} {c : set (set α)} (hchain : zorn.chain has_subset.subset c) (hc0 : c.nonempty) :
-    Π {n : ℕ} (F : fin n → α), (Π k, F k ∈ ⋃₀ c)
-      → ∃ (Y : set α), Y ∈ c ∧ (Π k, F k ∈ Y)
-  | nat.zero :=
-  begin
-    intros F hF,
-    cases hc0 with Y hY,
-    use Y,
-    split,
-    {exact hY},
-    {exact is_empty.elim fin.is_empty}
-  end
-  | (nat.succ n) :=
-  begin
-    intros Fsucc hFsucc,
-    have F : fin n → α := λ k, Fsucc (k.succ),
-    have hF : Π (k : fin n), Fsucc k.succ ∈ ⋃₀ c := λ k, hFsucc (fin.succ k),
-    cases fin_range_sub_mem_chain_of_sub_union (λk, Fsucc (k.succ)) hF with Y hY,
-    have h0cup : Fsucc 0 ∈ ⋃₀ c := hFsucc 0,
-    rw set.mem_sUnion at h0cup,
-    cases h0cup with Y0 hY0,
-    cases hY0 with hY0c hY0,
-    cases hY with hYc hY,
-    by_cases hYY0 : Y = Y0,
-    {
-      use Y,
-      split,
-      {exact hYc},
-      {
-        intro k,
-        apply @fin.cases n (λ l, Fsucc l ∈ Y),
-        {rw hYY0, exact hY0},
-        {intro i, apply hY i},
-      }
-    },
-    {
-      cases hchain Y hYc Y0 hY0c hYY0 with hsub hsub,
-      {
-        use Y0,
-        split,
-        {exact hY0c},
-        {
-          intro k,
-          apply @fin.cases n (λ l, Fsucc l ∈ Y0),
-          {exact hY0},
-          {intro i, apply hsub, apply hY i},
-        }
-      },
-      {
-        use Y,
-        split,
-        {exact hYc},
-        {
-          intro k,
-          apply @fin.cases n (λ l, Fsucc l ∈ Y),
-          {apply hsub, exact hY0},
-          {intro i, apply hY i},
-        },
-      },
-    }
-  end
+--   lemma fin_range_sub_mem_chain_of_sub_union
+--     {α : Type u} {c : set (set α)} (hchain : zorn.chain has_subset.subset c) (hc0 : c.nonempty) :
+--     Π {n : ℕ} (F : fin n → α), (Π k, F k ∈ ⋃₀ c)
+--       → ∃ (Y : set α), Y ∈ c ∧ (Π k, F k ∈ Y)
+--   | nat.zero :=
+--   begin
+--     intros F hF,
+--     cases hc0 with Y hY,
+--     use Y,
+--     split,
+--     {exact hY},
+--     {exact is_empty.elim fin.is_empty}
+--   end
+--   | (nat.succ n) :=
+--   begin
+--     intros Fsucc hFsucc,
+--     have F : fin n → α := λ k, Fsucc (k.succ),
+--     have hF : Π (k : fin n), Fsucc k.succ ∈ ⋃₀ c := λ k, hFsucc (fin.succ k),
+--     cases fin_range_sub_mem_chain_of_sub_union (λk, Fsucc (k.succ)) hF with Y hY,
+--     have h0cup : Fsucc 0 ∈ ⋃₀ c := hFsucc 0,
+--     rw set.mem_sUnion at h0cup,
+--     cases h0cup with Y0 hY0,
+--     cases hY0 with hY0c hY0,
+--     cases hY with hYc hY,
+--     by_cases hYY0 : Y = Y0,
+--     {
+--       use Y,
+--       split,
+--       {exact hYc},
+--       {
+--         intro k,
+--         apply @fin.cases n (λ l, Fsucc l ∈ Y),
+--         {rw hYY0, exact hY0},
+--         {intro i, apply hY i},
+--       }
+--     },
+--     {
+--       cases hchain Y hYc Y0 hY0c hYY0 with hsub hsub,
+--       {
+--         use Y0,
+--         split,
+--         {exact hY0c},
+--         {
+--           intro k,
+--           apply @fin.cases n (λ l, Fsucc l ∈ Y0),
+--           {exact hY0},
+--           {intro i, apply hsub, apply hY i},
+--         }
+--       },
+--       {
+--         use Y,
+--         split,
+--         {exact hYc},
+--         {
+--           intro k,
+--           apply @fin.cases n (λ l, Fsucc l ∈ Y),
+--           {apply hsub, exact hY0},
+--           {intro i, apply hY i},
+--         },
+--       },
+--     }
+--   end
 
-  lemma fin_sub_mem_chain_of_sub_union
-    {α : Type u} {c : set (set α)} (hchain : zorn.chain has_subset.subset c) (hc0 : c.nonempty) :
-    Π (F : finset α), (↑F ⊆ ⋃₀ c) → ∃ (Y : set α), Y ∈ c ∧ ↑F ⊆ Y :=
-  @finset.induction α (λ (F : finset α), (↑F ⊆ ⋃₀ c) → ∃ (Y : set α), Y ∈ c ∧ ↑F ⊆ Y)
-  _
-  (begin
-    intro h0sub,
-    cases hc0 with Y hY,
-    use Y,
-    split,
-    exact hY,
-    simp,
-  end)
-  (begin
-    intros a F haF hind hFasub,
-    have hacup : a ∈ ⋃₀ c,
-    {apply hFasub, simp},
-    rw set.mem_sUnion at hacup,
-    cases hacup with Z hZ,
-    cases hZ with hZc haZ,
-    have hFsub : ↑F ⊆ ⋃₀ c,
-    {apply set.subset.trans _ hFasub, simp},
-    have Y := (hind hFsub),
-    cases Y with Y hY,
-    by_cases hYZ : Y = Z,
-    {
-      use Y,
-      split,
-      {exact hY.1},
-      {
-        simp only [finset.coe_insert, set.insert_subset],
-        split,
-        {rw hYZ, exact haZ,},
-        {exact hY.2}
-      }
-    },
-    cases hY with hYc hFY,
-    cases hchain Y hYc Z hZc hYZ with hl hr,
-    {
-      use Z,
-      split,
-      {exact hZc},
-      simp only [finset.coe_insert, set.insert_subset],
-      split,
-      {exact haZ},
-      {exact set.subset.trans hFY hl},
-    },
-    {
-      use Y,
-      split,
-      {exact hYc},
-      {
-        simp only [finset.coe_insert, set.insert_subset],
-        split,
-        {exact hr haZ},
-        {exact hFY}
-      },
-    }
-  end)
+--   lemma fin_sub_mem_chain_of_sub_union
+--     {α : Type u} {c : set (set α)} (hchain : zorn.chain has_subset.subset c) (hc0 : c.nonempty) :
+--     Π (F : finset α), (↑F ⊆ ⋃₀ c) → ∃ (Y : set α), Y ∈ c ∧ ↑F ⊆ Y :=
+--   @finset.induction α (λ (F : finset α), (↑F ⊆ ⋃₀ c) → ∃ (Y : set α), Y ∈ c ∧ ↑F ⊆ Y)
+--   _
+--   (begin
+--     intro h0sub,
+--     cases hc0 with Y hY,
+--     use Y,
+--     split,
+--     exact hY,
+--     simp,
+--   end)
+--   (begin
+--     intros a F haF hind hFasub,
+--     have hacup : a ∈ ⋃₀ c,
+--     {apply hFasub, simp},
+--     rw set.mem_sUnion at hacup,
+--     cases hacup with Z hZ,
+--     cases hZ with hZc haZ,
+--     have hFsub : ↑F ⊆ ⋃₀ c,
+--     {apply set.subset.trans _ hFasub, simp},
+--     have Y := (hind hFsub),
+--     cases Y with Y hY,
+--     by_cases hYZ : Y = Z,
+--     {
+--       use Y,
+--       split,
+--       {exact hY.1},
+--       {
+--         simp only [finset.coe_insert, set.insert_subset],
+--         split,
+--         {rw hYZ, exact haZ,},
+--         {exact hY.2}
+--       }
+--     },
+--     cases hY with hYc hFY,
+--     cases hchain Y hYc Z hZc hYZ with hl hr,
+--     {
+--       use Z,
+--       split,
+--       {exact hZc},
+--       simp only [finset.coe_insert, set.insert_subset],
+--       split,
+--       {exact haZ},
+--       {exact set.subset.trans hFY hl},
+--     },
+--     {
+--       use Y,
+--       split,
+--       {exact hYc},
+--       {
+--         simp only [finset.coe_insert, set.insert_subset],
+--         split,
+--         {exact hr haZ},
+--         {exact hFY}
+--       },
+--     }
+--   end)
 
 end zorn
 

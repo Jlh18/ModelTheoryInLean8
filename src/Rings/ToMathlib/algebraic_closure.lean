@@ -1,4 +1,4 @@
-import field_theory.algebraic_closure
+import field_theory.is_alg_closed.algebraic_closure
 import data.zmod.basic
 import Rings.ToMathlib.char_p
 

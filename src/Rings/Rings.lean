@@ -1,4 +1,3 @@
-import tactic
 import fol
 import Rings.Notation
 import Rings.ToMathlib
@@ -307,22 +306,14 @@ lemma realize_ring_theory :
 begin
   intros ϕ h,
   repeat {cases h},
-  { intros a b c,
-    simp [add_assoc] },
-  { intro a,
-    simp },
-  { intro a,
-    simp },
-  { intros a b,
-    simp [add_comm] },
-  { intros a b c,
-    simp [mul_assoc] },
-  { intro a,
-    simp [mul_one] },
-  { intros a b,
-    simp [mul_comm] },
-  { intros a b c,
-    simp [add_mul] }
+  { intros a b c, simp [add_assoc] },
+  { intro a, simp }, -- add_zero
+  { intro a, simp }, -- add_left_neg
+  { intros a b, simp [add_comm] },
+  { intros a b c, simp [mul_assoc] },
+  { intro a, simp [mul_one] },
+  { intros a b, simp [mul_comm] },
+  { intros a b c, simp [add_mul] }
 end
 
 /-- Commutative rings model the theory of rings -/

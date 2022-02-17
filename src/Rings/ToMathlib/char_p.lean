@@ -4,19 +4,9 @@ import algebra.free_algebra
 
 namespace ring_char
 
-lemma of_prime_eq_zero
-  {A : Type*} [non_assoc_semiring A] [nontrivial A]
-  {p : ℕ} (hprime : nat.prime p) (hp0 : (p : A) = 0) :
-  ring_char A = p :=
-begin
-  have hchar : ring_char A ∣ p := ring_char.dvd hp0,
-  unfold nat.prime at hprime,
-  have heq := hprime.2 (ring_char A) hchar,
-  cases heq,
-  { exfalso,
-    exact char_p.ring_char_ne_one heq },
-  { exact heq },
-end
+-- lemma ring_char_of_prime_eq_zero [nontrivial R] {p : ℕ}
+--   (hprime : nat.prime p) (hp0 : (p : R) = 0) : ring_char R = p :=
+-- or.resolve_left ((nat.dvd_prime hprime).1 (ring_char.dvd hp0)) ring_char_ne_one
 
 lemma lt_char {A : Type*} [non_assoc_semiring A]
   {n : ℕ} : (n : A) = 0 → n < ring_char A → n = 0 :=

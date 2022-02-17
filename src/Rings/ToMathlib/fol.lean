@@ -1,10 +1,10 @@
 import fol
 import to_mathlib
 import Rings.Notation
-import data.fin
+import data.fin.basic
 import Rings.ToMathlib.fin
 import Rings.ToMathlib.dvector
-import data.set_like
+import data.set_like.basic
 import data.set.lattice
 import order.closure
 
@@ -334,8 +334,8 @@ lemma fun_map_eq_coe_const {c : L.const} {x : dvector M 0} :
 
 namespace hom
 
-@[simps] instance has_coe_to_fun : has_coe_to_fun (M →[L] N) :=
-⟨(λ _, M → N), fol.Language.hom.to_fun⟩
+@[simps] instance has_coe_to_fun : has_coe_to_fun (M →[L] N) (λ _, M → N) :=
+⟨fol.Language.hom.to_fun⟩
 
 @[simp] lemma to_fun_eq_coe {f : M →[L] N} : f.to_fun = (f : M → N) := rfl
 
@@ -396,8 +396,8 @@ end hom
 
 namespace embedding
 
-@[simps] instance has_coe_to_fun : has_coe_to_fun (M ↪[L] N) :=
-⟨(λ _, M → N), λ f, f.to_fun⟩
+@[simps] instance has_coe_to_fun : has_coe_to_fun (M ↪[L] N) (λ _, M → N) :=
+⟨λ f, f.to_fun⟩
 
 @[simp] lemma map_fun (φ : M ↪[L] N) {n : ℕ} (f : L.functions n) (x : dvector M n) :
   φ (M.fun_map f x) = N.fun_map f (dvector.map φ x) := φ.map_fun' f x
@@ -481,8 +481,8 @@ namespace equiv
   end,
   .. f.to_equiv.symm }
 
-@[simps] instance has_coe_to_fun : has_coe_to_fun (M ≃[L] N) :=
-⟨(λ _, M → N), λ f, f.to_fun⟩
+@[simps] instance has_coe_to_fun : has_coe_to_fun (M ≃[L] N) (λ _, M → N) :=
+⟨λ f, f.to_fun⟩
 
 @[simp] lemma map_fun (φ : M ≃[L] N) {n : ℕ} (f : L.functions n) (x : dvector M n) :
   φ (M.fun_map f x) = N.fun_map f (dvector.map φ x) := φ.map_fun' f x
@@ -649,6 +649,10 @@ lemma coe_inf (p p' : L.substructure M) : ((p ⊓ p' : L.substructure M) : set M
 @[simp]
 lemma mem_inf {p p' : L.substructure M} {x : M} : x ∈ p ⊓ p' ↔ x ∈ p ∧ x ∈ p' := iff.rfl
 
+lemma set.Inter_pos {α} {p : Prop} {μ : p → set α} (hp : p) : (⋂h:p, μ h) = μ hp := infi_pos hp
+
+lemma set.Inter_neg {α} {p : Prop} {μ : p → set α} (hp : ¬ p) : (⋂h:p, μ h) = set.univ := infi_neg hp
+
 instance : has_Inf (L.substructure M) :=
 ⟨λ s, { carrier := ⋂ t ∈ s, ↑t,
         fun_mem := λ n f, closed_under.Inf begin
@@ -661,12 +665,13 @@ instance : has_Inf (L.substructure M) :=
             exact λ _ _, set.mem_univ _ }
         end }⟩
 
+
 @[simp, norm_cast]
 lemma coe_Inf (S : set (L.substructure M)) :
   ((Inf S : L.substructure M) : set M) = ⋂ s ∈ S, ↑s := rfl
 
 lemma mem_Inf {S : set (L.substructure M)} {x : M} : x ∈ Inf S ↔ ∀ p ∈ S, x ∈ p :=
-  set.mem_bInter_iff
+  set.mem_Inter₂
 
 lemma mem_infi {ι : Sort*} {S : ι → L.substructure M} {x : M} : (x ∈ ⨅ i, S i) ↔ ∀ i, x ∈ S i :=
 by simp only [infi, mem_Inf, set.forall_range_iff]
@@ -761,7 +766,7 @@ variables {L} {M}
 @[simp] lemma closure_empty : closure L (∅ : set M) = ⊥ :=
 (substructure.gi L M).gc.l_bot
 
-@[simp] lemma closure_univ : closure L (univ : set M) = ⊤ :=
+@[simp] lemma closure_univ : closure L (set.univ : set M) = ⊤ :=
 @coe_top L M ▸ closure_eq ⊤
 
 lemma closure_union (s t : set M) : closure L (s ∪ t) = closure L s ⊔ closure L t :=

@@ -1,7 +1,7 @@
 import fol
 import Rings.Notation
 import Rings.Rings
-import field_theory.algebraic_closure
+import field_theory.is_alg_closed.algebraic_closure
 import Rings.ToMathlib.algebraic_closure
 import Rings.ToMathlib.char_p
 

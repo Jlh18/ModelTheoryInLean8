@@ -1,5 +1,5 @@
 import to_mathlib
-import data.fin
+import data.fin.basic
 import Rings.ToMathlib.fin
 
 namespace dvector
@@ -66,7 +66,7 @@ lemma nth_append_big : Π {xl yl : ℕ}
   {xs : dvector α xl} {ys : dvector α yl} {n : ℕ}
   (hbig : xl ≤ n) (h : n < yl + xl),
   (dvector.append xs ys).nth n h
-  = ys.nth (n - xl) ((nat.sub_lt_right_iff_lt_add hbig).2 h)
+  = ys.nth (n - xl) ((tsub_lt_iff_right hbig).2 h)
 | 0             yl nil                 ys n hbig h := by simpa
 | (nat.succ xl) yl (dvector.cons x xs) ys 0 hbig h :=
 begin

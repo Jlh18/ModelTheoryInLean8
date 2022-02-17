@@ -1,4 +1,4 @@
-import data.fin
+import data.fin.basic
 
 namespace fin
 
