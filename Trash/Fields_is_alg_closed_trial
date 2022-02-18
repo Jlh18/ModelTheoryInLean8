@@ -300,7 +300,8 @@ lemma realize_gen_poly {n : ℕ} {root} {c : ℕ → M} :
 realize_bounded_term
   (dvector.cons root (dvector.of_fn (λ (i : fin (n + 1)), c i)))
   (gen_poly n) dvector.nil =
-(finset.range (n + 1)).sum (λ (x : ℕ), c x * root ^ x) :=
+(finset.range (n + 1)).sum (λ (x : ℕ), c x * root ^ x)
+     :=
 begin
   induction n with n hn,
   { simpa only [finset.sum_range_one, _root_.pow_zero, mul_one,
@@ -320,6 +321,53 @@ begin
 end
 
 instance is_alg_closed : is_alg_closed M :=
+begin
+  apply is_alg_closed.of_exists_root_nat_degree,
+  intros p hmonic hirr hdeg,
+  simp only [ACF, all_realize_sentence_union, all_realize_sentence_range,
+    all_gen_monic_poly_has_root, realize_sentence_bd_alls,
+    realize_bounded_formula, models_ring_theory_to_comm_ring.realize_zero,
+    realize_bounded_formula_ex] at hM,
+  obtain ⟨ _ , halg_closed ⟩ := hM.1,
+  set n := polynomial.nat_degree p - 1 with hn,
+  set xs := dvector.of_fn (λ (i : fin (n + 1)), polynomial.coeff p i) with hxs,
+  obtain ⟨ root , hroot ⟩ := halg_closed n xs,
+  use root,
+  convert hroot,
+  have h := @polynomial.eval_term_evaluated_at_coeffs_eq_realize_bounded_term M _ _ xs root (gen_monic_poly n),
+  convert h,
+  work_on_goal 1 { exact (Structure_structure_eq_self M).symm },
+  ext i,
+  by_cases hi : i = p.nat_degree,
+  {
+    rw hi,
+    dsimp only [polynomial.monic, polynomial.leading_coeff] at hmonic,
+    simp only [hmonic, gen_monic_poly, models_ring_theory_to_comm_ring.realize_add,
+      fin.val_zero', models_ring_theory_to_comm_ring.realize_mul,
+      realize_bounded_term, dvector.nth, models_ring_theory_to_comm_ring.realize_pow],
+
+    sorry,
+  },
+  sorry,
+  -- rw polynomial.eval_eq_finset_sum,
+  -- simp only [
+  --   gen_monic_poly, models_ring_theory_to_comm_ring.realize_add,
+  --   fin.val_zero', models_ring_theory_to_comm_ring.realize_mul,
+  --   realize_bounded_term, dvector.nth, models_ring_theory_to_comm_ring.realize_pow],
+  -- simp only [polynomial.monic, polynomial.leading_coeff] at hmonic,
+  -- have hpow : npow_rec (n + 1) root = root ^ p.nat_degree,
+  -- { simp only [pow, hn], rw nat.sub_add_cancel, refl,
+  --   rw ← nat.one_lt_bit0_iff, exact nat.one_lt_bit0 hdeg },
+  -- simp only [finset.sum_range_add, finset.sum_range_one,
+  --   add_zero, hmonic, one_mul, add_comm _ (root ^ p.nat_degree), hpow, hxs, hn],
+  -- congr,
+  -- rw [realize_gen_poly, nat.sub_add_cancel],
+  -- rw ← nat.one_lt_bit0_iff,
+  -- exact nat.one_lt_bit0 hdeg,
+end
+
+
+instance is_alg_closed' : is_alg_closed M :=
 begin
   apply is_alg_closed.of_exists_root_nat_degree,
   intros p hmonic hirr hdeg,
@@ -356,56 +404,20 @@ end models_ACF_to
 
 variables {M : Structure ring_signature} {p : ℕ}
 
-lemma models_ACFₚ_iff' {hp : nat.prime p} :
+lemma models_ACFₚ_iff {hp : nat.prime p} :
   M ⊨ ACFₚ hp ↔ (p : M) = 0 ∧ M ⊨ ACF :=
 by simp only [ACFₚ, all_realize_sentence_insert, realize_sentence_equal,
     realize_closed_term, models_ring_theory_to_comm_ring.realize_nat,
     models_ring_theory_to_comm_ring.realize_zero]
 
-lemma models_ACFₚ_iff [hM : fact (M ⊨ ACF)] {hp : nat.prime p} :
-  M ⊨ ACFₚ hp ↔ ring_char M = p :=
+lemma models_ACFₚ_char [hM : fact (M ⊨ ACF)] {hp : nat.prime p} :
+  M ⊨ ACFₚ hp → ring_char M = p :=
 begin
-  rw models_ACFₚ_iff',
-  split,
-  { intro hmodel, apply char_p.ring_char_of_prime_eq_zero hp hmodel.1 },
-  { intro hchar, refine ⟨ _ , hM.1 ⟩, rw [← hchar, ring_char.spec] },
+  rw models_ACFₚ_iff,
+  intro hmodel,
+  apply char_p.ring_char_of_prime_eq_zero hp hmodel.1,
 end
 
-lemma realize_nat_succ {n : ℕ} : (n.succ : M) = (n : M) + 1 := rfl
-
-lemma realize_nat_eq_zero {n : ℕ} (h : n = 0) : (n : M) = 0 := by simp [h]
-
-lemma models_ACF₀_char_zero [hM : fact (M ⊨ ACF)] (hM : M ⊨ ACF₀) : char_zero M :=
-begin
-  simp only [ACF₀, all_realize_sentence_union,
-  all_realize_sentence_range, realize_plus_one_ne_zero] at hM,
-  split,
-  intros n,
-  induction n with n hn,
-  { intro m, induction m with m hm,
-    { intro, refl },
-    { intro hnm, exfalso, apply hM.2 m, simpa only [← realize_nat_succ, ← hnm] }},
-  { intro m, induction m with m hm,
-    { intro hnm, exfalso, exact hM.2 n hnm },
-    {
-      intro hnm, rw nat.succ_inj', apply hn, simp only [realize_nat_succ] at hnm,
-      apply add_right_cancel hnm }}
-end
-
-lemma models_ACF₀_iff [hM : fact (M ⊨ ACF)] :
-  M ⊨ ACF₀ ↔ ring_char M = 0 :=
-begin
-  split,
-  { intro hmodel, apply @ring_char.eq_zero _ _ (models_ACF₀_char_zero hmodel) },
-  { intro hchar,
-    simp only [ACF₀, all_realize_sentence_union, all_realize_sentence_range,
-      plus_one_ne_zero, realize_bounded_formula_not],
-    refine ⟨ hM.1 , _ ⟩, intros n hn,
-    rw ring_char.eq_iff at hchar, have hchar1 := hchar.1, have hcharn := hchar1 (n + 1),
-    simp only [zero_dvd_iff, nat.succ_ne_zero, nat.cast_add, nat.cast_one, iff_false] at hcharn,
-    apply hcharn, convert hn, convert (@realize_nat M _ _ _ _ _ dvector.nil n).symm,
-    rw Structure_structure_eq_self },
-end
 
 namespace instances
 
@@ -416,7 +428,7 @@ Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp �
 theorem algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
   algebraic_closure_of_zmod hp ⊨ ACFₚ hp :=
 begin
-  rw models_ACFₚ_iff',
+  rw models_ACFₚ_iff,
   split,
   { have h := @algebraic_closure.of_ulift_zmod.char_p p ⟨ hp ⟩,
     rw ← ring_char.eq_iff at h,

@@ -2,14 +2,14 @@ import algebra.char_p.basic
 import ring_theory.localization
 import algebra.free_algebra
 
-namespace char_p
+-- namespace char_p
 
-lemma ring_char_of_prime_eq_zero {R : Type*} [non_assoc_semiring R]
-  [nontrivial R] {p : ℕ}
-  (hprime : nat.prime p) (hp0 : (p : R) = 0) : ring_char R = p :=
-or.resolve_left ((nat.dvd_prime hprime).1 (ring_char.dvd hp0)) ring_char_ne_one
+-- lemma ring_char_of_prime_eq_zero {R : Type*} [non_assoc_semiring R]
+--   [nontrivial R] {p : ℕ}
+--   (hprime : nat.prime p) (hp0 : (p : R) = 0) : ring_char R = p :=
+-- or.resolve_left ((nat.dvd_prime hprime).1 (ring_char.dvd hp0)) ring_char_ne_one
 
-end char_p
+-- end char_p
 
 namespace ring_char
 

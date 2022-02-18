@@ -4,7 +4,6 @@ import Rings.ToMathlib.list
 import Rings.ToMathlib.nat
 import Rings.ToMathlib.fol
 import Rings.ToMathlib.mv_polynomial
-import Rings.RealizeThings
 import algebra.big_operators.finprod
 import data.finset.basic
 import Rings.Lefschetz

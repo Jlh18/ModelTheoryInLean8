@@ -4,6 +4,8 @@ import Rings.ToMathlib
 import Rings.ToMathlib.fol
 import Rings.ToMathlib.dvector
 import Rings.ToMathlib.fin
+import Rings.ToMathlib.list
+import Rings.ToMathlib.nat
 import data.polynomial.eval
 import data.mv_polynomial
 
@@ -46,6 +48,21 @@ open fol
 /-- The language of rings -/
 def ring_signature : Language :=
 (Language.mk) (ring_funcs) (λ n, pempty)
+
+/-- To show two structures are equal it suffices that they are
+    equal on carrier sets and heterogeneously equal on fun_map -/
+
+lemma Structure.ext {A B : Structure ring_signature} :
+  A.carrier = B.carrier → A.fun_map == B.fun_map → A = B :=
+begin
+  obtain ⟨ A , A_fun , A_rel ⟩ := A, obtain ⟨ B , B_fun , B_rel ⟩ := B,
+  simp only,
+  intros hcarrier hfun, subst hcarrier,
+  refine ⟨ rfl, hfun, _ ⟩,
+  rw heq_iff_eq,
+  funext _ mem_empty,
+  cases mem_empty,
+end
 
 /-- Shorter name for bounded_term ring_signature -/
 @[reducible] def bounded_ring_term := bounded_term ring_signature
@@ -363,34 +380,9 @@ lemma realized_term_is_evaluated_poly {n} {as : dvector A n} :
   (begin intro k, simpa, end) -- variables
   (by simpa)
   (by simp)
-  (begin -- neg
-    intros t h,
-    unfold_coes,
-    simp only [struc_to_ring_struc.unaries_map, struc_to_ring_struc.func_map,
-      dvector.last, realize_bounded_term, dvector.nth, mv_polynomial.coe_mv_poly_neg],
-    unfold_coes at h,
-    simp only [ring_hom.to_fun_eq_coe, mv_polynomial.eval_map] at h,
-    simp only [term_neg, h, ring_hom.to_fun_eq_coe, ring_hom.map_neg,
-      mv_polynomial.eval_map, neg_inj, struc_to_ring_struc.apps_neg],
-  end)
-  (begin -- add
-    intros s t hs ht,
-    unfold_coes,
-    simp only [term_add, struc_to_ring_struc.binaries_map, dvector.last,
-      struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
-      dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
-    unfold_coes,
-    simp,
-  end)
-  (begin -- mul
-    intros s t hs ht,
-    unfold_coes,
-    simp only [term_mul, struc_to_ring_struc.binaries_map, dvector.last,
-      struc_to_ring_struc.func_map, dvector.last, realize_bounded_term,
-      dvector.nth, mv_polynomial.coe_mv_poly_neg, hs, ht],
-    unfold_coes,
-    simp,
-  end)
+  (by { intros t h, unfold_coes at h ⊢, simp [h] } ) -- neg
+  (by { intros s t hs ht, unfold_coes at hs ht ⊢, simp [hs, ht] }) -- add
+  (by { intros s t hs ht, unfold_coes at hs ht ⊢, simp [hs, ht] }) -- mul
 
 end mv_polynomial
 
@@ -405,7 +397,7 @@ namespace polynomial
   @[reducible] noncomputable def term_evaluated_at_coeffs {n} (as : dvector A n)
     (t : bounded_ring_term n.succ) : polynomial A :=
   let σ : fin n.succ → polynomial A :=
-  @fin.cases n (λ _, polynomial A) polynomial.X (λ i, polynomial.C (dvector.nth' as i)) in
+  @fin.cases n (λ _, polynomial A) polynomial.X (λ i, polynomial.C (as.nth' i)) in
   mv_polynomial.eval σ (mv_polynomial.term t)
 
   /-- Evaluating the polynomial term_evaluated_at_coeffs at a₀ : A produces the same
@@ -695,6 +687,23 @@ instance comm_ring : comm_ring M :=
 
 end models_ring_theory_to_comm_ring
 
+lemma Structure_structure_eq_self (M : Structure ring_signature) :
+  struc_to_ring_struc.Structure M = M :=
+begin
+  apply Structure.ext,
+  { refl },
+  { simp only [struc_to_ring_struc.Structure, heq_iff_eq],
+    funext n, cases n,
+    { funext c, cases c; { funext nil, cases nil, refl }},
+    cases n,
+    { funext neg, cases neg, funext y, cases y with _ _ y, cases y, refl },
+    cases n,
+    {
+      funext addmul, cases addmul; { funext y, repeat {cases y with _ _ y}, refl },
+    },
+    { funext mem_empty, cases mem_empty }}
+end
+
 namespace instances
 
 open ulift
@@ -750,3 +759,70 @@ end
 end instances
 
 end Rings
+
+namespace realize_ring_term
+
+open Rings fol
+
+
+variables
+  {A : Type*} [comm_ring A]
+  {c : ℕ} (xs : dvector (struc_to_ring_struc.Structure A) c)
+
+@[simp] lemma list_sumr :
+  Π {l : list (bounded_ring_term c)},
+  realize_bounded_term xs (list.sumr l) dvector.nil
+  =
+  list.sumr (list.map (λ t, realize_bounded_term xs t dvector.nil) l)
+| list.nil := by simp
+| (list.cons t ts) :=
+begin
+  simp only [list.map, models_ring_theory_to_comm_ring.realize_add,
+    list.sumr, realize_bounded_term],
+  simp only [struc_to_ring_struc.func_map, dvector.last,
+    struc_to_ring_struc.binaries_map, add_right_inj, dvector.nth],
+  rw list_sumr,
+end
+
+def add_zero_hom :
+  add_zero_hom (bounded_ring_term c) A :=
+⟨ λ t, realize_bounded_term xs t dvector.nil ,
+  models_ring_theory_to_comm_ring.realize_zero ,
+  λ t s, models_ring_theory_to_comm_ring.realize_add ⟩
+
+lemma sumr
+  {ts : list (bounded_ring_term c)} :
+  realize_bounded_term xs (ts).sumr dvector.nil
+  =
+  (list.map (add_zero_hom xs).to_fun ts).sumr :=
+begin
+  rw ← list.add_zero_hom_sumr (add_zero_hom xs) ts,
+  refl,
+end
+
+lemma nat_non_comm_prod :
+  Π (n : ℕ) (ts : fin n → bounded_ring_term c),
+  realize_bounded_term xs (nat.non_comm_prod _ ts) dvector.nil
+  =
+  nat.non_comm_prod n (λ i, realize_bounded_term xs (ts i) dvector.nil)
+| nat.zero ts :=
+begin
+  simp only [nat.non_comm_prod],
+  refl,
+end
+| (nat.succ n) ts :=
+begin
+  simp only [nat.non_comm_prod, struc_to_ring_struc.func_map,
+    dvector.last, struc_to_ring_struc.binaries_map, realize_bounded_term,
+    dvector.nth],
+  rw nat_non_comm_prod n,
+end
+
+lemma pow (t : bounded_ring_term c) : Π (n : ℕ),
+  realize_bounded_term xs (npow_rec n t) dvector.nil
+  =
+  (realize_bounded_term xs t dvector.nil) ^ n
+| nat.zero := by simpa
+| (nat.succ n) := by simp [npow_rec, pow n, pow_succ]
+
+end realize_ring_term
