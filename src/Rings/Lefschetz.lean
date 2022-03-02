@@ -1,6 +1,7 @@
 import Rings.Fields
 import completeness
 import Rings.ToMathlib.finset
+import field_theory.is_alg_closed.classification
 
 namespace Lefschetz
 
@@ -8,6 +9,9 @@ open fol
 open Rings
 open Fields
 open Rings.instances
+
+
+
 
 /-- Lefschetz part 1. Any sentence or its negation can be deduced in ACF₀-/
 theorem is_complete'_ACF₀ : is_complete' ACF₀ :=

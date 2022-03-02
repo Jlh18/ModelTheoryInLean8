@@ -1,6 +1,7 @@
 import algebra.char_p.basic
 import ring_theory.localization
 import algebra.free_algebra
+import algebra.char_p.algebra
 
 -- namespace char_p
 
@@ -30,14 +31,3 @@ end
 
 end ring_char
 
-/-- If the algebra map `R →+* A` is injective then `A` has the same characteristic as `R`. -/
-lemma char_p_of_injective_algebra_map {R A : Type*} [comm_semiring R] [semiring A] [algebra R A]
-  (h : function.injective (algebra_map R A)) (p : ℕ) [char_p R p] : char_p A p :=
-{ cast_eq_zero_iff := λx,
-  begin
-    rw ←char_p.cast_eq_zero_iff R p x,
-    change algebra_map ℕ A x = 0 ↔ algebra_map ℕ R x = 0,
-    rw is_scalar_tower.algebra_map_apply ℕ R A x,
-    refine iff.trans _ h.eq_iff,
-    rw ring_hom.map_zero,
-  end }

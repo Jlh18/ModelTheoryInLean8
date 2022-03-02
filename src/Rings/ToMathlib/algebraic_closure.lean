@@ -2,7 +2,9 @@ import field_theory.is_alg_closed.algebraic_closure
 import data.zmod.basic
 import data.equiv.transfer_instance
 import Rings.ToMathlib.char_p
+import algebra.char_p.algebra
 
+universes u v
 
 namespace is_alg_closed
 
@@ -32,38 +34,31 @@ of_exists_root_nat_degree $ λ _ _ hdeg, H _
 end is_alg_closed
 
 
-section zmod
+section ulift
 
-variables (p : ℕ) [hp : fact (nat.prime p)]
+variables {K : Type} [field K]
 
-include hp
+instance : field (ulift K) := equiv.ulift.field
 
-/-- lift zmod up to any universe -/
-def ulift_zmod := ulift (zmod p)
-
-instance ulift_zmod.field : field (ulift_zmod p) := equiv.ulift.field
-
-lemma down_nat_coe_ulift_of_zmod :
-  Π {n : ℕ}, (n : ulift_zmod p).down = (n : zmod p)
+lemma nat_down_eq : Π {n : ℕ}, (n : ulift K).down = (n : K)
 | nat.zero := rfl
-| (nat.succ n) :=
-begin
-  simp only [nat.cast_succ],
-  rw ← down_nat_coe_ulift_of_zmod,
-  refl,
-end
+| (nat.succ n) := by { simp only [nat.cast_succ], rw ← nat_down_eq, refl }
 
-lemma ulift_zmod.char_p : char_p (ulift_zmod p) p :=
+lemma nat_up_eq : Π {n : ℕ}, ulift.up (n : K) = (n : ulift K)
+| nat.zero := rfl
+| (nat.succ n) := by { simp only [nat.cast_succ], rw ← nat_up_eq, refl }
+
+lemma ulift_char_p (p : ℕ) [hp : fact (nat.prime p)] (hp : char_p K p) :
+  char_p (ulift K) p :=
 begin
   split,
   intro n,
-  rw ← (zmod.char_p p).cast_eq_zero_iff,
+  rw ← hp.cast_eq_zero_iff,
   split,
   {
     intro hn,
-    have hn' := congr_arg ulift.down hn,
-    convert hn',
-    rw down_nat_coe_ulift_of_zmod,
+    convert congr_arg ulift.down hn,
+    rw nat_down_eq,
   },
   {
     intro hn,
@@ -71,84 +66,45 @@ begin
     rw ← ulift.up_down 0,
     apply congr_arg ulift.up,
     convert hn,
-    rw down_nat_coe_ulift_of_zmod,
+    rw nat_down_eq,
   },
 end
 
-end zmod
+lemma ulift_char_zero (h0 : char_zero K) : char_zero (ulift K) :=
+begin
+  split,
+  intros n m hnm,
+  apply h0.1,
+  apply equiv.injective equiv.ulift.symm,
+  convert hnm,
+  repeat { simp [nat_up_eq] },
+end
 
+end ulift
 
 namespace algebraic_closure
 
-section zmod
+section instances
 
 variables (p : ℕ) [hp : fact (nat.prime p)]
 
-include hp
-
 /-- algebraic closure of finite fields with char p lifted to any universe -/
-@[reducible] def of_ulift_zmod := algebraic_closure (ulift_zmod p)
-
--- noncomputable instance fields : field (of_zmod p) := by apply_instance
-
-universe u
-
--- noncomputable instance :
---  algebra (ulift_zmod.{u} p) (of_ulift_zmod.{u} p) := by apply_instance
+@[reducible] def of_ulift_zmod (p : ℕ) [hp : fact (nat.prime p)] :=
+algebraic_closure (ulift (zmod p))
 
 /-- algebraic closure of zmod is still characteristic p -/
-lemma of_ulift_zmod.char_p : char_p (of_ulift_zmod.{u} p) p :=
-(ring_hom.char_p_iff_char_p (algebra_map (ulift_zmod.{u} p) (of_ulift_zmod.{u} p)) p).1 $ ulift_zmod.char_p p
+lemma of_ulift_zmod.char_p (p : ℕ) [hp : fact (nat.prime p)] : char_p (of_ulift_zmod.{u} p) p :=
+(ring_hom.char_p_iff_char_p (algebra_map (ulift.{u} (zmod p))
+  (of_ulift_zmod.{u} p)) p).1 $ ulift_char_p p (zmod.char_p p)
 
+/-- algebraic closure of finite fields with char p lifted to any universe -/
+@[reducible] def of_ulift_rat := algebraic_closure (ulift rat)
 
--- @[reducible] def ulift_of_zmod : Type* := ulift (of_zmod p)
+/-- algebraic closure of zmod is still characteristic p -/
+lemma of_ulift_rat.char_zero : char_zero of_ulift_rat.{u} :=
+(ring_hom.char_zero_iff (ring_hom.injective (algebra_map (ulift.{u} rat) _))).1
+  (ulift_char_zero linear_ordered_semiring.to_char_zero)
 
--- noncomputable instance of_zmod.field : field (ulift (of_zmod p)) := equiv.ulift.field
-
--- #check equiv.iff
-
--- lemma difjsij {α β : Type*} (hequiv : α ≃ β) (p : Type* → Prop) :
---   p α ↔ p β :=
--- by library_search
-
-instance of_zmod.is_alg_closed : is_alg_closed (of_ulift_zmod p) :=
-by apply_instance
-
--- lemma down_nat_coe_ulift_of_zmod :
---   Π {n : ℕ}, (n : ulift_of_zmod p).down = (n : of_zmod p)
--- | nat.zero := rfl
--- | (nat.succ n) :=
--- begin
---   simp only [nat.cast_succ],
---   rw ← down_nat_coe_ulift_of_zmod,
---   refl,
--- end
-
--- lemma ulift_of_zmod.char_p :
---   char_p (ulift_of_zmod p) p :=
--- begin
---   split,
---   intro n,
---   rw ← (of_zmod.char_p p).cast_eq_zero_iff,
---   split,
---   {
---     intro hn,
---     have hn' := congr_arg ulift.down hn,
---     convert hn',
---     rw down_nat_coe_ulift_of_zmod,
---   },
---   {
---     intro hn,
---     rw ← ulift.up_down ↑n,
---     rw ← ulift.up_down 0,
---     apply congr_arg ulift.up,
---     convert hn,
---     rw down_nat_coe_ulift_of_zmod,
---   },
--- end
-
-
-
-end zmod
+end instances
 
 end algebraic_closure

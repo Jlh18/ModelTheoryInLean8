@@ -409,10 +409,12 @@ end
 
 namespace instances
 
+/-- alg_cl (ℤ/p) : Type* as a ring structure -/
 @[reducible] def algebraic_closure_of_zmod {p : ℕ} (hp : nat.prime p) :
   Structure ring_signature :=
 Rings.struc_to_ring_struc.Structure (@algebraic_closure.of_ulift_zmod p ⟨ hp ⟩)
 
+/-- alg_cl (ℤ/p) : Type* is algebraically closed of characteristic p -/
 theorem algebraic_closure_of_zmod_models_ACFₚ {p : ℕ} (hp : nat.prime p) :
   algebraic_closure_of_zmod hp ⊨ ACFₚ hp :=
 begin
@@ -429,6 +431,27 @@ begin
   { classical,
     apply is_alg_closed_to.realize_ACF },
 end
+
+/-- ℚ̅ : Type* as a ring structure -/
+@[reducible] def algebraic_closure_of_rat :
+  Structure ring_signature :=
+Rings.struc_to_ring_struc.Structure algebraic_closure.of_ulift_rat
+
+instance algebraic_closure_of_rat_models_ACF : fact (algebraic_closure_of_rat ⊨ ACF) :=
+by {split, classical, apply is_alg_closed_to.realize_ACF }
+
+instance : char_zero algebraic_closure_of_rat :=
+{ cast_injective :=
+begin
+  intros n m hnm,
+  apply algebraic_closure.of_ulift_rat.char_zero.1,
+  exact hnm,
+end }
+
+/-- ℚ̅ : Type* is algebraically closed of characteristic zero -/
+theorem algebraic_closure_of_rat_models_ACF₀ :
+  algebraic_closure_of_rat ⊨ ACF₀ :=
+models_ACF₀_iff.2 ring_char.eq_zero
 
 end instances
 
