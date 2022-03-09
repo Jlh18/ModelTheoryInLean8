@@ -458,7 +458,8 @@ namespace is_complete_ACF₀
 open_locale fol cardinal
 open Rings dvector fol cardinal
 
-instance : comm_ring (ulift.{u} ℤ) := equiv.comm_ring equiv.ulift
+@[reducible] def comm_ring_ulift : comm_ring (ulift.{u} ℤ) := equiv.comm_ring equiv.ulift
+local attribute [instance] comm_ring_ulift
 
 def ulift.down_ring_hom : ulift.{u} ℤ →+* ℤ :=
 { to_fun := equiv.ulift.to_fun,
@@ -467,10 +468,9 @@ def ulift.down_ring_hom : ulift.{u} ℤ →+* ℤ :=
   map_zero' := rfl,
   map_add' := by finish }
 
--- example (f : equiv ℤ ℤ) : function.injective f := by library_search
-
-instance {A : Type u} [comm_ring A] : algebra (ulift.{u} ℤ) A :=
+@[reducible] def algebra_ulift {A : Type u} [comm_ring A] : algebra (ulift.{u} ℤ) A :=
 ring_hom.to_algebra (ring_hom.comp (algebra_map ℤ A) ulift.down_ring_hom)
+local attribute [instance] algebra_ulift
 
 lemma injective_alg_map {K : Type u} [field K] (hK : char_zero K) :
   function.injective (algebra_map (ulift.{u} ℤ) K) :=
@@ -527,6 +527,10 @@ max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum
 lemma only_infinite_ACF : only_infinite ACF :=
 by { intro M, haveI : fact (M.1 ⊨ ACF) := ⟨ M.2 ⟩, exact is_alg_closed.infinite }
 
+end is_complete_ACF₀
+
+open is_complete_ACF₀ cardinal
+
 /-- a.k.a Lefschetz part 1. Any sentence or its negation can be deduced in ACF₀-/
 theorem is_complete'_ACF₀ : is_complete' ACF₀ :=
 is_complete'_of_only_infinite_of_categorical
@@ -536,8 +540,6 @@ is_complete'_of_only_infinite_of_categorical
     -- pick the cardinal κ := 𝔠
     (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
     (categorical_ACF₀ omega_lt_continuum)
-
-end is_complete_ACF₀
 
 end Fields
 
