@@ -43,6 +43,13 @@ instance : inhabited ring_consts := ⟨ ring_consts.zero ⟩
 instance : inhabited ring_unaries := ⟨ ring_unaries.neg ⟩
 instance : inhabited ring_binaries := ⟨ ring_binaries.add ⟩
 
+/-- The type bool is equivalent to the type of constant symbols -/
+def bool_equiv_ring_consts : equiv bool ring_consts :=
+{ to_fun := λ x, match x with | ff := ring_consts.zero | tt := ring_consts.one end,
+  inv_fun := λ c, match c with | ring_consts.zero := ff | ring_consts.one := tt end,
+  left_inv := λ x, match x with | ff := rfl | tt := rfl end,
+  right_inv := λ c, match c with | ring_consts.zero := rfl | ring_consts.one := rfl end }
+
 open fol
 
 /-- The language of rings -/
@@ -280,13 +287,17 @@ lemma apps_zero {n} : Π {t_ : dvector (bounded_ring_term n) 0},
   @realize_bounded_ring_term (Structure A) n vec 0
     (@bd_func ring_signature _ 0 ring_consts.one) dvector.nil = 1 := rfl
 
-lemma realize_nat {as} : Π (n : ℕ),
+@[simp] lemma realize_nat {as} : Π (n : ℕ),
 @realize_bounded_term _ (Structure A) _ as _ (n : bounded_ring_term 0) dvector.nil
 = n
 | 0 := rfl
 | (n+1) :=
 by simpa only [const_map, realize_bounded_term,
       nat.cast_succ, realize_nat n]
+
+lemma realize_nat_succ {n : ℕ} : (n.succ : A) = (n : A) + 1 := rfl
+
+lemma realize_nat_eq_zero {n : ℕ} (h : n = 0) : (n : A) = 0 := by simp [h]
 
 lemma apps_one {n} : Π {t_ : dvector (bounded_ring_term n) 0},
   bd_apps (@bd_func ring_signature _ 0 ring_consts.one) t_ = 1
@@ -665,7 +676,7 @@ begin
   exact add_mul h a b c,
 end
 
-instance comm_ring : comm_ring M :=
+def comm_ring : comm_ring M :=
 {
   add            := add,
   add_assoc      := add_assoc h,
@@ -686,6 +697,10 @@ instance comm_ring : comm_ring M :=
 }
 
 end models_ring_theory_to_comm_ring
+
+instance models_ring_theory_to_comm_ring {M : Structure ring_signature}
+  [h : fact (M ⊨ ring_signature.ring_theory)] : comm_ring M :=
+models_ring_theory_to_comm_ring.comm_ring h.1
 
 lemma Structure_structure_eq_self (M : Structure ring_signature) :
   struc_to_ring_struc.Structure M = M :=
@@ -757,6 +772,40 @@ begin
 end
 
 end instances
+
+section equiv
+
+open dvector fol
+open_locale fol
+
+lemma equiv_of_ring_equiv_map_fun {M N : Structure Rings.ring_signature}
+  [fact (M ⊨ ring_signature.ring_theory)]
+  [fact (N ⊨ ring_signature.ring_theory)]
+  (ϕ : M ≃+* N) : Π {n : ℕ} (f : ring_signature.functions n) (xs : dvector M n),
+    ϕ (M.fun_map f xs) = N.fun_map f (xs.map ϕ)
+| 0 ring_consts.zero nil := ring_equiv.map_zero ϕ
+| 0 ring_consts.one nil := ring_equiv.map_one ϕ
+| 1 ring_unaries.neg (x :: nil) := by simp [dvector.map]
+| 2 ring_binaries.add (x :: y :: nil) := by simp [dvector.map]
+| 2 ring_binaries.mul (x :: y :: nil) := by simp [dvector.map]
+| (n+3) f xs := pempty.elim f
+
+/--
+We need the hypothesis that M and N are models of `ring_theory` since
+`≃+*` alone lacks commuting proofs for `0` and `1`
+-/
+def equiv_of_ring_equiv {M N : Structure Rings.ring_signature}
+  [fact (M ⊨ ring_signature.ring_theory)]
+  [fact (N ⊨ ring_signature.ring_theory)]
+  (ϕ : M ≃+* N) : M ≃[Rings.ring_signature] N :=
+{ to_fun := ϕ.to_fun,
+  inv_fun := ϕ.inv_fun,
+  left_inv := ϕ.left_inv,
+  right_inv := ϕ.right_inv,
+  map_fun' := λ _, equiv_of_ring_equiv_map_fun ϕ,
+  map_rel' := λ n r, pempty.elim r }
+
+end equiv
 
 end Rings
 

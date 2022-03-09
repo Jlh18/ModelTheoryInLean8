@@ -3,6 +3,7 @@ import data.zmod.basic
 import data.equiv.transfer_instance
 import Rings.ToMathlib.char_p
 import algebra.char_p.algebra
+import field_theory.separable
 
 universes u v
 
@@ -31,8 +32,35 @@ lemma of_nat_degree_ne_zero_exists_root {k : Type*} [field k]
   is_alg_closed k :=
 of_exists_root_nat_degree $ λ _ _ hdeg, H _
 
-end is_alg_closed
+lemma infinite {K : Type*} [field K] [is_alg_closed K] : infinite K :=
+begin
+  split,
+  intro hfin, haveI := hfin,
+  set n := fintype.card K with hn,
+  set f : polynomial K := polynomial.monomial n.succ 1 - 1 with hf,
+  have hfsep : f.separable,
+  { rw polynomial.separable_def',
+    refine ⟨ -1, (polynomial.monomial 1 (n.succ : K)⁻¹), _⟩,
+    simp only [hf, polynomial.derivative_sub, polynomial.derivative_monomial,
+      neg_one_mul, neg_sub, one_mul, polynomial.derivative_one, sub_zero,
+      polynomial.monomial_mul_monomial],
+    have hrw0 : (1 + (n.succ - 1)) = n.succ, ring,
+    rw hrw0,
+    have hrw1 : (n.succ : K)⁻¹ * n.succ = 1, simp,
+    -- char_p.cast_card_eq_zero, nice simp lemma!
+    rw hrw1,
+    ring },
+  apply nat.not_succ_le_self (fintype.card K),
+  have hroot : fintype.card (f.root_set K) = n.succ,
+  { rw [polynomial.card_root_set_eq_nat_degree hfsep (is_alg_closed.splits_domain _),
+      hf, polynomial.nat_degree, polynomial.degree_sub_eq_left_of_degree_lt],
+    { simp },
+    { simpa [← cmp_eq_lt_iff] } },
+  rw ← hroot,
+  apply fintype.card_le_of_injective coe subtype.coe_injective,
+end
 
+end is_alg_closed
 
 section ulift
 

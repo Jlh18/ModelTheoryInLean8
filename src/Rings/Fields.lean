@@ -1,9 +1,11 @@
 import fol
 import Rings.Notation
 import Rings.Rings
-import field_theory.is_alg_closed.algebraic_closure
 import Rings.ToMathlib.algebraic_closure
 import Rings.ToMathlib.char_p
+import field_theory.is_alg_closed.classification
+import set_theory.continuum
+import Rings.vaught
 
 universe u
 
@@ -13,17 +15,17 @@ notation `[` l:(foldr `, ` (h t, dvector.cons h t) dvector.nil `]`) := l
 local infix ` ≃ `:64 := fol.bounded_preformula.bd_equal
 
 namespace Fields
-open fol
-open Rings
-open Rings.ring_signature
-open Rings.struc_to_ring_struc
 
+open fol Rings Rings.ring_signature Rings.struc_to_ring_struc
+
+/-- The sentence "every non-zero element has a multiplicative inverse" -/
 def mul_inv : sentence ring_signature :=
 ∀' (x_ 1 ≃ 0) ⊔ (∃' x_ 1 * x_ 0 ≃ 1)
 
+/-- The sentence "zero is not equal to one", implying the ring is non-trivial -/
 def non_triv : sentence ring_signature := 0 ≄ 1
 
-
+/-- The theory of fields in the language of rings -/
 def field_theory : Theory ring_signature := ring_theory ∪ {mul_inv , non_triv}
 
 lemma mul_inv_in_field_theory : mul_inv ∈ field_theory :=
@@ -69,32 +71,27 @@ end field_to
 
 namespace models_theory_of_fields_to_is_field
 
-variables {M : Structure ring_signature} (h : M ⊨ field_theory)
+variables {M : Structure ring_signature} [h : fact (M ⊨ field_theory)]
 -- M inherits instances of 0 1 - + * from Rings.ModelTo
 
 include h
 
-lemma ring_model : M ⊨ ring_theory :=
-all_realize_sentence_of_subset h ring_theory_sub_field_theory
+instance ring_model : fact (M ⊨ ring_theory) :=
+⟨ all_realize_sentence_of_subset h.1 ring_theory_sub_field_theory ⟩
 
-instance comm_ring : comm_ring M :=
-models_ring_theory_to_comm_ring.comm_ring (ring_model h)
-
-instance ring : ring M := @comm_ring.to_ring M (models_theory_of_fields_to_is_field.comm_ring h)
-
-lemma zero_ne_one : (0 : M) ≠ 1 := by simpa using h non_triv_in_field_theory
+lemma zero_ne_one : (0 : M) ≠ 1 :=
+by { have h1 := h.1, have h2 := h1 non_triv_in_field_theory, simpa [h2] }
 
 lemma mul_inv (a : M) (ha : a ≠ 0) : (∃ (b : M), a * b = 1) :=
-let hmulinv := h mul_inv_in_field_theory in by simpa using hmulinv a ha
+by { have h1 := h.1, have hmulinv := h1 mul_inv_in_field_theory, by simpa using hmulinv a ha }
 
-lemma is_field : @is_field M (models_theory_of_fields_to_is_field.ring h) :=
-{ exists_pair_ne := ⟨ 0 , 1 , zero_ne_one h ⟩,
-  mul_comm := (models_theory_of_fields_to_is_field.comm_ring h).mul_comm,
-  mul_inv_cancel := mul_inv h }
+lemma is_field : is_field M :=
+{ exists_pair_ne := ⟨ 0 , 1 , zero_ne_one ⟩,
+  mul_comm := mul_comm,
+  mul_inv_cancel := mul_inv }
 
 noncomputable instance field : field M :=
-@is_field.to_field M (models_theory_of_fields_to_is_field.ring h)
-(models_theory_of_fields_to_is_field.is_field h)
+is_field.to_field M is_field
 
 end models_theory_of_fields_to_is_field
 
@@ -192,10 +189,10 @@ field_theory ∪ (set.range all_gen_monic_poly_has_root)
 -- the latter stands for {gen_monic_polyHasSolution n | n : ℕ}
 
 /-- The theory of algebraically closed fields of prime characteristic -/
-
 def ACFₚ {p : ℕ} (h : nat.prime p) : Theory ring_signature :=
 set.insert (p ≃ 0) ACF
 
+/-- The sentence "`p + 1` is non-zero" for a natural p -/
 @[reducible] def plus_one_ne_zero (p : ℕ) : sentence ring_signature :=
 p + 1 ≄ 0
 
@@ -277,12 +274,8 @@ variables {M : Structure ring_signature} [hM : fact (M ⊨ ACF)]
 
 include hM
 
-instance Field : field M :=
-  models_theory_of_fields_to_is_field.field
-(begin
-  rw [ACF, all_realize_sentence_union] at hM,
-  exact hM.1.1,
-end)
+instance models_field_theory : fact (M ⊨ field_theory) :=
+by { rw [ACF, all_realize_sentence_union] at hM, exact ⟨ hM.1.1 ⟩ }
 
 lemma realize_npow_rec
   {m n} {as : dvector M m} {t : bounded_term ring_signature m} :
@@ -371,9 +364,11 @@ begin
   { intro hchar, refine ⟨ _ , hM.1 ⟩, rw [← hchar, ring_char.spec] },
 end
 
-lemma realize_nat_succ {n : ℕ} : (n.succ : M) = (n : M) + 1 := rfl
+instance models_ACFₚ_to_models_ACF {hp : nat.prime p} [hM : fact (M ⊨ ACFₚ hp)] : fact (M ⊨ ACF) :=
+by { rw [models_ACFₚ_iff'] at hM, exact ⟨ hM.1.2 ⟩ }
 
-lemma realize_nat_eq_zero {n : ℕ} (h : n = 0) : (n : M) = 0 := by simp [h]
+instance models_ACF₀_to_models_ACF [hM : fact (M ⊨ ACF₀)] : fact (M ⊨ ACF) :=
+by { rw [ACF₀, all_realize_sentence_union] at hM, exact ⟨ hM.1.1 ⟩ }
 
 lemma models_ACF₀_char_zero [hM : fact (M ⊨ ACF)] (hM : M ⊨ ACF₀) : char_zero M :=
 begin
@@ -391,6 +386,9 @@ begin
       intro hnm, rw nat.succ_inj', apply hn, simp only [realize_nat_succ] at hnm,
       apply add_right_cancel hnm }}
 end
+
+instance models_ACF₀_char_zero' [hM : fact (M ⊨ ACF₀)] : char_zero M :=
+models_ACF₀_char_zero hM.1
 
 lemma models_ACF₀_iff [hM : fact (M ⊨ ACF)] :
   M ⊨ ACF₀ ↔ ring_char M = 0 :=
@@ -455,6 +453,91 @@ models_ACF₀_iff.2 ring_char.eq_zero
 
 end instances
 
+namespace is_complete_ACF₀
+
+open_locale fol cardinal
+open Rings dvector fol cardinal
+
+instance : comm_ring (ulift.{u} ℤ) := equiv.comm_ring equiv.ulift
+
+def ulift.down_ring_hom : ulift.{u} ℤ →+* ℤ :=
+{ to_fun := equiv.ulift.to_fun,
+  map_one' := rfl,
+  map_mul' := by finish,
+  map_zero' := rfl,
+  map_add' := by finish }
+
+-- example (f : equiv ℤ ℤ) : function.injective f := by library_search
+
+instance {A : Type u} [comm_ring A] : algebra (ulift.{u} ℤ) A :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map ℤ A) ulift.down_ring_hom)
+
+lemma injective_alg_map {K : Type u} [field K] (hK : char_zero K) :
+  function.injective (algebra_map (ulift.{u} ℤ) K) :=
+function.injective.comp (@int.cast_injective _ _ _ hK) equiv.ulift.injective
+
+/-- Two uncountable algebraically closed fields of characteristic zero are isomorphic
+if they have the same cardinality. -/
+lemma ring_equiv_of_cardinal_eq_of_char_zero
+  {K L : Type u} (hK : field K) (hL : field L)
+  (hK1 : is_alg_closed K) (hL1 : is_alg_closed L)
+  (hK2 : char_zero K) (hL2 : char_zero L)
+  (hK : ω < #K) (hKL : #K = #L) : nonempty (K ≃+* L) :=
+begin
+  have hinjK := injective_alg_map hK2,
+  have hinjL := injective_alg_map hL2,
+  have mk_ulift_int : #(ulift.{u} ℤ) = ω := by simp,
+  cases exists_is_transcendence_basis (ulift.{u} ℤ)
+    (show function.injective (algebra_map (ulift.{u} ℤ) K),
+      from hinjK) with s hs,
+  cases exists_is_transcendence_basis (ulift.{u} ℤ)
+    (show function.injective (algebra_map (ulift.{u} ℤ) L),
+      from hinjL) with t ht,
+  have : #s = #t,
+  { rw [← is_alg_closed.cardinal_eq_cardinal_transcendence_basis_of_omega_lt _ hs (le_of_eq mk_ulift_int) hK,
+      ← is_alg_closed.cardinal_eq_cardinal_transcendence_basis_of_omega_lt _ ht (le_of_eq mk_ulift_int), hKL],
+    rwa ← hKL },
+  cases cardinal.eq.1 this with e,
+  exact ⟨is_alg_closed.equiv_of_transcendence_basis _ _ e hs ht⟩,
+end
+
+lemma categorical_ACF₀ {κ} (hκ : ω < κ) : fol.categorical κ ACF₀ :=
+begin
+  intros M N hM hN hMκ hNκ,
+  haveI : fact (M ⊨ ACF₀) := ⟨ hM ⟩, haveI : fact (N ⊨ ACF₀) := ⟨ hN ⟩,
+  split,
+  apply equiv_of_ring_equiv,
+  apply classical.choice,
+  apply ring_equiv_of_cardinal_eq_of_char_zero,
+  repeat { apply_instance }, --why?
+  repeat { cc },
+end
+
+lemma functions_le_omega : # (Rings.ring_signature.functions 0) ≤ ω :=
+begin
+  apply le_of_lt,
+  simp only [lt_omega_iff_fintype, ring_signature, ring_funcs],
+  refine ⟨ fintype.of_equiv bool bool_equiv_ring_consts ⟩ ,
+end
+
+lemma max_card_functions_omega_le_continuum :
+max (# (Rings.ring_signature.functions 0)) ω ≤ 𝔠 :=
+max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum
+
+lemma only_infinite_ACF : only_infinite ACF :=
+by { intro M, haveI : fact (M.1 ⊨ ACF) := ⟨ M.2 ⟩, exact is_alg_closed.infinite }
+
+/-- a.k.a Lefschetz part 1. Any sentence or its negation can be deduced in ACF₀-/
+theorem is_complete'_ACF₀ : is_complete' ACF₀ :=
+is_complete'_of_only_infinite_of_categorical
+    instances.algebraic_closure_of_rat
+    instances.algebraic_closure_of_rat_models_ACF₀ -- ℚ̅ is a model of ACF₀
+    (only_infinite_subset ACF_subset_ACF₀ only_infinite_ACF) -- alg closed fields are infinite
+    -- pick the cardinal κ := 𝔠
+    (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
+    (categorical_ACF₀ omega_lt_continuum)
+
+end is_complete_ACF₀
 
 end Fields
 

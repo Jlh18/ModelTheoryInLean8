@@ -816,5 +816,86 @@ open substructure
 
 end hom
 
+namespace equiv
+
+lemma realize_bounded_term {M N : Structure L} (equiv : M ≃[L] N) {n l} (v : dvector M n)
+  (t : bounded_preterm L n l) (xs : dvector M l) :
+  realize_bounded_term (dvector.map equiv v) t (dvector.map equiv xs) =
+    equiv (realize_bounded_term v t xs) :=
+begin
+  induction t with _ _ _ _ t s ht hs,
+  { simp only [realize_bounded_term, dvector.map_nth] },
+  { simp only [realize_bounded_term, dvector.map_nth, map_fun] },
+  { specialize hs dvector.nil, rw dvector.map at hs,
+    simp only [realize_bounded_term, hs, dvector.map],
+    apply ht (xs.cons $ realize_bounded_term v s dvector.nil) }
+end
+
+/-- Isomorphic structures realize the same formulas -/
+lemma realize_bounded_formula {M N : Structure L} (g : M ≃[L] N) {n l} (v : dvector M n)
+  (ϕ : bounded_preformula L n l) (xs : dvector M l) :
+  (realize_bounded_formula (v.map g) ϕ (xs.map g)
+  ↔ realize_bounded_formula v ϕ xs) :=
+begin
+  induction ϕ with _ _ _ _ _ _ _ _ _ s t hs _ ϕ ψ hϕ hψ _ _ hϕ,
+  { refl },
+  { simp only [realize_bounded_formula, realize_bounded_term, g.injective.eq_iff] },
+  { simp only [realize_bounded_formula, map_rel] },
+  { specialize hs v (xs.cons $ fol.realize_bounded_term v t dvector.nil),
+    simp only [dvector.map, ← equiv.realize_bounded_term g v t dvector.nil] at hs,
+    rw [realize_bounded_formula, hs, realize_bounded_formula] },
+  { simp [realize_bounded_formula, hϕ, hψ] },
+  { split,
+    { intros H _, rw ← hϕ, apply H },
+    { intros H x, specialize hϕ (v.cons $ g.inv_fun x) xs,
+      have fun_inv : g (g.to_equiv.inv_fun x) = x, {unfold_coes, simp},
+      simp only [dvector.map, fun_inv] at hϕ, rw hϕ, apply H } }
+end
+
+/-- Isomorphic structures realize the same sentences -/
+lemma realize_sentence {M N : Structure L} (ϕ : sentence L) (g : M ≃[L] N) : (N ⊨ ϕ ↔ M ⊨ ϕ) :=
+by {convert realize_bounded_formula g dvector.nil ϕ dvector.nil }
+
+/-- Isomorphic structures model the same theories -/
+lemma all_realize_sentence (M N : Structure L) (T : Theory L) :
+(M ≃[L] N) → (M ⊨ T ↔ N ⊨ T) :=
+λ H, by simp only [all_realize_sentence, Language.equiv.realize_sentence _ H]
+
+end equiv
 end Language
+
+section only_infinite
+
+open_locale cardinal
+
+variable {L : Language}
+
+/-- Theory T only has infinitely large models -/
+def only_infinite (T : Theory L) : Prop :=
+∀ (M : Model T), infinite M.1
+
+lemma only_infinite_subset {T₀ T₁ : Theory L} (hsub : T₀ ⊆ T₁) :
+only_infinite T₀ → only_infinite T₁ :=
+λ hinf M, hinf ⟨ M.1 , all_realize_sentence_of_subset M.2 hsub ⟩
+
+end only_infinite
+
+section categorical
+
+variable {L : Language}
+
+open_locale cardinal fol
+
+/-- Categoricity states any two models of the same cardinality κ are isomorphic -/
+def categorical (κ : cardinal) (T : Theory L) :=
+∀ (M N : Structure L) (hM : M ⊨ T) (hN : N ⊨ T), #M = κ → #N = κ → nonempty (M ≃[L] N)
+
+/-- The theory doesn't deduce ϕ ↔ there is a model satisfying its negation -/
+lemma not_ssatisfied {T : Theory L} {ϕ : sentence L} :
+¬ T ⊨ ϕ ↔ ∃ M : Structure L, nonempty M ∧ M ⊨ set.insert (∼ ϕ) T :=
+by { simp only [ssatisfied, not_forall, not_imp, all_realize_sentence_insert,
+       realize_sentence_not], tauto }
+
+end categorical
+
 end fol
