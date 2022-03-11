@@ -364,8 +364,11 @@ begin
   { intro hchar, refine ⟨ _ , hM.1 ⟩, rw [← hchar, ring_char.spec] },
 end
 
-instance models_ACFₚ_to_models_ACF {hp : nat.prime p} [hM : fact (M ⊨ ACFₚ hp)] : fact (M ⊨ ACF) :=
-by { rw [models_ACFₚ_iff'] at hM, exact ⟨ hM.1.2 ⟩ }
+instance models_ACFₚ_to_models_ACF [hp : fact (nat.prime p)] [hM : fact (M ⊨ ACFₚ hp.1)] :
+  fact (M ⊨ ACF) := by { rw [models_ACFₚ_iff'] at hM, exact ⟨ hM.1.2 ⟩ }
+
+lemma models_ACFₚ_char_p [hp : fact (nat.prime p)] [hM : fact (M ⊨ ACFₚ hp.1)] : char_p M p :=
+by { convert ring_char.char_p M, rw ((@models_ACFₚ_iff _ _ _ hp.1).1 hM.1) }
 
 instance models_ACF₀_to_models_ACF [hM : fact (M ⊨ ACF₀)] : fact (M ⊨ ACF) :=
 by { rw [ACF₀, all_realize_sentence_union] at hM, exact ⟨ hM.1.1 ⟩ }
@@ -382,8 +385,7 @@ begin
     { intro hnm, exfalso, apply hM.2 m, simpa only [← realize_nat_succ, ← hnm] }},
   { intro m, induction m with m hm,
     { intro hnm, exfalso, exact hM.2 n hnm },
-    {
-      intro hnm, rw nat.succ_inj', apply hn, simp only [realize_nat_succ] at hnm,
+    { intro hnm, rw nat.succ_inj', apply hn, simp only [realize_nat_succ] at hnm,
       apply add_right_cancel hnm }}
 end
 
