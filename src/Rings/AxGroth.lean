@@ -174,7 +174,7 @@ list.sumr
     λ f : (fin n → ℕ),
     let
       x_js : bounded_ring_term c :=
-      x_ ⟨(list.index_of' f (monom_deg_le n d) + s) ,
+      x_ ⟨((monom_deg_le n d).index_of' f + s) ,
         poly_indexed_by_monoms_aux0 n d s c hndsc f ⟩,
       x_ip (i : fin n) : bounded_ring_term c :=
       x_ ⟨ (i : ℕ) + p , fin_add_lt_of_add_le n p c hnpc i ⟩
@@ -298,7 +298,7 @@ bd_alls' n _
 $
 -- if at each pⱼ
 (bd_big_and n
--- pⱼ xᵢ = pⱼ yᵢ
+-- pⱼ x₋ = pⱼ y₋
   (λ j,
     (poly_indexed_by_monoms n d (j * monom + n + n) n _ -- note n
       inj_formula_aux0 inj_formula_aux2)
@@ -312,7 +312,7 @@ $
 -- at each 0 ≤ i < n,
 (bd_big_and n $ λ i,
 -- xᵢ = yᵢ (where yᵢ is written as xᵢ₊ₙ₊₁)
-  x_ ⟨ i , inj_formula_aux3 ⟩ ≃ x_ (⟨ i + n , inj_formula_aux4 ⟩)
+  x_ (⟨ i + n , inj_formula_aux4 ⟩) ≃ x_ ⟨ i , inj_formula_aux3 ⟩
 )
 
 -- in the context of having n polynomials pⱼ indexed by
@@ -781,7 +781,7 @@ begin
     dvector.nth_append_big (nat.le_add_left _ _),
     nat.add_sub_cancel,
     @dvector.nth_append_small _ _ _ xs' _ i i.2] at hPreimage,
-  convert symm hPreimage,
+  convert hPreimage,
   {rw [hxs', dvector.nth_of_fn, fin.eta] },
   {rw [hys', dvector.nth_of_fn, fin.eta] },
   },
@@ -1260,7 +1260,7 @@ begin
      dvector.nth_append_big (nat.le_add_left _ _),
      nat.add_sub_cancel,
      @dvector.nth_append_small _ _ _ xs _ k k.2],
-   exact symm hpreimage,
+   exact hpreimage,
   },
   {
     intros hInj xs ys himage,
@@ -1300,9 +1300,8 @@ begin
       nat.add_sub_cancel,
       @dvector.nth_append_small _ _ _ xs' _ k k.2,
       hys, hxs, dvector.nth_of_fn] at hPreimage,
-    convert symm hPreimage,
-    rw fin.eta k,
-    rw fin.eta k,
+    convert hPreimage,
+    repeat {rw fin.eta k},
   },
 end
 
@@ -1345,8 +1344,6 @@ begin
     rw [eval_mv_polynomial_of_coeffs_ys1],
   },
 end
-
-
 
 end injectivity_and_surjectivity_from_coeffs
 

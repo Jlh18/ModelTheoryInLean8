@@ -56,9 +56,8 @@ open fol
 def ring_signature : Language :=
 (Language.mk) (ring_funcs) (λ n, pempty)
 
-/-- To show two structures are equal it suffices that they are
+/-- To show two ring structures are equal it suffices that they are
     equal on carrier sets and heterogeneously equal on fun_map -/
-
 lemma Structure.ext {A B : Structure ring_signature} :
   A.carrier = B.carrier → A.fun_map == B.fun_map → A = B :=
 begin
