@@ -127,6 +127,11 @@ S ⊨ set.range fs ↔ ∀ a : α, S ⊨ fs a :=
 by simp only [all_realize_sentence, forall_apply_eq_imp_iff',
   set.mem_range, exists_imp_distrib]
 
+lemma all_realize_sentence_image {L} {α}
+  (S : Structure L) (fs : α → sentence L) (s : set α) :
+S ⊨ set.image fs s ↔ ∀ a : α, a ∈ s → S ⊨ fs a :=
+by simp [all_realize_sentence]
+
 lemma all_realize_sentence_insert {L} {s : Theory L} (ϕ : sentence L)
   (S : Structure L) :
   S ⊨ set.insert ϕ s ↔ S ⊨ ϕ ∧ S ⊨ s :=
@@ -259,9 +264,6 @@ def empty : Language := ⟨λ _, pempty, λ _, pempty⟩
 
 instance : inhabited Language := ⟨empty⟩
 
-/-- The type of constants in a given language. -/
-@[nolint has_inhabited_instance] def const (L : Language) := L.functions 0
-
 variable (L : Language)
 
 /-- A Language is relational when it has no function symbols. -/
@@ -326,10 +328,10 @@ localized "notation A ` ≃[`:25 L `] ` B := L.equiv A B" in fol
 
 variables {L M N} {P : Structure L} {Q : Structure L}
 
-instance : has_coe_t L.const M :=
+instance : has_coe_t L.constants M :=
 ⟨λ c, M.fun_map c dvector.nil⟩
 
-lemma fun_map_eq_coe_const {c : L.const} {x : dvector M 0} :
+lemma fun_map_eq_coe_constants {c : L.constants} {x : dvector M 0} :
   M.fun_map c x = c := by cases x; refl
 
 namespace hom
@@ -352,7 +354,7 @@ lemma ext_iff {f g : M →[L] N} : f = g ↔ ∀ x, f x = g x :=
 @[simp] lemma map_fun (φ : M →[L] N) {n : ℕ} (f : L.functions n) (x : dvector M n) :
   φ (M.fun_map f x) = N.fun_map f (dvector.map φ x) := φ.map_fun' f x
 
-@[simp] lemma map_const (φ : M →[L] N) (c : L.const) : φ c = c :=
+@[simp] lemma map_constants (φ : M →[L] N) (c : L.constants) : φ c = c :=
 (φ.map_fun c dvector.nil).trans rfl
 
 @[simp] lemma map_rel (φ : M →[L] N) {n : ℕ} (r : L.relations n) (x : dvector M n) :
@@ -402,7 +404,7 @@ namespace embedding
 @[simp] lemma map_fun (φ : M ↪[L] N) {n : ℕ} (f : L.functions n) (x : dvector M n) :
   φ (M.fun_map f x) = N.fun_map f (dvector.map φ x) := φ.map_fun' f x
 
-@[simp] lemma map_const (φ : M ↪[L] N) (c : L.const) : φ c = c :=
+@[simp] lemma map_constants (φ : M ↪[L] N) (c : L.constants) : φ c = c :=
 (φ.map_fun c dvector.nil).trans rfl
 
 @[simp] lemma map_rel (φ : M ↪[L] N) {n : ℕ} (r : L.relations n) (x : dvector M n) :
@@ -487,7 +489,7 @@ namespace equiv
 @[simp] lemma map_fun (φ : M ≃[L] N) {n : ℕ} (f : L.functions n) (x : dvector M n) :
   φ (M.fun_map f x) = N.fun_map f (dvector.map φ x) := φ.map_fun' f x
 
-@[simp] lemma map_const (φ : M ≃[L] N) (c : L.const) : φ c = c :=
+@[simp] lemma map_constants (φ : M ≃[L] N) (c : L.constants) : φ c = c :=
 (φ.map_fun c dvector.nil).trans rfl
 
 @[simp] lemma map_rel (φ : M ≃[L] N) {n : ℕ} (r : L.relations n) (x : dvector M n) :
@@ -623,7 +625,7 @@ variable {S : L.substructure M}
 lemma copy_eq {s : set M} (hs : s = S) : S.copy s hs = S :=
 set_like.coe_injective hs
 
-lemma const_mem {c : L.const} : ↑c ∈ S :=
+lemma constants_mem {c : L.constants} : ↑c ∈ S :=
 mem_carrier.2 (S.fun_mem c _ fin.elim0)
 
 /-- The substructure `M` of the structure `M`. -/
