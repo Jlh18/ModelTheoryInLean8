@@ -34,8 +34,17 @@ begin
   rw hind,
 end
 
-@[simp, reducible] def ϕ_bd_func {n : ℕ} (f : L.functions n) (xs : dvector L.constants n) :
+/-- The formula that will give rise to a witness for function symbols -/
+abbreviation wit_bd_func {n : ℕ} (f : L.functions n) (xs : dvector L.constants n) :
   bounded_formula L 1 := bd_apps (bd_func f) (dvector.map bd_const xs) ≃ x_ 0
+
+-- /-- The formula that will give rise to a witness for terms -/
+-- abbreviation wit_bd_preterm {n l} (t : bounded_preterm L n l) (v : dvector ) :
+--   bounded_preformula L (n+1) l := bd_equal (lift_bounded_term1 t) x_ 0
+
+/-- The formula that will give rise to a witness for terms -/
+abbreviation wit_bd_term (t : bounded_term L 0) :
+  bounded_formula L 1 := (lift_bounded_term1 t : bounded_term L 1) ≃ x_ 0
 
 variables (T : Theory L) [hcompl : fact (is_complete T)]
 
@@ -116,10 +125,10 @@ variable (T)
   Proving these formulas are in `T` repeatedly uses completeness and (hence) consistency of `T`.
 -/
 abbreviation fun_map_on_L_constants {n : ℕ} (f : L.functions n) (xs : dvector L.constants n) :
-  L.constants := w T (ϕ_bd_func f xs)
+  L.constants := w T (wit_bd_func f xs)
 
 lemma fun_map_on_L_constants_all_realize_sentence {n : ℕ} (f : L.functions n)
-  (xs : dvector L.constants n) : T ⊨ (ϕ_bd_func f xs)[bd_const (w T (ϕ_bd_func f xs)) /0] :=
+  (xs : dvector L.constants n) : T ⊨ (wit_bd_func f xs)[bd_const (w T (wit_bd_func f xs)) /0] :=
 begin
   obtain ⟨ M , hM0 , hMT ⟩ := (model_existence _).1 hcompl.1.1,
   set x := realize_bounded_term (dvector.nil : dvector M 0)
@@ -135,8 +144,8 @@ begin
 end
 
 lemma bd_func_on_L_constants_mem {n : ℕ} (f : L.functions n) (xs : dvector L.constants n) :
-  -- T ⊨ (ϕ_bd_func f xs)[bd_const (w T (ϕ_bd_func f xs)) /0] →
-  ((bd_apps (bd_func f) (dvector.map bd_const xs)) ≃ (bd_const (w T (ϕ_bd_func f xs)))) ∈ T :=
+  -- T ⊨ (wit_bd_func f xs)[bd_const (w T (wit_bd_func f xs)) /0] →
+  ((bd_apps (bd_func f) (dvector.map bd_const xs)) ≃ (bd_const (w T (wit_bd_func f xs)))) ∈ T :=
 begin
   obtain ⟨ M , hM0 , hMT ⟩ := (model_existence _).1 hcompl.1.1,
   apply or.resolve_right (hcompl.1.2 _),
@@ -167,34 +176,53 @@ def model :
   fun_map := λ _, fun_map_on_M T,
   rel_map := λ _ r, false.elim $ Language.is_algebraic.empty_relations _ r }
 
-lemma realize_term (t : bounded_term L 0) : ∃ c : L.constants,
-  realize_closed_term (model T) t = realize_closed_term (model T) (bd_const c) :=
+lemma realize_term_all_realize_sentence (t : bounded_term L 0) :
+  T ⊨ (wit_bd_term t)[bd_const (w T (wit_bd_term t)) /0] :=
 begin
-  let ϕ := (lift_bounded_term1 t : bounded_term L 1) ≃ x_ 0,
-  have hex : (∃' ϕ) ∈ T,
-  {
-    obtain ⟨ M , hM0 , hMT ⟩ := (model_existence _).1 hcompl.1.1,
-    apply or.resolve_right (hcompl.1.2 _),
-    intro hmem,
-    apply hMT hmem,
-    simp only [realize_bounded_formula, lift_bounded_term1,
-      realize_bounded_term, realize_bounded_formula_ex, dvector.nth, fin.val_zero'],
-    use (realize_closed_term M t),
-    rw realize_lift_bounded_term },
-  use w T ϕ,
-  simp only [realize_closed_term],
-  have hTϕ := all_realize_wit_of_mem ϕ hex,
-
-  cases t with k,
-  { apply fin_zero_elim k },
-  {
-    simp [bd_const],
-    sorry
-  },
-  {sorry},
+  apply all_realize_wit_of_mem,
+  obtain ⟨ M , hM0 , hMT ⟩ := (model_existence _).1 hcompl.1.1,
+  apply or.resolve_right (hcompl.1.2 _),
+  intro hmem,
+  apply hMT hmem,
+  simp only [realize_bounded_formula, lift_bounded_term1,
+    realize_bounded_term, realize_bounded_formula_ex, dvector.nth, fin.val_zero'],
+  use (realize_closed_term M t),
+  rw realize_lift_bounded_term,
 end
 
-#check lift_bounded_term1
+-- lemma realize_bounded_term {n l} (xs : dvector (model T) n) (t : bounded_preterm L n l)
+--   (v : dvector (model T) l) :
+--   realize_bounded_term xs t v
+--   = realize_closed_term (model T) (bd_const (w T (wit_bd_term t))) :=
+
+
+lemma realize_term' (t : bounded_term L 0) : realize_closed_term (model T) t
+  = realize_closed_term (model T) (bd_const (w T (wit_bd_term t))) :=
+begin
+  sorry
+  -- let ϕ := (lift_bounded_term1 t : bounded_term L 1) ≃ -- x_ 0,
+  -- have hex : (∃' ϕ) ∈ T,
+  -- {
+  --   obtain ⟨ M , hM0 , hMT ⟩ := (model_existence _).1 hcompl.1.1,
+  --   apply or.resolve_right (hcompl.1.2 _),
+  --   intro hmem,
+  --   apply hMT hmem,
+  --   simp only [realize_bounded_formula, lift_bounded_term1,
+  --     realize_bounded_term, realize_bounded_formula_ex, dvector.nth, fin.val_zero'],
+  --   use (realize_closed_term M t),
+  --   rw realize_lift_bounded_term },
+  -- use w T ϕ,
+  -- simp only [realize_closed_term],
+  -- have hTϕ := all_realize_wit_of_mem ϕ hex,
+
+  -- cases t with k,
+  -- { apply fin_zero_elim k },
+  -- {
+    -- simp [bd_const],
+    -- sorry
+  -- },
+  -- {sorry},
+end
 
 lemma realize_sentence_iff (ϕ : sentence L) : model T ⊨ ϕ ↔ ϕ ∈ T :=
 begin
@@ -247,17 +275,19 @@ begin
   },
 end
 
+lemma cardinality : #(model T) ≤ #L.constants := sorry
+
 end bounded_model_of_infinite_model
 
 /-- If a theory `T` is complete (i.e. maximal) and consistent
   then `T` has a model `M` with `#M ≤ |constant symbols of the language|` -/
 theorem bounded_model_of_infinite_model
   [hwit : fact (has_enough_constants T)] [L.is_algebraic] :
-  ∃ M : Structure L, M ⊨ T ∧ #M ≤ #L.constants :=
-begin
-  use bounded_model_of_infinite_model.model T,
-  sorry,
-end
+  ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M ≤ #L.constants :=
+⟨ bounded_model_of_infinite_model.model T,
+    sorry,
+    bounded_model_of_infinite_model.all_realize_sentence T ,
+    bounded_model_of_infinite_model.cardinality T ⟩
 
 
 #check Language.constants

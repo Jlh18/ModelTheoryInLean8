@@ -2,7 +2,6 @@ import Rings.ToMathlib.fol
 import set_theory.cardinal
 import completeness
 import language_extension
-
 universes u v
 
 open fol fol.Language fol.Lhom
@@ -60,26 +59,6 @@ variables {L' : Language.{u}} {ϕ : L →ᴸ L'}
 def reduct_Theory_induced {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective)
   (h : S ⊨ Theory_induced ϕ T) : S[[ϕ]] ⊨ T :=
 reduct_all_ssatisfied hϕ h
-
-
--- lemma Lhom.Structure_sentence (hϕ : ϕ.is_injective) {S : Structure L} {S' : Structure L'}
---   (hS0 : nonempty S)
---   (hSS' : S'[[ϕ]] = S) (f : sentence L) :
---   S'[[ϕ]] ⊨ f ↔ S' ⊨ on_sentence ϕ f :=
--- begin
---   have hS' : nonempty (S'[[ϕ]]) := by {rw hSS', exact hS0},
---   have hS'' : nonempty S' := hS',
---   rw ← Th.ssatisfied_iff_satisfied hS',
---   split,
---   {
---     intro hS'f,
-
---     sorry,
---   },
---   { intro hS'f,
---     sorry,-- exact reduct_ssatisfied hϕ hS'f
---     },
--- end
 
 namespace sum
 
@@ -354,12 +333,50 @@ begin
   exact hM,
 end
 
-/-- Theories with big models have arbitrarily large models -/
-lemma has_sized_model_of_has_infinite_model {T : Theory L} {κ : cardinal}
-(hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) :
-(∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
-∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M = κ :=
-sorry
+/-- Upward Lowenheim Skolem.
+  Theories with infinite models have arbitrarily large models -/
+theorem has_sized_model_of_has_infinite_model {T : Theory L} {κ : cardinal}
+  (hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) :
+  (∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
+  ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M = κ :=
+begin
+  rintro ⟨ M , hM0, hMT, hMinf ⟩,
+  set Tκ := union_add_distinct_constants T κ.out,
+  have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
+  set T2 := completion_of_henkinization hTκ_consis,
+  use (term_model T2)[[ henkin_language_over ]]
+    [[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]],
+  split,
+  { apply fol.nonempty_term_model, exact completion_of_henkinization_is_henkin _, },
+  split,
+  { apply Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl,
+    have h := reduct_of_complete_henkinization_models_T hTκ_consis,
+    simp only [all_realize_sentence_union] at h,
+    exact h.1 },
+  { apply cardinal.partial_order.le_antisymm,
+    {
+      sorry,
+    },
+    { have hle : #κ.out ≤ #((term_model T2)[[henkin_language_over]]
+               [[(Lhom.sum_inr : _ →ᴸ L.sum (of_constants κ.out))]]),
+      { apply all_realize_sentence_distinct_constants,
+        apply Lhom.reduct_Theory_induced Lhom.sum.is_injective_inr,
+        have h := reduct_of_complete_henkinization_models_T hTκ_consis,
+        simp only [all_realize_sentence_union] at h,
+        exact h.2 },
+      { simp only [fol.Lhom.reduct_coe, cardinal.mk_out] at hle ⊢,
+        exact hle } } },
+  -- rw model_existence at hTκ_consis,
+  -- obtain ⟨ M , hM0, hMTκ ⟩ := hTκ_consis,
+  -- rw all_realize_sentence_union at hMTκ,
+  -- refine ⟨ ( M[[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]] ), (by simp [hM0]),
+    -- Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl hMTκ.1 , _ ⟩,
+  -- have hMκ := Lhom.reduct_Theory_induced Lhom.sum.is_injective_inr hMTκ.2,
+  -- have hM := all_realize_sentence_distinct_constants _ hMκ,
+  -- simp only [reduct_coe, cardinal.mk_out κ] at *,
+
+
+end
 
 /-- Vaught's test for showing a theory is complete -/
 lemma is_complete'_of_only_infinite_of_categorical
