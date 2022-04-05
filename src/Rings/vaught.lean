@@ -38,27 +38,64 @@ def bounded_term.rec2 {n} {C : bounded_term L n → Sort v}
   ∀(t : bounded_term L n), C t :=
 λt, bounded_term.rec2_aux hvar (λ _, hfunc) t dvector.nil (λ s hs, false.elim $ by {cases hs})
 
+-- have h : ∀{n l} (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l),
+--   C n (bd_apps_rel f ts),
+-- begin
+--   intros, induction f; try {rw ts.zero_eq},
+--   apply hfalsum, apply hequal, apply hrel, apply f_ih (f_t::ts),
+--   exact himp (f_ih_f₁ ([])) (f_ih_f₂ ([])), exact hall (f_ih ([]))
+-- end,
+-- λn f, h f ([])
 
-lemma bounded_term.rec2_aux_bd_apps {n} {C : bounded_term L n → Sort v}
-  (hvar : ∀(k : fin n), C &k)
-  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
-    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
-  ∀ {l} (t : bounded_preterm L n l) (ts : dvector (bounded_term L n) l)
-    (ih_ts : ∀t, ts.pmem t → C t),
-  bounded_term.rec2_aux hvar (λ _, hfunc) (bd_apps t ts)
-    = sorry :=
-begin
-  sorry
-  -- intros l t,
-  -- induction t,
-  -- {
-  --   intro ts,
-  --   -- induction ts,
+def bounded_formula.rec2_aux {C : Πn, bounded_formula L n → Sort v}
+  (hfalsum : Π {n}, C n ⊥)
+  (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
+  (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term L n) l),
+    C n (bd_apps_rel (bd_rel R) ts))
+  (himp : Π {n} {f₁ f₂ : bounded_formula L n} (ih₁ : C n f₁) (ih₂ : C n f₂), C n (f₁ ⟹ f₂))
+  (hall : Π {n} {f : bounded_formula L (n+1)} (ih : C (n+1) f), C n (∀' f)) :
+  ∀{n l} (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l),
+  C n (bd_apps_rel f ts)
+| _ _ bd_falsum dvector.nil := hfalsum
+| _ _ (t₁ ≃ t₂) dvector.nil := hequal _ _
+| _ _ (bd_rel R)         ts := hrel _ _
+| _ _ (bd_apprel f t)    ts := by {let x := bounded_formula.rec2_aux f (dvector.cons t ts),
+  dsimp [bd_apps_rel] at x, exact x }
+| _ _ (f₁ ⟹ f₂) dvector.nil := himp (bounded_formula.rec2_aux f₁ dvector.nil)
+  (bounded_formula.rec2_aux f₂ dvector.nil)
+| _ _ (∀' f)    dvector.nil := hall (bounded_formula.rec2_aux f dvector.nil)
+
+def bounded_formula.rec2 {C : Πn, bounded_formula L n → Sort v}
+  (hfalsum : Π {n}, C n ⊥)
+  (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
+  (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term L n) l),
+    C n (bd_apps_rel (bd_rel R) ts))
+  (himp : Π {n} {f₁ f₂ : bounded_formula L n} (ih₁ : C n f₁) (ih₂ : C n f₂), C n (f₁ ⟹ f₂))
+  (hall : Π {n} {f : bounded_formula L (n+1)} (ih : C (n+1) f), C n (∀' f)) :
+  ∀{n : ℕ} (f : bounded_formula L n), C n f :=
+λ n f, bounded_formula.rec2_aux (λ _, hfalsum) (λ _, hequal) (λ _ _, hrel) (λ _ _ _, himp)
+  (λ _ _, hall) f dvector.nil
+
+-- lemma bounded_term.rec2_aux_bd_apps {n} {C : bounded_term L n → Sort v}
+--   (hvar : ∀(k : fin n), C &k)
+--   (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+--     (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
+--   ∀ {l} (t : bounded_preterm L n l) (ts : dvector (bounded_term L n) l)
+--     (ih_ts : ∀t, ts.pmem t → C t),
+--   bounded_term.rec2_aux hvar (λ _, hfunc) (bd_apps t ts)
+--     = sorry :=
+-- begin
+--   sorry
+--   -- intros l t,
+--   -- induction t,
+--   -- {
+--   --   intro ts,
+--   --   -- induction ts,
 
 
-  -- },
-  -- {sorry},
-end
+--   -- },
+--   -- {sorry},
+-- end
 
 lemma bounded_term.rec2_bd_apps {n} {C : bounded_term L n → Sort v}
   (hvar : ∀(k : fin n), C &k)
@@ -82,11 +119,46 @@ begin
     sorry,
 
   },
-  -- have h := bounded_term.rec2_aux _ _ (bd_func f) ts ih_ts,
-
 end
 
+-- inductive box : ℕ → Type u
+-- | base {n} : box n
+-- | all {n} (f : box (n+1)) : box n
 
+-- def drop : Π (n), box n → box 0
+-- | 0 x := x
+-- | (n+1) x := drop n (box.all x)
+
+-- def box_zero_of_nat : ℕ → (box 0) := λ n, drop n box.base
+
+-- def nat_of_box : ∀ n : ℕ, box n → ℕ
+-- | n box.base := 0
+-- | n (box.all f) := nat_of_box (n+1) f + 1
+
+-- lemma left_inv : ∀ n, nat_of_box 0 (box_zero_of_nat n) = n
+-- | 0 := rfl
+-- | (n+1) :=
+-- begin
+--   have h := left_inv n,
+--   dsimp [box_zero_of_nat, drop] at h,
+--   sorry,
+
+-- end
+
+lemma bounded_preformula_le_bounded_term (n l : ℕ) :
+  #(bounded_preformula L n l) ≤ #(Σ k : ℕ, bounded_term L k) := _
+
+lemma bounded_preformula_of_bounded_formula (n : ℕ) :
+  bounded_formula L n → (bounded_preformula L n 0) := λ x, x
+
+
+lemma bounded_term_of_bounded_formula [is_algebraic L] (n : ℕ) :
+  bounded_formula L n → (bounded_term L n) :=
+sorry
+
+lemma bounded_formula_card [is_algebraic L] (n : ℕ) :
+  #(bounded_formula L n) ≤ #(bounded_term L n) :=
+sorry
 
 namespace term_model
 
@@ -159,16 +231,22 @@ lemma fintype_term_β : Π (a : term_α L), fintype (term_β L a) :=
 
 local attribute [instance] fintype_term_β
 
-lemma card_le_functions : #(term_model T) ≤
+lemma cardinal.closed_term_le_functions : #(closed_term L) ≤
   max (cardinal.sum (λ n : ulift.{u} (ℕ), #(L.functions n.down))) ω :=
-calc #(term_model T)
-      ≤ #(closed_term L) : card_le_closed_term T
-  ... ≤ #(W_type (term_β.{u u u} L)) :
+calc #(closed_term L)
+      ≤ #(W_type (term_β.{u u u} L)) :
     cardinal.mk_le_of_surjective closed_term_of_W_type_term_β_surjective
   ... ≤ max (#(Σ n : ulift.{u} ℕ, L.functions n.down)) ω :
     W_type.cardinal_mk_le_max_omega_of_fintype
   ... = max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :
     by {rw cardinal.mk_sigma _}
+
+lemma card_le_functions : #(term_model T) ≤
+  max (cardinal.sum (λ n : ulift.{u} (ℕ), #(L.functions n.down))) ω :=
+calc #(term_model T)
+      ≤ #(closed_term L) : card_le_closed_term T
+  ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :
+    cardinal.closed_term_le_functions
 
 lemma card_le_cardinal {κ : cardinal.{u}} (hωκ : ω ≤ κ)
   (hκ : ∀ n : ulift.{u} ℕ, #(L.functions n.down) ≤ κ) : #(term_model T) ≤ κ :=
@@ -509,8 +587,10 @@ begin
   apply h,
 end
 
-lemma bounded_formula_card [is_algebraic L] (hfunc : ∀ n, #(L.functions n) ≤ κ) (n : ℕ) :
-  #(bounded_formula L n) ≤ κ := sorry
+
+lemma bounded_formula_card_le [is_algebraic L] (hfunc : ∀ n, #(L.functions n) ≤ κ) (n : ℕ) :
+  #(bounded_formula L n) ≤ κ :=
+sorry
 
 lemma henkin_language_chain_obj_card [is_algebraic L] {T : Theory L}
   (hconsis : is_consistent T)
@@ -529,7 +609,7 @@ begin
       simp only [cardinal.mk_sum, cardinal.lift_id],
       apply le_trans (cardinal.add_le_max _ _),
       refine max_le (max_le (hi _) _) hωκ,
-      apply bounded_formula_card hωκ hi, },
+      apply bounded_formula_card_le hωκ hi, },
     { rw cardinal.mk_congr (@henkin_language_functions_succ (@henkin_language_chain_objects L i) n),
       apply hi } }
 end
