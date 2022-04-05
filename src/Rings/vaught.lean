@@ -435,7 +435,12 @@ end
 
 instance is_algebraic_henkin_language_chain_objects [is_algebraic L] {i} :
   is_algebraic (@henkin_language_chain_objects L i) :=
-sorry
+begin
+  induction i with i hi,
+  { dsimp only [henkin_language_chain_objects], cc },
+  { dsimp only [henkin_language_chain_objects, henkin_language_step],
+    split, intro n, apply hi.1 },
+end
 
 section le_cardinal
 
@@ -463,15 +468,13 @@ lemma henkin_language_functions_succ {n : ℕ} :
     | (henkin_language_functions.inc f) := rfl end,
   right_inv := λ f, rfl }
 
-
-
 lemma cardinal.sum_nat (f : ℕ → Type u) :
   cardinal.sum (λ (i : ℕ), # (f i)) = cardinal.sum (λ (i : ulift.{u} (ℕ)), #(f i.down)) :=
 begin
   unfold cardinal.sum,
   apply cardinal.mk_congr,
   let F : (Σ (i : ℕ), quotient.out (# (f i))) → (Σ (i : ulift ℕ), quotient.out (# (f i.down))) :=
-    λ ⟨ i , q ⟩, ⟨ ulift.up i , q ⟩ ,
+    λ ⟨ i , q ⟩, ⟨ ulift.up i , q ⟩,
   let G : (Σ (i : ulift ℕ), quotient.out (# (f i.down))) → (Σ (i : ℕ), quotient.out (# (f i))) :=
     λ ⟨ i , q ⟩, ⟨ i.down , q ⟩ ,
   refine ⟨ F , G , _ , _ ⟩,
@@ -481,7 +484,6 @@ begin
     cases i,
     refl },
 end
-
 
 variables {κ : cardinal.{u}} (hωκ : ω ≤ κ)
 
@@ -506,7 +508,6 @@ begin
   cases i,
   apply h,
 end
-
 
 lemma bounded_formula_card [is_algebraic L] (hfunc : ∀ n, #(L.functions n) ≤ κ) (n : ℕ) :
   #(bounded_formula L n) ≤ κ := sorry

@@ -113,13 +113,4 @@ begin
   },
 end
 
-
-
-
-
-
-
-
-
-
 end Lefschetz
