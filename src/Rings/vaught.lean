@@ -2,6 +2,12 @@ import Rings.ToMathlib.fol
 import set_theory.cardinal
 import completeness
 import language_extension
+import data.W.cardinal
+import Rings.ToMathlib.Lhom
+import Rings.ToMathlib.completeness
+
+noncomputable theory
+
 universes u v
 
 open fol fol.Language fol.Lhom
@@ -9,83 +15,177 @@ open fol fol.Language fol.Lhom
 namespace fol
 
 open_locale cardinal fol
-
-noncomputable theory
-
 variables {L : Language.{u}}
 
-def Structure.constants (S : Structure L) (c : L.constants) : S :=
-Structure.fun_map S c dvector.nil
+def bounded_term.rec2_aux {n} {C : bounded_term L n → Sort v}
+  (hvar : ∀(k : fin n), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
+  Π {l} (t : bounded_preterm L n l) (ts : dvector (bounded_term L n) l)
+  (ih_ts : ∀s, ts.pmem s → C s), C (bd_apps t ts)
+| l (bd_var k) dvector.nil := λ _, hvar k
+| l (bd_func f)  ts := λ hs, hfunc f ts hs
+| l (bd_app t s) ts := λ hs, bounded_term.rec2_aux t (dvector.cons s ts) $
+  λ r hr, psum.cases_on hr
+    (λ hrs, eq.rec_on hrs.symm (bounded_term.rec2_aux s dvector.nil $
+      λ s₀ hs₀, false.elim $ by {cases hs₀}))
+    (hs _)
 
-lemma is_complete'_of_is_complete {T : Theory L} (hT : is_complete T) :
-  is_complete' T :=
+def bounded_term.rec2 {n} {C : bounded_term L n → Sort v}
+  (hvar : ∀(k : fin n), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
+  ∀(t : bounded_term L n), C t :=
+λt, bounded_term.rec2_aux hvar (λ _, hfunc) t dvector.nil (λ s hs, false.elim $ by {cases hs})
+
+
+lemma bounded_term.rec2_aux_bd_apps {n} {C : bounded_term L n → Sort v}
+  (hvar : ∀(k : fin n), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
+  ∀ {l} (t : bounded_preterm L n l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t),
+  bounded_term.rec2_aux hvar (λ _, hfunc) (bd_apps t ts)
+    = sorry :=
 begin
-  intro f,
-  cases hT.2 f,
-  { left,
-    intros M _ hM,
-    exact hM h },
-  { right,
-    intros M _ hM,
-    exact hM h },
+  sorry
+  -- intros l t,
+  -- induction t,
+  -- {
+  --   intro ts,
+  --   -- induction ts,
+
+
+  -- },
+  -- {sorry},
 end
 
-lemma is_complete.mem_iff_ssatisfied {T : Theory L} (hT : is_complete T) (f : sentence L) :
-  f ∈ T ↔ T ⊨ f :=
+lemma bounded_term.rec2_bd_apps {n} {C : bounded_term L n → Sort v}
+  (hvar : ∀(k : fin n), C &k)
+  (hfunc : Π {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t), C (bd_apps (bd_func f) ts)) :
+  ∀ {l} (f : L.functions l) (ts : dvector (bounded_term L n) l)
+    (ih_ts : ∀t, ts.pmem t → C t),
+  bounded_term.rec2 hvar (λ _, hfunc) (bd_apps (bd_func f) ts)
+    = hfunc f ts ih_ts :=
 begin
-  split,
-  { intros hf M _ hM, exact hM hf },
-  { intro hTf,
-    apply or.resolve_right (hT.2 f),
-    intro hfT,
-    apply hT.1,
-    rw completeness,
-    intros M hM0 hM,
-    simp only [false_of_satisfied_false],
-    have hMf := hM hfT,
-    simp only [realize_sentence_not] at hMf,
-    exact hMf (hTf hM0 hM) },
+  intros l f ts,
+  induction ts with a b c hind e f g,
+  { intro ih_ts,
+    dsimp [bounded_term.rec2, bounded_term.rec2_aux],
+    apply congr_arg,
+    ext _ a,
+    cases a },
+  {
+    intro ih_ts,
+    dsimp [bd_apps, bounded_term.rec2, bounded_term.rec2_aux],
+    sorry,
+
+  },
+  -- have h := bounded_term.rec2_aux _ _ (bd_func f) ts ih_ts,
+
 end
 
-@[simp] lemma Th.ssatisfied_iff_satisfied {S : Structure L} (hS : nonempty S) {f : sentence L} :
-  Th S ⊨ f ↔ S ⊨ f :=
-by { rw ← is_complete.mem_iff_ssatisfied (is_complete_Th S hS), exact in_theory_iff_satisfied }
 
-namespace Lhom
 
-variables {L' : Language.{u}} {ϕ : L →ᴸ L'}
+namespace term_model
 
-/-- restatement of `Lhom.reduct_all_ssatisfied` -/
-def reduct_Theory_induced {S : Structure L'} {T : Theory L} (hϕ : ϕ.is_injective)
-  (h : S ⊨ Theory_induced ϕ T) : S[[ϕ]] ⊨ T :=
-reduct_all_ssatisfied hϕ h
+/- `term_model` is the structure on terms built from a complete henkin theory.
+  David Marker takes the elements of the model to be constant symbols
+  up to equality in the theory (i.e. `c ≃ d ∈ T` or equivalently `T ⊢ c ≃ d`).
+  In practice it is more sensible to take the model as 0-variable terms
+  (closed terms) up to equality in the theory. -/
 
-namespace sum
+/- In this section we show that the cardinality of `term_model` is bounded
+  by the function symbols in the language-/
 
-lemma is_injective_inl : (@Lhom.sum_inl L L').is_injective :=
-{ on_function := λ n x y hxy, sum.inl.inj hxy,
-  on_relation := λ n x y hxy, sum.inl.inj hxy, }
+variable (T : Theory L)
 
-lemma is_injective_inr : (@Lhom.sum_inr L L').is_injective :=
-{ on_function := λ n x y hxy, sum.inr.inj hxy,
-  on_relation := λ n x y hxy, sum.inr.inj hxy, }
+lemma card_le_closed_term : #(term_model T) ≤ #(closed_term L) :=
+cardinal.mk_le_of_surjective quotient.surjective_quotient_mk'
 
-end sum
-end Lhom
+/-- We make `closed_term` as a `W_type`, viewing the `W_type` as an inductive type
+  the constructors would be indexed by the following definition.
+  For each `n : ℕ` we have a variable `xₙ` (with arity zero given by `pempty`)
+  For each `⟨ n , f ⟩ : Σ n : ℕ, L.functions n` we have a function application (with arity `n`) -/
+def term_α (L : Language) := Σ n : ulift.{u} ℕ, L.functions n.down
 
-/-- A version of compactness theorem: a theory is consistent (a.k.a satisfiable)
-  if and only if it is finitely consistent -/
-theorem compactness' {T : Theory L} : is_consistent T ↔
-  ∀ fs : finset (sentence L), ↑fs ⊆ T → is_consistent (↑fs : Theory L) :=
+/-- To define the arities in the `W_type` for `closed_term`.
+  For each `n : ℕ` we have a variable `xₙ` (with arity zero given by `pempty`)
+  For each `⟨ n , f ⟩ : Σ n : ℕ, L.functions n` we have a function application (with arity `n`) -/
+def term_β (L : Language) : Π (c : term_α L), Type u
+-- | (sum.inl n) := empty
+| ⟨ n , f ⟩ := ulift (fin n.down)
+
+/-- The forward map of the equivalence `W_type_term_β_equiv_closed_term` -/
+def closed_term_of_W_type_term_β : W_type (term_β L) → closed_term L
+-- | ⟨ n , b ⟩ := sorry
+| ⟨ ⟨ n , f ⟩ , b ⟩ := bd_apps (bd_func f)
+  (dvector.of_fn (λ k, closed_term_of_W_type_term_β $ b (ulift.up k)))
+
+/-- The forward map of the equivalence `W_type_term_β_equiv_closed_term` -/
+def W_type_term_β_of_closed_term : closed_term L → W_type (term_β L) :=
+  bounded_term.rec2 fin_zero_elim $ λ l f ts rec,
+    ⟨ ⟨ ulift.up l , f ⟩, λ k : ulift (fin l), rec (dvector.nth' ts $ k.down) dvector.pmem_nth' ⟩
+
+lemma surj_lemma : ∀ t : closed_term L,
+  closed_term_of_W_type_term_β (W_type_term_β_of_closed_term t) = t :=
 begin
-  split,
-  { rintros hT fs hfsT ⟨hbot⟩,
-    exact hT ⟨sweakening hfsT hbot⟩ },
-  { intros h hbot,
-    rw theory_proof_compactness_iff at hbot,
-    obtain ⟨ fs , hfsbot , hfsT ⟩ := hbot,
-    exact h fs hfsT hfsbot },
+  apply bounded_term.rec2,
+  { exact fin_zero_elim },
+  { intros l f ts hind,
+    dsimp [W_type_term_β_of_closed_term],
+    rw bounded_term.rec2_bd_apps _ _ _ _ (λ t _, W_type_term_β_of_closed_term t),
+    dsimp [closed_term_of_W_type_term_β],
+    congr,
+    rw dvector.ext,
+    intro i,
+    simp [dvector.nth'_of_fn],
+    apply hind,
+    exact dvector.pmem_nth' },
 end
+
+/- This is really an equivalence, but we only need surjectivity -/
+lemma closed_term_of_W_type_term_β_surjective :
+  function.surjective (@closed_term_of_W_type_term_β L) :=
+begin
+  intros t,
+  use W_type_term_β_of_closed_term t,
+  exact surj_lemma _,
+end
+
+lemma fintype_term_β : Π (a : term_α L), fintype (term_β L a) :=
+λ ⟨ n , f ⟩, fintype.of_equiv (fin n.down) equiv.ulift.symm
+
+local attribute [instance] fintype_term_β
+
+lemma card_le_functions : #(term_model T) ≤
+  max (cardinal.sum (λ n : ulift.{u} (ℕ), #(L.functions n.down))) ω :=
+calc #(term_model T)
+      ≤ #(closed_term L) : card_le_closed_term T
+  ... ≤ #(W_type (term_β.{u u u} L)) :
+    cardinal.mk_le_of_surjective closed_term_of_W_type_term_β_surjective
+  ... ≤ max (#(Σ n : ulift.{u} ℕ, L.functions n.down)) ω :
+    W_type.cardinal_mk_le_max_omega_of_fintype
+  ... = max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :
+    by {rw cardinal.mk_sigma _}
+
+lemma card_le_cardinal {κ : cardinal.{u}} (hωκ : ω ≤ κ)
+  (hκ : ∀ n : ulift.{u} ℕ, #(L.functions n.down) ≤ κ) : #(term_model T) ≤ κ :=
+begin
+  apply le_trans (card_le_functions T),
+  apply max_le _ hωκ,
+  apply le_trans (cardinal.sum_le_sup (λ n : ulift.{u} ℕ, #(L.functions n.down))),
+  apply le_trans (cardinal.mul_le_max _ _),
+  apply max_le _ hωκ,
+  apply max_le,
+  { simp [hωκ] },
+  { rw cardinal.sup_le,
+    exact hκ },
+end
+
+end term_model
+
 
 namespace Language
 
@@ -313,37 +413,152 @@ end
 --   exact all_realize_sentence_distinct_constants _ hMκ,
 -- end
 
-/-- Theories with big models have arbitrarily large models (lower bound to cardinality) -/
-lemma has_sized_model_of_has_infinite_model_lower {T : Theory L} {κ : cardinal}
-(hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) :
-(∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
-∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ κ ≤ #M :=
+-- /-- Theories with big models have arbitrarily large models (lower bound to cardinality) -/
+-- lemma has_sized_model_of_has_infinite_model_lower {T : Theory L} {κ : cardinal}
+-- (hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) :
+-- (∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
+-- ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ κ ≤ #M :=
+-- begin
+--   rintro ⟨ M , hM0, hMT, hMinf ⟩,
+--   set Tκ := union_add_distinct_constants T κ.out,
+--   have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
+--   rw model_existence at hTκ_consis,
+--   obtain ⟨ M , hM0, hMTκ ⟩ := hTκ_consis,
+--   rw all_realize_sentence_union at hMTκ,
+--   refine ⟨ ( M[[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]] ), (by simp [hM0]),
+--     Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl hMTκ.1 , _ ⟩,
+--   have hMκ := Lhom.reduct_Theory_induced Lhom.sum.is_injective_inr hMTκ.2,
+--   have hM := all_realize_sentence_distinct_constants _ hMκ,
+--   simp only [reduct_coe, cardinal.mk_out κ] at *,
+--   exact hM,
+-- end
+
+instance is_algebraic_henkin_language_chain_objects [is_algebraic L] {i} :
+  is_algebraic (@henkin_language_chain_objects L i) :=
+sorry
+
+section le_cardinal
+
+def henkin_language_functions_zero_fun :
+  (henkin_language_functions L 0) → (L.functions 0 ⊕ bounded_formula L 1)
+| (henkin_language_functions.inc f) := sum.inl f
+| (henkin_language_functions.wit f) := sum.inr f
+
+
+lemma henkin_language_functions_zero :
+  _root_.equiv (henkin_language_functions L 0) (L.functions 0 ⊕ bounded_formula L 1) :=
+{ to_fun := henkin_language_functions_zero_fun,
+  inv_fun := λ f, sum.cases_on f henkin_language_functions.inc henkin_language_functions.wit,
+  left_inv := λ f, match f with
+    | (henkin_language_functions.inc f) := rfl
+    | (henkin_language_functions.wit f) := rfl end,
+  right_inv := λ f, sum.cases_on f (λ _, rfl) (λ _, rfl) }
+
+lemma henkin_language_functions_succ {n : ℕ} :
+  _root_.equiv (henkin_language_functions L (n+1)) (L.functions (n+1)) :=
+{ to_fun := λ f, match f with
+    | (henkin_language_functions.inc f) := f end,
+  inv_fun := henkin_language_functions.inc,
+  left_inv := λ f, match f with
+    | (henkin_language_functions.inc f) := rfl end,
+  right_inv := λ f, rfl }
+
+
+
+lemma cardinal.sum_nat (f : ℕ → Type u) :
+  cardinal.sum (λ (i : ℕ), # (f i)) = cardinal.sum (λ (i : ulift.{u} (ℕ)), #(f i.down)) :=
 begin
-  rintro ⟨ M , hM0, hMT, hMinf ⟩,
-  set Tκ := union_add_distinct_constants T κ.out,
-  have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
-  rw model_existence at hTκ_consis,
-  obtain ⟨ M , hM0, hMTκ ⟩ := hTκ_consis,
-  rw all_realize_sentence_union at hMTκ,
-  refine ⟨ ( M[[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]] ), (by simp [hM0]),
-    Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl hMTκ.1 , _ ⟩,
-  have hMκ := Lhom.reduct_Theory_induced Lhom.sum.is_injective_inr hMTκ.2,
-  have hM := all_realize_sentence_distinct_constants _ hMκ,
-  simp only [reduct_coe, cardinal.mk_out κ] at *,
-  exact hM,
+  unfold cardinal.sum,
+  apply cardinal.mk_congr,
+  let F : (Σ (i : ℕ), quotient.out (# (f i))) → (Σ (i : ulift ℕ), quotient.out (# (f i.down))) :=
+    λ ⟨ i , q ⟩, ⟨ ulift.up i , q ⟩ ,
+  let G : (Σ (i : ulift ℕ), quotient.out (# (f i.down))) → (Σ (i : ℕ), quotient.out (# (f i))) :=
+    λ ⟨ i , q ⟩, ⟨ i.down , q ⟩ ,
+  refine ⟨ F , G , _ , _ ⟩,
+  { rintros ⟨ i , q ⟩,
+    refl },
+  { rintros ⟨ i , q ⟩,
+    cases i,
+    refl },
 end
+
+
+variables {κ : cardinal.{u}} (hωκ : ω ≤ κ)
+
+include hωκ
+
+/- Can be more general than just for ℕ' -/
+lemma colimit_language_le_cardinal {F : colimit.directed_diagram_language ℕ'}
+  (n : ℕ) (h : ∀ i : ℕ, # ((F.obj i).functions n) ≤ κ) :
+  # ((colimit.colimit_language F).functions n) ≤ κ :=
+begin
+  apply le_trans cardinal.mk_quotient_le,
+  dsimp only [colimit.coproduct_of_directed_diagram],
+  rw cardinal.mk_sigma,
+  rw cardinal.sum_nat,
+  apply le_trans (cardinal.sum_le_sup _),
+  simp only [cardinal.mk_denumerable],
+  apply le_trans (cardinal.mul_le_max _ _),
+  apply max_le _ hωκ,
+  apply max_le hωκ,
+  rw cardinal.sup_le,
+  intro i,
+  cases i,
+  apply h,
+end
+
+
+lemma bounded_formula_card [is_algebraic L] (hfunc : ∀ n, #(L.functions n) ≤ κ) (n : ℕ) :
+  #(bounded_formula L n) ≤ κ := sorry
+
+lemma henkin_language_chain_obj_card [is_algebraic L] {T : Theory L}
+  (hconsis : is_consistent T)
+  (hLκ : ∀ n, # (L.functions n) ≤ κ) (i : ℕ) :
+  ∀ (n : ℕ), # (((@henkin_language_chain L).obj i).functions n) ≤ κ :=
+begin
+  unfold henkin_language_chain,
+  induction i with i hi,
+  { dsimp only [henkin_language_chain_objects],
+    apply hLκ },
+  { dsimp only [henkin_language_chain_objects] at ⊢ hi,
+    intro n,
+    induction n with n hn,
+    {
+      rw cardinal.mk_congr (@henkin_language_functions_zero (@henkin_language_chain_objects L i)),
+      simp only [cardinal.mk_sum, cardinal.lift_id],
+      apply le_trans (cardinal.add_le_max _ _),
+      refine max_le (max_le (hi _) _) hωκ,
+      apply bounded_formula_card hωκ hi, },
+    { rw cardinal.mk_congr (@henkin_language_functions_succ (@henkin_language_chain_objects L i) n),
+      apply hi } }
+end
+
+lemma henkin_language_card [is_algebraic L] {T : Theory L}
+  {hconsis : is_consistent T}
+  (hLκ : ∀ n, # (L.functions n) ≤ κ) (n : ℕ) :
+  # ((@henkin_language _ _ hconsis).functions n) ≤ κ :=
+begin
+  dsimp [henkin_language, L_infty],
+  apply colimit_language_le_cardinal hωκ,
+  intro i,
+  apply henkin_language_chain_obj_card hωκ hconsis hLκ,
+end
+
+end le_cardinal
 
 /-- Upward Lowenheim Skolem.
   Theories with infinite models have arbitrarily large models -/
 theorem has_sized_model_of_has_infinite_model {T : Theory L} {κ : cardinal}
-  (hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) :
+  (h0κ : #(L.functions 0) ≤ κ) (hωκ : ω ≤ κ) :
   (∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
   ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M = κ :=
 begin
   rintro ⟨ M , hM0, hMT, hMinf ⟩,
   set Tκ := union_add_distinct_constants T κ.out,
   have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
+  -- we extend T to a complete theory with the witness property (a.k.a. it is henkin)
   set T2 := completion_of_henkinization hTκ_consis,
+  -- this has a model, which we can reduct to the language L
   use (term_model T2)[[ henkin_language_over ]]
     [[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]],
   split,
@@ -354,7 +569,13 @@ begin
     simp only [all_realize_sentence_union] at h,
     exact h.1 },
   { apply cardinal.partial_order.le_antisymm,
-    {
+    { apply term_model.card_le_cardinal T2 hωκ,
+      rintro ⟨ n ⟩,
+      dsimp,
+      apply henkin_language_card hωκ,
+      {
+        sorry
+      },
       sorry,
     },
     { have hle : #κ.out ≤ #((term_model T2)[[henkin_language_over]]
@@ -378,23 +599,25 @@ begin
 
 end
 
+
+
 /-- Vaught's test for showing a theory is complete -/
 lemma is_complete'_of_only_infinite_of_categorical
 {T : Theory L} (M : Structure L) (hM : M ⊨ T)
 (hinf : only_infinite T) {κ : cardinal}
-(hκ : max (#(L.functions 0)) cardinal.omega ≤ κ) (hcat : categorical κ T) :
+(h0κ : #(L.functions 0) ≤ κ) (hωκ : ω ≤ κ) (hcat : categorical κ T) :
 is_complete' T :=
 begin
   intro ϕ,
   by_contra hbot,
   simp only [not_or_distrib, not_ssatisfied] at hbot,
   obtain ⟨ ⟨ M , hM0 , hM ⟩ , ⟨ N , hN0 , hN ⟩ ⟩ := hbot,
-  obtain ⟨ M' , hM'0 , hM' , hMcard ⟩ := has_sized_model_of_has_infinite_model hκ
+  obtain ⟨ M' , hM'0 , hM' , hMcard ⟩ := has_sized_model_of_has_infinite_model h0κ hωκ
     ⟨
       M , hM0 , hM ,
       hinf ⟨ M , all_realize_sentence_of_subset hM (set.subset_insert _ _) ⟩
     ⟩,
-  obtain ⟨ N' , hN'0 , hN' , hNcard ⟩ := has_sized_model_of_has_infinite_model hκ
+  obtain ⟨ N' , hN'0 , hN' , hNcard ⟩ := has_sized_model_of_has_infinite_model h0κ hωκ
     ⟨
       N , hN0 , hN ,
       hinf ⟨ N , all_realize_sentence_of_subset hN (set.subset_insert _ _) ⟩

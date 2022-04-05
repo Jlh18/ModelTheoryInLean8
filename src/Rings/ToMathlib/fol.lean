@@ -7,6 +7,7 @@ import Rings.ToMathlib.dvector
 import data.set_like.basic
 import data.set.lattice
 import order.closure
+import completeness
 
 namespace fol
 
@@ -899,5 +900,46 @@ by { simp only [ssatisfied, not_forall, not_imp, all_realize_sentence_insert,
        realize_sentence_not], tauto }
 
 end categorical
+
+variable {L : Language}
+
+def Structure.constants (S : Structure L) (c : L.constants) : S :=
+Structure.fun_map S c dvector.nil
+
+lemma is_complete'_of_is_complete {T : Theory L} (hT : is_complete T) :
+  is_complete' T :=
+begin
+  intro f,
+  cases hT.2 f,
+  { left,
+    intros M _ hM,
+    exact hM h },
+  { right,
+    intros M _ hM,
+    exact hM h },
+end
+
+lemma is_complete.mem_iff_ssatisfied {T : Theory L} (hT : is_complete T) (f : sentence L) :
+  f ∈ T ↔ T ⊨ f :=
+begin
+  split,
+  { intros hf M _ hM, exact hM hf },
+  { intro hTf,
+    apply or.resolve_right (hT.2 f),
+    intro hfT,
+    apply hT.1,
+    rw completeness,
+    intros M hM0 hM,
+    simp only [false_of_satisfied_false],
+    have hMf := hM hfT,
+    simp only [realize_sentence_not] at hMf,
+    exact hMf (hTf hM0 hM) },
+end
+
+@[simp] lemma Th.ssatisfied_iff_satisfied {S : Structure L} (hS : nonempty S) {f : sentence L} :
+  Th S ⊨ f ↔ S ⊨ f :=
+by { rw ← is_complete.mem_iff_ssatisfied (is_complete_Th S hS), exact in_theory_iff_satisfied }
+
+
 
 end fol

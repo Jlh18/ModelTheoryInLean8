@@ -2596,7 +2596,7 @@ def term_model_fun' {l} (t : closed_preterm L l) (ts : dvector (closed_term L) l
 @quotient.mk _ (term_setoid T) $ bd_apps t ts
 
 variable {T}
-def term_model_fun_eq {l} (t t' : closed_preterm L (l+1)) (x x' : closed_term L)
+lemma term_model_fun_eq {l} (t t' : closed_preterm L (l+1)) (x x' : closed_term L)
   (Ht : equal_preterms T.fst t.fst t'.fst) (Hx : T ⊢ x ≃ x') (ts : dvector (closed_term L) l) :
   term_model_fun' T (bd_app t x) ts = term_model_fun' T (bd_app t' x') ts :=
 begin

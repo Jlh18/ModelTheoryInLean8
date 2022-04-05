@@ -300,6 +300,47 @@ end ulift
 | _ dvector.nil  g f    := rfl
 | _ (dvector.cons x xs) g f := by simp
 
+lemma pmem_nth {xs : dvector α n} {k : ℕ} (hk : k < n) :
+  dvector.pmem (xs.nth k hk) xs :=
+begin
+  induction xs with m a xs hind generalizing k,
+  { exfalso, apply nat.not_lt_zero _ hk, },
+  { cases k with k,
+    { exact psum.inl rfl },
+    { dsimp only [dvector.nth, dvector.pmem],
+      apply psum.inr,
+      apply hind }},
+end
+
+lemma pmem_nth' {xs : dvector α n} {k : fin n} :
+  dvector.pmem (xs.nth' k) xs := pmem_nth _
+
+
+lemma cast_nil {α} (h : 0 = 0) : (dvector.cast h dvector.nil : dvector α 0) = dvector.nil :=
+by refl
+
+lemma of_fn_zero {α : Type*} (f : fin 0 → α) : dvector.of_fn f = dvector.nil := rfl
+
+lemma of_fn_eq_cons_of_fn_succ' {α : Type*} {n : ℕ} {f : fin n.succ → α} :
+  dvector.of_fn f = dvector.cons (f 0) (dvector.of_fn (λ (i : fin n), f (i + 1))) :=
+begin
+  set g : ℕ → α := λ k, ite (k < n.succ) (f k) (f 0) with hg,
+  have hrw1 : dvector.of_fn f = dvector.of_fn (λ k, g k),
+  { congr, ext x, rw hg, simp only [fin.coe_coe_eq_self],
+    by_cases hx : (x : ℕ) < n.succ,
+    { simp [if_pos hx] },
+    { exfalso, apply hx x.2 }},
+  rw hrw1,
+  rw dvector.of_fn_eq_cons_of_fn_succ,
+  congr,
+  ext,
+  rw hg,
+  simp only [fin.coe_coe_eq_self],
+  by_cases hx : (x : ℕ) + 1 < n.succ,
+  { simp only [if_pos hx], congr },
+  { exfalso, apply hx, apply nat.succ_lt_succ x.2 }
+end
+
 
 
 end dvector
