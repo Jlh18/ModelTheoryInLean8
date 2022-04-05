@@ -56,6 +56,10 @@ open fol
 def ring_signature : Language :=
 (Language.mk) (ring_funcs) (λ n, pempty)
 
+/-- The language of rings is empty -/
+instance : Language.is_algebraic ring_signature :=
+{ empty_relations := λ _, pempty.elim }
+
 /-- To show two ring structures are equal it suffices that they are
     equal on carrier sets and heterogeneously equal on fun_map -/
 lemma Structure.ext {A B : Structure ring_signature} :

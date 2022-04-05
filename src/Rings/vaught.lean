@@ -547,37 +547,63 @@ end
 end le_cardinal
 
 /-- Upward Lowenheim Skolem.
-  Theories with infinite models have arbitrarily large models -/
-theorem has_sized_model_of_has_infinite_model {T : Theory L} {κ : cardinal}
-  (h0κ : #(L.functions 0) ≤ κ) (hωκ : ω ≤ κ) :
+  Theories with infinite models have arbitrarily large models,
+  A stronger version of this should hold with
+  (hκ : ∀ n, #(L.functions n) ≤ κ) replaced with (h0κ : #(L.functions 0) ≤ κ),
+  but our proof uses `term_model`, which has cardinality that depends on all function symbols,
+  the stronger result should use a model built with just the constant symbols of `L`.
+  A generalization would replace [is_algebraic L] with some bound
+-/
+theorem has_sized_model_of_has_infinite_model [is_algebraic L] {T : Theory L} {κ : cardinal}
+  (hκ : ∀ n, #(L.functions n) ≤ κ) (hωκ : ω ≤ κ) :
   (∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ infinite M) →
   ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M = κ :=
 begin
   rintro ⟨ M , hM0, hMT, hMinf ⟩,
+  -- we add κ many constants to the language and ensure they're all distinct in the thoery `Tκ`
   set Tκ := union_add_distinct_constants T κ.out,
   have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
   -- we extend T to a complete theory with the witness property (a.k.a. it is henkin)
   set T2 := completion_of_henkinization hTκ_consis,
-  -- this has a model, which we can reduct to the language L
+  -- this has a model, which we can reduce to the language L
   use (term_model T2)[[ henkin_language_over ]]
     [[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]],
   split,
+  -- the reduction of a non-empty model is non-empty
   { apply fol.nonempty_term_model, exact completion_of_henkinization_is_henkin _, },
   split,
+  -- this reduction models T
   { apply Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl,
     have h := reduct_of_complete_henkinization_models_T hTκ_consis,
     simp only [all_realize_sentence_union] at h,
     exact h.1 },
+  -- the model (and the reduction) are size κ
   { apply cardinal.partial_order.le_antisymm,
+    -- ≤ because of the construction of `term_model`
     { apply term_model.card_le_cardinal T2 hωκ,
+      -- Note: we use the term "bounded by" loosely
+      -- `term_model` has size bounded by the terms of the language,
+      -- which in turn is bounded by the function symbols in the language
       rintro ⟨ n ⟩,
-      dsimp,
+      -- for an algebraic language, the henkinization is bounded by the number of function symbols
       apply henkin_language_card hωκ,
-      {
-        sorry
-      },
-      sorry,
+      { intro m,  -- the bound on function symbols
+        simp only [Language.sum, cardinal.mk_sum, cardinal.lift_id],
+        apply le_trans (cardinal.add_le_max _ _),
+        apply max_le _ hωκ,
+        apply max_le,
+        { apply hκ },
+        { cases m,
+          { simp [of_constants] },
+          { simp [of_constants] } } },
+      { split, -- adding κ constant symbols to an `is_algebraic` language preserves `is_algebraic`
+        intro m,
+        dsimp [Language.sum],
+        let f := _inst_1.1,
+        simp only [sum.forall, forall_pempty, and_true],
+        exact f m },
     },
+    -- ≥ because we added κ constants and made sure they're distinct in any model of Tκ
     { have hle : #κ.out ≤ #((term_model T2)[[henkin_language_over]]
                [[(Lhom.sum_inr : _ →ᴸ L.sum (of_constants κ.out))]]),
       { apply all_realize_sentence_distinct_constants,
@@ -587,37 +613,29 @@ begin
         exact h.2 },
       { simp only [fol.Lhom.reduct_coe, cardinal.mk_out] at hle ⊢,
         exact hle } } },
-  -- rw model_existence at hTκ_consis,
-  -- obtain ⟨ M , hM0, hMTκ ⟩ := hTκ_consis,
-  -- rw all_realize_sentence_union at hMTκ,
-  -- refine ⟨ ( M[[(Lhom.sum_inl : L →ᴸ L.sum (of_constants κ.out))]] ), (by simp [hM0]),
-    -- Lhom.reduct_Theory_induced Lhom.sum.is_injective_inl hMTκ.1 , _ ⟩,
-  -- have hMκ := Lhom.reduct_Theory_induced Lhom.sum.is_injective_inr hMTκ.2,
-  -- have hM := all_realize_sentence_distinct_constants _ hMκ,
-  -- simp only [reduct_coe, cardinal.mk_out κ] at *,
-
-
 end
 
-
-
-/-- Vaught's test for showing a theory is complete -/
+/-- Vaught's test for showing a theory is complete.
+  Like with Upward Lowenheim Skolem this could be strengthened
+  with just asking for `#(L.constants) ≤ κ` and generalized
+  by giving a bound on relations instead of using `[is_algebraic]`
+-/
 lemma is_complete'_of_only_infinite_of_categorical
-{T : Theory L} (M : Structure L) (hM : M ⊨ T)
-(hinf : only_infinite T) {κ : cardinal}
-(h0κ : #(L.functions 0) ≤ κ) (hωκ : ω ≤ κ) (hcat : categorical κ T) :
+  [is_algebraic L] {T : Theory L} (M : Structure L) (hM : M ⊨ T)
+  (hinf : only_infinite T) {κ : cardinal}
+  (hκ : ∀ n, #(L.functions n) ≤ κ) (hωκ : ω ≤ κ) (hcat : categorical κ T) :
 is_complete' T :=
 begin
   intro ϕ,
   by_contra hbot,
   simp only [not_or_distrib, not_ssatisfied] at hbot,
   obtain ⟨ ⟨ M , hM0 , hM ⟩ , ⟨ N , hN0 , hN ⟩ ⟩ := hbot,
-  obtain ⟨ M' , hM'0 , hM' , hMcard ⟩ := has_sized_model_of_has_infinite_model h0κ hωκ
+  obtain ⟨ M' , hM'0 , hM' , hMcard ⟩ := has_sized_model_of_has_infinite_model hκ hωκ
     ⟨
       M , hM0 , hM ,
       hinf ⟨ M , all_realize_sentence_of_subset hM (set.subset_insert _ _) ⟩
     ⟩,
-  obtain ⟨ N' , hN'0 , hN' , hNcard ⟩ := has_sized_model_of_has_infinite_model h0κ hωκ
+  obtain ⟨ N' , hN'0 , hN' , hNcard ⟩ := has_sized_model_of_has_infinite_model hκ hωκ
     ⟨
       N , hN0 , hN ,
       hinf ⟨ N , all_realize_sentence_of_subset hN (set.subset_insert _ _) ⟩

@@ -515,16 +515,35 @@ begin
   repeat { cc },
 end
 
-lemma functions_le_omega : # (Rings.ring_signature.functions 0) ≤ ω :=
+def unit_equiv_ring_unaries : _root_.equiv unit ring_unaries :=
+{ to_fun := λ x, match x with | unit.star := ring_unaries.neg end,
+  inv_fun := λ x, match x with | ring_unaries.neg := unit.star end,
+  left_inv := λ x, match x with | unit.star := rfl end,
+  right_inv := λ x, match x with | ring_unaries.neg := rfl end }
+
+def bool_equiv_ring_binaries : _root_.equiv bool ring_binaries :=
+{ to_fun := λ x, match x with | ff := ring_binaries.add | tt := ring_binaries.mul end,
+  inv_fun := λ c, match c with | ring_binaries.add := ff | ring_binaries.mul := tt end,
+  left_inv := λ x, match x with | ff := rfl | tt := rfl end,
+  right_inv := λ c, match c with | ring_binaries.add := rfl | ring_binaries.mul := rfl end }
+
+
+lemma ring_signature.fintype_functions : ∀ n, fintype (ring_signature.functions n)
+| 0 := fintype.of_equiv bool bool_equiv_ring_consts
+| 1 := fintype.of_equiv unit unit_equiv_ring_unaries
+| 2 := fintype.of_equiv bool bool_equiv_ring_binaries
+| (n+3) := by { dsimp [ring_signature, ring_funcs], exact fintype.of_is_empty }
+
+lemma functions_le_omega : ∀ n, # (Rings.ring_signature.functions n) ≤ ω :=
 begin
+  intro n,
   apply le_of_lt,
   simp only [lt_omega_iff_fintype, ring_signature, ring_funcs],
-  refine ⟨ fintype.of_equiv bool bool_equiv_ring_consts ⟩ ,
+  exact ⟨ ring_signature.fintype_functions _ ⟩,
 end
 
-lemma max_card_functions_omega_le_continuum :
-max (# (Rings.ring_signature.functions 0)) ω ≤ 𝔠 :=
-max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum
+lemma card_functions_omega_le_continuum : ∀ (n : ℕ), mk (ring_signature.functions n) ≤ continuum :=
+λ n, (functions_le_omega _).trans omega_le_continuum
 
 lemma only_infinite_ACF : only_infinite ACF :=
 by { intro M, haveI : fact (M.1 ⊨ ACF) := ⟨ M.2 ⟩, exact is_alg_closed.infinite }
@@ -540,7 +559,9 @@ is_complete'_of_only_infinite_of_categorical
     instances.algebraic_closure_of_rat_models_ACF₀ -- ℚ̅ is a model of ACF₀
     (only_infinite_subset ACF_subset_ACF₀ only_infinite_ACF) -- alg closed fields are infinite
     -- pick the cardinal κ := 𝔠
-    (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
+    card_functions_omega_le_continuum
+    omega_le_continuum
+    -- (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
     (categorical_ACF₀ omega_lt_continuum)
 
 end Fields
