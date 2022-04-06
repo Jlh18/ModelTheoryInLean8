@@ -235,66 +235,58 @@ calc #(bounded_term L n)
 
 variable (L)
 
+def atomic_formula_α : Type u := punit.{u+1} ⊕ ((bounded_term L n) × (bounded_term L n)) ⊕ punit.{u+1}
+
+@[reducible] def atomic_formula_β : atomic_formula_α L n → Type u
+| (sum.inl x)           := pempty.{u+1}
+| (sum.inr (sum.inl x)) := pempty.{u+1}
+| (sum.inr (sum.inr x)) := ulift.{u} bool
+
 /-- We inject `bounded_formula L n` into the `W_type` built from this `⊕` `bounded_formula L (n+1)`.
   This could be generalized to when `L` has relation symbols,
   in which case more constructors should be added.
   -/
-def formula_α : Type u := punit.{u+1} ⊕ ((bounded_term L n) × (bounded_term L n))
-  ⊕ punit.{u+1} ⊕ (bounded_formula L (n+1))
+@[reducible] def formula_α : Type u := atomic_formula_α L n ⊕ (bounded_formula L (n+1))
 
 /-- The arities of the constructors `formula_α` for the `W_type` -/
-def formula_β : formula_α L n → Type u
-| (sum.inl x)           := pempty.{u+1}
-| (sum.inr (sum.inl x)) := pempty.{u+1}
-| (sum.inr (sum.inr (sum.inl x))) := ulift.{u} bool
-| (sum.inr (sum.inr (sum.inr x))) := pempty.{u+1}
+@[reducible] def formula_β : formula_α L n → Type u
+| (sum.inl x) := atomic_formula_β L n x
+| (sum.inr x) := pempty.{u+1}
+
+lemma fintype_formula_β : Π (a : formula_α L n), fintype (formula_β L n a)
+| (sum.inl (sum.inl x)) := by apply_instance
+| (sum.inl (sum.inr (sum.inl x))) := by apply_instance
+| (sum.inl (sum.inr (sum.inr x))) := by apply_instance
+| (sum.inr x) := by apply_instance
+
+local attribute [instance] fintype_formula_β
 
 variable {L}
 
-/-- For the recursion to work, first map to the `W_type` in
-  `W_type_sum_bounded_formula_succ_of_bounded_formula` -/
+/-- For all `n` we make a characterizing type for `bounded_formula L n`,
+  in the sense that this should be an equivalence.
+  For the recursion to work in the `∀` case,
+  it is important to define it for all `n` at once.
+  This is part of an equivalence -/
 @[simp, reducible] def W_type_of_bounded_formula [is_algebraic L] {n} :
   bounded_formula L n → W_type (formula_β L n) :=
 bounded_formula.rec2
-  (λ _, ⟨ sum.inl punit.star , pempty.elim ⟩) -- bd_falsum
-  (λ _ t s, ⟨ sum.inr $ sum.inl ⟨ t , s ⟩ , pempty.elim ⟩) -- t ≃ s
+  (λ _, ⟨ sum.inl $ sum.inl punit.star , pempty.elim ⟩) -- bd_falsum
+  (λ _ t s, ⟨ sum.inl $ sum.inr $ sum.inl ⟨ t , s ⟩ , pempty.elim ⟩) -- t ≃ s
   (λ _ l r, false.elim $ Language.is_algebraic.empty_relations l r) -- there are no relation symbols
-  (λ _ f₁ f₂ recf₁ recf₂, ⟨ sum.inr $ sum.inr (sum.inl punit.star) ,
-    λ ⟨b⟩, bool.rec_on b recf₁ recf₂ ⟩ )
-    -- bd_imp
-  (λ _ f _, ⟨ sum.inr $ sum.inr (sum.inr f) , pempty.elim ⟩) -- bd_all degenerate case
+  (λ _ f₁ f₂ recf₁ recf₂, ⟨ sum.inl $ sum.inr $ sum.inr punit.star ,
+    λ ⟨b⟩, bool.rec_on b recf₁ recf₂ ⟩ ) -- bd_imp
+  (λ _ f _, ⟨ sum.inr f , pempty.elim ⟩) -- bd_all degenerate case
 
-/-- For all `n` we make a characterizing type for `bounded_formula L n`,
-  in the sense that this should be an equivalence.
-  For the recursion to work in the `⟹` case,
-  it is important to define it without the `∀` first.
-  For the recursion to work in the `∀` case,
-  it is important to define it for all `n` at once. -/
-@[simp, reducible] def W_type_sum_bounded_formula_succ_of_bounded_formula [is_algebraic L] {n} :
-  bounded_formula L n → W_type (formula_β L n) ⊕ bounded_formula L (n+1) :=
-bounded_formula.rec2
-  (λ k, sum.inl (W_type_of_bounded_formula ⊥)) -- bd_falsum
-  (λ _ t s, sum.inl (W_type_of_bounded_formula (t ≃ s))) -- t ≃ s
-  (λ _ l r, false.elim $ Language.is_algebraic.empty_relations l r) -- there are no relation symbols
-  (λ _ f₁ f₂ recf₁ recf₂, sum.inl (W_type_of_bounded_formula (f₁ ⟹ f₂))) -- bd_imp
-  (λ _ f _, sum.inr f)
-
-/-- Mapping `W_type_oplus_bounded_formula_succ_of_bounded_formula` just on the W_type -/
+/-- Mapping `W_type_to_bounded_formula` (part of an equivalence) -/
 @[simp, reducible] def bounded_formula_of_W_type {n} :
   W_type (formula_β L n) → bounded_formula L n
-| ⟨ (sum.inl x) , y ⟩ := ⊥
-| ⟨ (sum.inr (sum.inl ⟨ t , s ⟩)) , y ⟩ := t ≃ s
-| ⟨ (sum.inr (sum.inr (sum.inl x))) , y ⟩ :=
+| ⟨ (sum.inl (sum.inl x)) , y ⟩ := ⊥
+| ⟨ sum.inl (sum.inr (sum.inl ⟨ t , s ⟩)) , y ⟩ := t ≃ s
+| ⟨ sum.inl (sum.inr (sum.inr x)) , y ⟩ :=
   bounded_formula_of_W_type (y $ ⟨ ff ⟩) ⟹
   bounded_formula_of_W_type (y $ ⟨ tt ⟩)
-| ⟨ (sum.inr (sum.inr (sum.inr f))) , y ⟩ := ∀' f
-
-/-- The supposed inverse of `W_type_oplus_bounded_formula_succ_of_bounded_formula`.
-  we want this to be surjective. -/
-@[simp, reducible] def bounded_formula_of_W_type_sum_bounded_formula_succ {n} :
-  W_type (formula_β L n) ⊕ bounded_formula L (n+1) → bounded_formula L n
-| (sum.inl x) := bounded_formula_of_W_type x
-| (sum.inr f) := ∀' f
+| ⟨ sum.inr f , y ⟩ := ∀' f
 
 lemma bounded_formula_of_W_type_left_inv
   [is_algebraic L] {n} : ∀ f : bounded_formula L n,
@@ -309,9 +301,7 @@ begin
     exfalso,
     exact Language.is_algebraic.empty_relations l r },
   { intros _ _ _ h1 h2,
-    simp only [bounded_formula_of_W_type_sum_bounded_formula_succ,
-      bounded_formula_of_W_type, W_type_of_bounded_formula,
-      W_type_sum_bounded_formula_succ_of_bounded_formula,
+    simp only [bounded_formula_of_W_type, W_type_of_bounded_formula,
       bounded_formula.rec2, bounded_formula.rec2_aux ],
     exact ⟨ h1 , h2 ⟩ },
   { intros,
@@ -323,10 +313,10 @@ lemma bounded_formula_of_W_type_right_inv [is_algebraic L] {n} (f : W_type (form
 begin
   induction f with a b hind,
   cases a,
-  { tidy },
   cases a,
   { tidy },
   cases a,
+  { tidy },
   {
     cases a,
     have hff := hind ⟨ ff ⟩,
@@ -349,17 +339,126 @@ def bounded_formula_equiv_W_type [is_algebraic L] (n : ℕ) :
 
 inductive box : ℕ → Type u
 | base {n} : box n
-| drop {n} (f : box (n+1)) : box n
+| succ {n} : box n → box n
+| drop {n} (x : box (n+1)) : box n
+
+def nat_of_box : ∀ n, box n → ℕ × ℕ × ℕ
+| n (box.base) := ⟨ n , 0 , 0 ⟩
+| n (box.succ x) := ⟨ (nat_of_box n x).1, (nat_of_box n x).2.1.succ , (nat_of_box n x).2.2 ⟩
+| n (box.drop x) := ⟨(nat_of_box (n+1) x).1 , (nat_of_box (n+1) x).2.1 ,
+  (nat_of_box (n+1) x).2.2.succ ⟩
+
+/-- Write formulas as lists of the following symbols -/
+inductive logic_symbol (L : Language.{u}) : Type u
+| bot : logic_symbol
+| eq : logic_symbol
+| imp : logic_symbol
+| all : logic_symbol
+| term : Π (l : ℕ), bounded_term L l → logic_symbol
+| nat : ℕ → logic_symbol
+
+@[simp] def logic_symbol_of_formula [is_algebraic L] {n} :
+  bounded_formula L n → list (logic_symbol L) :=
+bounded_formula.rec2
+  (λ _, [logic_symbol.nat n, logic_symbol.bot]) -- ⊥
+  (λ l t s, [ logic_symbol.nat n, logic_symbol.eq ,
+    logic_symbol.term l t , logic_symbol.term l s ]) -- t ≃ s
+  (λ _ _ r, false.elim $ Language.is_algebraic.empty_relations _ r) -- bd_rel
+  (λ _ ϕ ψ lϕ lψ, (logic_symbol.nat n) :: logic_symbol.imp :: lϕ.append lψ ) -- ϕ ⟹ ψ
+  (λ l ϕ L, (logic_symbol.nat n) :: logic_symbol.all :: L) -- ∀ₗ ϕ
+
+lemma logic_symbol_of_preformula_injective [is_algebraic L] {n m} : ∀ (x : bounded_formula L n)
+  (y : bounded_formula L m),
+  logic_symbol_of_formula x = logic_symbol_of_formula y → x == y :=
+begin
+  -- apply bounded_formula.rec2,
+  have hrel : ∀ {l} {p : Prop} (r : L.relations l), p,
+  { intros _ _ r,
+    exact false.elim (Language.is_algebraic.empty_relations _ r) },
+  apply @bounded_formula.rec2 _ (λ n x, ∀ (y : bounded_formula L m),
+    logic_symbol_of_formula x = logic_symbol_of_formula y → x == y),
+  { intro l,
+    apply @bounded_formula.rec2 _ (λ n y,
+      logic_symbol_of_formula _ = logic_symbol_of_formula y → _ == y),
+    { intros k h, simp at h, subst h },
+    { intros _ _ _ h, simp at h, simpa [h] },
+    { intros _ _ r, apply hrel r },
+    { intros _ _ _ _ _ h, simp at h, simpa [h] },
+    { intros _ _ _ h, simp at h, simpa [h] } },
+  { intros l t s,
+    apply @bounded_formula.rec2 _ (λ n y,
+      logic_symbol_of_formula _ = logic_symbol_of_formula y → _ == y),
+    { intros k h, simp at h, simpa [h], },
+    { intros _ _ _ h, simp at h, cases h with h h', subst h, cases h' with h h',
+      cases h with h h1, subst h1, cases h' with h' h'1, subst h'1 },
+    { intros _ _ r, apply hrel r },
+    { intros _ _ _ _ _ h, simp at h, simpa [h] },
+    { intros _ _ _ h, simp at h, simpa [h] } },
+  { intros _ _ r, apply hrel r },
+  {sorry},
+  {sorry},
+
+  -- cases x, cases y,
+  -- { simp },
+  -- { simp at hxy,
+    -- simp [hxy] },
+  -- {  },
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
+  -- {sorry},
 
 
-lemma bounded_formula_le_bounded_term :
+
+end
+
+
+lemma card_le_max [is_algebraic L] {n} (hn : #(bounded_formula L (n + 1))
+    ≤ max (cardinal.sum (λ (m : ulift.{u} ℕ), #(bounded_term L m.down))) ω) :
+  #(bounded_formula L n)
+    ≤ max (cardinal.sum (λ m : ulift.{u} ℕ, #(bounded_term L m.down))) ω :=
+calc #(bounded_formula L n)
+        = #(W_type (formula_β L n)) :
+  cardinal.mk_congr (bounded_formula_equiv_W_type _)
+    ... ≤ _ : W_type.cardinal_mk_le_max_omega_of_fintype
+    ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :
+begin
+  dsimp only [formula_α, atomic_formula_α],
+  apply max_le _ (le_max_right _ _),
+  simp only [cardinal.mk_sum, cardinal.mk_punit, cardinal.mk_prod, cardinal.lift_id],
+  apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+  { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+    { apply le_of_lt, simp },
+    { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+      { apply le_trans (cardinal.mul_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+        repeat { apply le_max_of_le_left,
+          apply cardinal.le_sum.{u u} (λ (n : ulift.{u} ℕ), #(bounded_term.{u} L n.down)) ⟨ n ⟩ }},
+      { apply le_max_of_le_right (le_of_lt _),
+        simp } } },
+  { exact hn },
+end
+
+lemma bounded_formula_le_bounded_term [is_algebraic L] :
+  #(bounded_formula L n) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
+calc #(bounded_formula L n)
+        = #(W_type (formula_β L n)) :
+  cardinal.mk_congr (bounded_formula_equiv_W_type _)
+    ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
+
+
+lemma sentence_le_bounded_term :
   #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
-sorry
+calc #(bounded_formula L 0) ≤ #(W_type (formula_β L 0)) : sorry
+     ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
 
 lemma sentence_le_functions :
   #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :=
 begin
-  apply le_trans (bounded_formula_le_bounded_term),
+  apply le_trans (sentence_le_bounded_term),
   apply max_le _ (le_max_right _ _),
   apply le_trans (cardinal.sum_le_sup _),
   simp only [cardinal.mk_denumerable],
