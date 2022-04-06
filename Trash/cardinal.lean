@@ -42,7 +42,7 @@ def bounded_term.rec2 {n} {C : bounded_term L n → Sort v}
 -- end,
 -- λn f, h f ([])
 
-@[simp] def bounded_formula.rec2_aux {C : Πn, bounded_formula L n → Sort v}
+def bounded_formula.rec2_aux {C : Πn, bounded_formula L n → Sort v}
   (hfalsum : Π {n}, C n ⊥)
   (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
   (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term L n) l),
@@ -60,7 +60,7 @@ def bounded_term.rec2 {n} {C : bounded_term L n → Sort v}
   (bounded_formula.rec2_aux f₂ dvector.nil)
 | _ _ (∀' f)    dvector.nil := hall (bounded_formula.rec2_aux f dvector.nil)
 
-@[simp] def bounded_formula.rec2 {C : Πn, bounded_formula L n → Sort v}
+def bounded_formula.rec2 {C : Πn, bounded_formula L n → Sort v}
   (hfalsum : Π {n}, C n ⊥)
   (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
   (hrel : Π {n l : ℕ} (R : L.relations l) (ts : dvector (bounded_term L n) l),
@@ -239,15 +239,13 @@ variable (L)
   This could be generalized to when `L` has relation symbols,
   in which case more constructors should be added.
   -/
-def formula_α : Type u := punit.{u+1} ⊕ ((bounded_term L n) × (bounded_term L n))
-  ⊕ punit.{u+1} ⊕ (bounded_formula L (n+1))
+def formula_α : Type u := punit.{u+1} ⊕ ((bounded_term L n) × (bounded_term L n)) ⊕ punit.{u+1}
 
 /-- The arities of the constructors `formula_α` for the `W_type` -/
 def formula_β : formula_α L n → Type u
 | (sum.inl x)           := pempty.{u+1}
 | (sum.inr (sum.inl x)) := pempty.{u+1}
-| (sum.inr (sum.inr (sum.inl x))) := ulift.{u} bool
-| (sum.inr (sum.inr (sum.inr x))) := pempty.{u+1}
+| (sum.inr (sum.inr x)) := ulift.{u} bool
 
 variable {L}
 
@@ -259,10 +257,9 @@ bounded_formula.rec2
   (λ _, ⟨ sum.inl punit.star , pempty.elim ⟩) -- bd_falsum
   (λ _ t s, ⟨ sum.inr $ sum.inl ⟨ t , s ⟩ , pempty.elim ⟩) -- t ≃ s
   (λ _ l r, false.elim $ Language.is_algebraic.empty_relations l r) -- there are no relation symbols
-  (λ _ f₁ f₂ recf₁ recf₂, ⟨ sum.inr $ sum.inr (sum.inl punit.star) ,
-    λ ⟨b⟩, bool.rec_on b recf₁ recf₂ ⟩ )
+  (λ _ f₁ f₂ recf₁ recf₂, ⟨ sum.inr $ sum.inr punit.star , λ ⟨b⟩, bool.rec_on b recf₁ recf₂ ⟩ )
     -- bd_imp
-  (λ _ f _, ⟨ sum.inr $ sum.inr (sum.inr f) , pempty.elim ⟩) -- bd_all degenerate case
+  (λ _ _ _, ⟨ sum.inl punit.star , pempty.elim ⟩) -- bd_all degenerate case
 
 /-- For all `n` we make a characterizing type for `bounded_formula L n`,
   in the sense that this should be an equivalence.
@@ -284,10 +281,9 @@ bounded_formula.rec2
   W_type (formula_β L n) → bounded_formula L n
 | ⟨ (sum.inl x) , y ⟩ := ⊥
 | ⟨ (sum.inr (sum.inl ⟨ t , s ⟩)) , y ⟩ := t ≃ s
-| ⟨ (sum.inr (sum.inr (sum.inl x))) , y ⟩ :=
-  bounded_formula_of_W_type (y $ ⟨ ff ⟩) ⟹
-  bounded_formula_of_W_type (y $ ⟨ tt ⟩)
-| ⟨ (sum.inr (sum.inr (sum.inr f))) , y ⟩ := ∀' f
+| ⟨ (sum.inr (sum.inr x)) , y ⟩ :=
+  bounded_formula_of_W_type (y $ ⟨ tt ⟩) ⟹
+  bounded_formula_of_W_type (y $ ⟨ ff ⟩)
 
 /-- The supposed inverse of `W_type_oplus_bounded_formula_succ_of_bounded_formula`.
   we want this to be surjective. -/
@@ -296,12 +292,42 @@ bounded_formula.rec2
 | (sum.inl x) := bounded_formula_of_W_type x
 | (sum.inr f) := ∀' f
 
-lemma bounded_formula_of_W_type_left_inv
+lemma bounded_formula_of_W_type_right_inv
   [is_algebraic L] {n} : ∀ f : bounded_formula L n,
-  (bounded_formula_of_W_type (W_type_of_bounded_formula f) = f) :=
+  ((∀ g : bounded_formula L (n+1), f ≠ ∀' g) →
+    bounded_formula_of_W_type (W_type_of_bounded_formula f) = f) :=
+begin
+  apply @bounded_formula.rec2 _
+    (λ (n : ℕ) f : bounded_formula L n, (∀ g : bounded_formula L (n+1), f ≠ ∀' g) →
+    bounded_formula_of_W_type (W_type_of_bounded_formula f) = f),
+  { intros,
+    simp [bounded_formula.rec2, bounded_formula.rec2_aux] },
+  { intros,
+    simp [bounded_formula.rec2, bounded_formula.rec2_aux] },
+  { intros n l r,
+    exfalso,
+    exact Language.is_algebraic.empty_relations l r },
+  { intros _ _ _ h1 h2 _,
+    simp only [bounded_formula_of_W_type_sum_bounded_formula_succ,
+      bounded_formula_of_W_type, W_type_of_bounded_formula,
+      W_type_sum_bounded_formula_succ_of_bounded_formula,
+      bounded_formula.rec2, bounded_formula.rec2_aux],
+    split,
+    {
+      convert h1,
+
+}
+  },
+  sorry,
+end
+
+lemma bounded_formula_of_W_type_sum_bounded_formula_right_inv
+  [is_algebraic L] {n} : ∀ f : bounded_formula L n,
+  bounded_formula_of_W_type_sum_bounded_formula_succ
+    (W_type_sum_bounded_formula_succ_of_bounded_formula f) = f :=
 begin
   apply bounded_formula.rec2,
-  { intros,
+  { intro,
     simp [bounded_formula.rec2, bounded_formula.rec2_aux] },
   { intros,
     simp [bounded_formula.rec2, bounded_formula.rec2_aux] },
@@ -312,45 +338,39 @@ begin
     simp only [bounded_formula_of_W_type_sum_bounded_formula_succ,
       bounded_formula_of_W_type, W_type_of_bounded_formula,
       W_type_sum_bounded_formula_succ_of_bounded_formula,
-      bounded_formula.rec2, bounded_formula.rec2_aux ],
-    exact ⟨ h1 , h2 ⟩ },
-  { intros,
-    simp [bounded_formula.rec2, bounded_formula.rec2_aux] },
+      bounded_formula.rec2, bounded_formula.rec2_aux],
+    split,
+    {
+      convert h1,
+      sorry,
+      -- simp [bounded_formula_of_W_type_sum_bounded_formula_succ,
+      --   bounded_formula_of_W_type, W_type_of_bounded_formula,
+      --   W_type_sum_bounded_formula_succ_of_bounded_formula,
+      --   bounded_formula.rec2, bounded_formula.rec2_aux],
+      -- sorry,
+    },
+    { sorry }
+    },
+  {sorry},
 end
 
-lemma bounded_formula_of_W_type_right_inv [is_algebraic L] {n} (f : W_type (formula_β L n)) :
-  (W_type_of_bounded_formula (bounded_formula_of_W_type f) = f) :=
+lemma bounded_formula_of_W_type_sum_bounded_formula_succ_surjective [is_algebraic L] {n}:
+  function.surjective $ @bounded_formula_of_W_type_sum_bounded_formula_succ L n :=
 begin
-  induction f with a b hind,
-  cases a,
-  { tidy },
-  cases a,
-  { tidy },
-  cases a,
-  {
-    cases a,
-    have hff := hind ⟨ ff ⟩,
-    have htt := hind ⟨ tt ⟩,
-    simp only [W_type_of_bounded_formula, bounded_formula.rec2_aux, bounded_formula.rec2,
-      eq_self_iff_true, heq_iff_eq, true_and] at ⊢ hff htt,
-    rw [hff, htt],
-    ext bl, cases bl, cases bl,
-    {refl}, {refl}, },
-  { tidy },
+  intro f,
+  use W_type_sum_bounded_formula_succ_of_bounded_formula f,
+  -- cases f,
+  sorry
 end
 
-/-- The types `bounded_formula L n` and `W_type (formula_β L n)` are equivalent -/
-def bounded_formula_equiv_W_type [is_algebraic L] (n : ℕ) :
-  _root_.equiv (bounded_formula L n) (W_type (formula_β L n)) :=
-{ to_fun := W_type_of_bounded_formula,
-  inv_fun := bounded_formula_of_W_type,
-  left_inv := bounded_formula_of_W_type_left_inv,
-  right_inv := bounded_formula_of_W_type_right_inv }
+-- lemma W_type_oplus_bounded_formula_succ_of_bounded_formula_injective [is_algebraic L] {n} :
+--   function.injective $ @W_type_oplus_bounded_formula_succ_of_bounded_formula L _ n :=
+-- begin
+--   intros f₁ f₂,
 
-inductive box : ℕ → Type u
-| base {n} : box n
-| drop {n} (f : box (n+1)) : box n
+-- end
 
+-- def W_type_oplus_bounded_formula_succ_of_bounded_formula
 
 lemma bounded_formula_le_bounded_term :
   #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
