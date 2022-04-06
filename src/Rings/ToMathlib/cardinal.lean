@@ -357,25 +357,28 @@ inductive logic_symbol (L : Language.{u}) : Type u
 | term : Π (l : ℕ), bounded_term L l → logic_symbol
 | nat : ℕ → logic_symbol
 
+-- EXPLAIN THESE SHINANIGANS
+
 @[simp] def logic_symbol_of_formula [is_algebraic L] {n} :
   bounded_formula L n → list (logic_symbol L) :=
 bounded_formula.rec2
-  (λ _, [logic_symbol.nat n, logic_symbol.bot]) -- ⊥
-  (λ l t s, [ logic_symbol.nat n, logic_symbol.eq ,
+  (λ l, [logic_symbol.nat l, logic_symbol.bot]) -- ⊥
+  (λ l t s, [ logic_symbol.nat l, logic_symbol.eq ,
     logic_symbol.term l t , logic_symbol.term l s ]) -- t ≃ s
   (λ _ _ r, false.elim $ Language.is_algebraic.empty_relations _ r) -- bd_rel
-  (λ _ ϕ ψ lϕ lψ, (logic_symbol.nat n) :: logic_symbol.imp :: lϕ.append lψ ) -- ϕ ⟹ ψ
-  (λ l ϕ L, (logic_symbol.nat n) :: logic_symbol.all :: L) -- ∀ₗ ϕ
+  (λ l ϕ ψ lϕ lψ, (logic_symbol.nat l) :: (logic_symbol.nat (list.length lϕ))
+    :: (logic_symbol.nat (list.length lψ)) :: logic_symbol.imp :: lϕ.append lψ ) -- ϕ ⟹ ψ
+  (λ l ϕ lϕ, (logic_symbol.nat l) :: logic_symbol.all :: lϕ) -- ∀ₗ ϕ
 
-lemma logic_symbol_of_preformula_injective [is_algebraic L] {n m} : ∀ (x : bounded_formula L n)
-  (y : bounded_formula L m),
+lemma logic_symbol_of_preformula_injective [is_algebraic L] {n} : ∀ (x : bounded_formula L n)
+  {m} (y : bounded_formula L m),
   logic_symbol_of_formula x = logic_symbol_of_formula y → x == y :=
 begin
   -- apply bounded_formula.rec2,
   have hrel : ∀ {l} {p : Prop} (r : L.relations l), p,
   { intros _ _ r,
     exact false.elim (Language.is_algebraic.empty_relations _ r) },
-  apply @bounded_formula.rec2 _ (λ n x, ∀ (y : bounded_formula L m),
+  apply @bounded_formula.rec2 _ (λ _ x, ∀ {m} (y : bounded_formula L m),
     logic_symbol_of_formula x = logic_symbol_of_formula y → x == y),
   { intro l,
     apply @bounded_formula.rec2 _ (λ n y,
@@ -395,27 +398,43 @@ begin
     { intros _ _ _ _ _ h, simp at h, simpa [h] },
     { intros _ _ _ h, simp at h, simpa [h] } },
   { intros _ _ r, apply hrel r },
-  {sorry},
-  {sorry},
-
-  -- cases x, cases y,
-  -- { simp },
-  -- { simp at hxy,
-    -- simp [hxy] },
-  -- {  },
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-  -- {sorry},
-
-
-
+  { intros l f₁ f₂ hf₁ hf₂,
+    apply @bounded_formula.rec2 _ (λ n y,
+      logic_symbol_of_formula _ = logic_symbol_of_formula y → _ == y),
+    { intros k h, simp at h, simpa [h], },
+    { intros _ _ _ h, simp at h, simpa [h] },
+    { intros _ _ r, apply hrel r },
+    { intros l' f₁' f₂' hf₁' hf₂' h,
+      simp at h,
+      obtain ⟨ hll' , hlenϕ , hlenψ , h ⟩ := h,
+      subst hll',
+      obtain ⟨ hf₁f₁' , hf₂f₂'⟩ := list.append_inj h hlenϕ,
+      congr,
+      { simp at hf₁,
+        specialize hf₁ f₁' hf₁f₁',
+        subst hf₁ },
+      { simp at hf₂,
+        specialize hf₂ f₂' hf₂f₂',
+        subst hf₂ } },
+    { intros _ _ _ h, simp at h, simpa [h] } },
+  { intros l f₁ hf₁ m,
+    apply @bounded_formula.rec2 _ (λ n y,
+      logic_symbol_of_formula _ = logic_symbol_of_formula y → _ == y),
+    { intros k h, simp at h, simpa [h], },
+    { intros _ _ _ h, simp at h, simpa [h] },
+    { intros _ _ r, apply hrel r },
+    { intros _ _ _ _ _ h, simp at h, simpa [h] },
+    { intros k f₂ hf₂ h,
+      have h' := h,
+      simp only [logic_symbol_of_formula, bounded_formula.rec2_aux,
+        bounded_formula.rec2, eq_self_iff_true, true_and] at h hf₁,
+      cases h with hlk h,
+      subst hlk,
+      congr1,
+      apply eq_of_heq,
+      apply hf₁,
+      exact h } },
 end
-
 
 lemma card_le_max [is_algebraic L] {n} (hn : #(bounded_formula L (n + 1))
     ≤ max (cardinal.sum (λ (m : ulift.{u} ℕ), #(bounded_term L m.down))) ω) :
