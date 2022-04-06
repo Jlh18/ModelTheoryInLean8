@@ -352,11 +352,10 @@ begin
   apply h,
 end
 
-
 lemma bounded_formula_card_le [is_algebraic L] (hfunc : ∀ n, #(L.functions n) ≤ κ) (n : ℕ) :
   #(bounded_formula L n) ≤ κ :=
 begin
-  apply le_trans (cardinal.bounded_formula_le_functions _),
+  apply le_trans (cardinal.bounded_formula_le_functions L),
   apply max_le _ hωκ,
   apply le_trans (cardinal.sum_le_sup _),
   simp only [cardinal.mk_denumerable],

@@ -33,6 +33,15 @@ def bounded_term.rec2 {n} {C : bounded_term L n → Sort v}
   ∀(t : bounded_term L n), C t :=
 λt, bounded_term.rec2_aux hvar (λ _, hfunc) t dvector.nil (λ s hs, false.elim $ by {cases hs})
 
+-- have h : ∀{n l} (f : bounded_preformula L n l) (ts : dvector (bounded_term L n) l),
+--   C n (bd_apps_rel f ts),
+-- begin
+--   intros, induction f; try {rw ts.zero_eq},
+--   apply hfalsum, apply hequal, apply hrel, apply f_ih (f_t::ts),
+--   exact himp (f_ih_f₁ ([])) (f_ih_f₂ ([])), exact hall (f_ih ([]))
+-- end,
+-- λn f, h f ([])
+
 @[simp] def bounded_formula.rec2_aux {C : Πn, bounded_formula L n → Sort v}
   (hfalsum : Π {n}, C n ⊥)
   (hequal : Π {n} (t₁ t₂ : bounded_term L n), C n (t₁ ≃ t₂))
@@ -348,51 +357,6 @@ inductive logic_symbol (L : Language.{u}) : Type u
 | term : Π (l : ℕ), bounded_term L l → logic_symbol
 | nat : ℕ → logic_symbol
 
-instance : infinite (logic_symbol L) :=
-infinite.of_injective logic_symbol.nat (λ x y, logic_symbol.nat.inj)
-
-/-- Capture the cardinality of `logic_symbol` by writing it equivalently in terms of a sum.
-  The forward map of the equivalence. -/
-def bounded_term_sum_nat_of_logic_symbol : logic_symbol L →
-  (Σ l : ulift.{u} ℕ, bounded_term L l.down) ⊕ ulift.{u} ℕ
-| logic_symbol.bot := sum.inr ⟨0⟩
-| logic_symbol.eq := sum.inr ⟨1⟩
-| logic_symbol.imp := sum.inr ⟨2⟩
-| logic_symbol.all := sum.inr ⟨3⟩
-| (logic_symbol.term l f) := sum.inl ⟨ ⟨l⟩ , f ⟩
-| (logic_symbol.nat n) := sum.inr ⟨ n+4 ⟩
-
-/-- Capture the cardinality of `logic_symbol` by writing it equivalently in terms of a sum.
-  The backward map of the equivalence. -/
-def logic_symbol_of_bounded_term_sum_nat :
-  (Σ l : ulift.{u} ℕ, bounded_term L l.down) ⊕ ulift.{u} ℕ → logic_symbol L
-| (sum.inl ⟨ l , f ⟩) := logic_symbol.term l.down f
-| (sum.inr ⟨0⟩) := logic_symbol.bot
-| (sum.inr ⟨1⟩) := logic_symbol.eq
-| (sum.inr ⟨2⟩) := logic_symbol.imp
-| (sum.inr ⟨3⟩) := logic_symbol.all
-| (sum.inr (⟨ n+4 ⟩)) := logic_symbol.nat n
-
-/-- Capture the cardinality of `logic_symbol` by writing it equivalently in terms of a sum. -/
-def logic_symbol_equiv_bounded_term_sum_nat :
-  _root_.equiv (logic_symbol L) ((Σ l : ulift.{u} ℕ, bounded_term L l.down) ⊕ ulift.{u} ℕ) :=
-{ to_fun := bounded_term_sum_nat_of_logic_symbol,
-  inv_fun := logic_symbol_of_bounded_term_sum_nat,
-  left_inv := λ x, match x with
-    | logic_symbol.bot := rfl
-    | logic_symbol.eq :=  rfl
-    | logic_symbol.imp := rfl
-    | logic_symbol.all := rfl
-    | (logic_symbol.term l f) := rfl
-    | (logic_symbol.nat n) := rfl end,
-  right_inv := λ x, match x with
-    | (sum.inl ⟨ ⟨l⟩ , f ⟩) := rfl
-    | (sum.inr ⟨0⟩) :=       rfl
-    | (sum.inr ⟨1⟩) :=       rfl
-    | (sum.inr ⟨2⟩) :=       rfl
-    | (sum.inr ⟨3⟩) :=       rfl
-    | (sum.inr (⟨ n+4 ⟩)) := rfl end, }
-
 /-- We inject `bounded_formula L n` into lists of symbols, keeping track
   of how the formula is build.
   We always include the number of variables of the formula at the beginning
@@ -410,7 +374,7 @@ bounded_formula.rec2
     :: (logic_symbol.nat (list.length lψ)) :: logic_symbol.imp :: lϕ.append lψ ) -- ϕ ⟹ ψ
   (λ l ϕ lϕ, (logic_symbol.nat l) :: logic_symbol.all :: lϕ) -- ∀ₗ ϕ
 
-lemma logic_symbol_of_preformula_injective' [is_algebraic L] {n} : ∀ (x : bounded_formula L n)
+lemma logic_symbol_of_preformula_injective [is_algebraic L] {n} : ∀ (x : bounded_formula L n)
   {m} (y : bounded_formula L m),
   logic_symbol_of_formula x = logic_symbol_of_formula y → x == y :=
 begin
@@ -464,73 +428,48 @@ begin
       cases h with hlk h, subst hlk, congr1, apply eq_of_heq, apply hf₁, exact h } },
 end
 
-lemma logic_symbol_of_preformula_injective [is_algebraic L] {n}:
-  function.injective (@logic_symbol_of_formula L _ n) :=
+lemma card_le_max [is_algebraic L] {n} (hn : #(bounded_formula L (n + 1))
+    ≤ max (cardinal.sum (λ (m : ulift.{u} ℕ), #(bounded_term L m.down))) ω) :
+  #(bounded_formula L n)
+    ≤ max (cardinal.sum (λ m : ulift.{u} ℕ, #(bounded_term L m.down))) ω :=
+calc #(bounded_formula L n)
+        = #(W_type (formula_β L n)) :
+  cardinal.mk_congr (bounded_formula_equiv_W_type _)
+    ... ≤ _ : W_type.cardinal_mk_le_max_omega_of_fintype
+    ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :
 begin
-  intros x y hxy,
-  have h := logic_symbol_of_preformula_injective' x y hxy,
-  subst h,
+  dsimp only [formula_α, atomic_formula_α],
+  apply max_le _ (le_max_right _ _),
+  simp only [cardinal.mk_sum, cardinal.mk_punit, cardinal.mk_prod, cardinal.lift_id],
+  apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+  { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+    { apply le_of_lt, simp },
+    { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+      { apply le_trans (cardinal.mul_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
+        repeat { apply le_max_of_le_left,
+          apply cardinal.le_sum.{u u} (λ (n : ulift.{u} ℕ), #(bounded_term.{u} L n.down)) ⟨ n ⟩ }},
+      { apply le_max_of_le_right (le_of_lt _),
+        simp } } },
+  { exact hn },
 end
 
-
-
--- lemma card_le_max [is_algebraic L] {n} (hn : #(bounded_formula L (n + 1))
---     ≤ max (cardinal.sum (λ (m : ulift.{u} ℕ), #(bounded_term L m.down))) ω) :
---   #(bounded_formula L n)
---     ≤ max (cardinal.sum (λ m : ulift.{u} ℕ, #(bounded_term L m.down))) ω :=
--- calc #(bounded_formula L n)
---         = #(W_type (formula_β L n)) :
---   cardinal.mk_congr (bounded_formula_equiv_W_type _)
---     ... ≤ _ : W_type.cardinal_mk_le_max_omega_of_fintype
---     ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :
--- begin
---   dsimp only [formula_α, atomic_formula_α],
---   apply max_le _ (le_max_right _ _),
---   simp only [cardinal.mk_sum, cardinal.mk_punit, cardinal.mk_prod, cardinal.lift_id],
---   apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
---   { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
---     { apply le_of_lt, simp },
---     { apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
---       { apply le_trans (cardinal.mul_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
---         repeat { apply le_max_of_le_left,
---           apply cardinal.le_sum.{u u} (λ (n : ulift.{u} ℕ), #(bounded_term.{u} L n.down)) ⟨ n ⟩ }},
---       { apply le_max_of_le_right (le_of_lt _),
---         simp } } },
---   { exact hn },
--- end
---
-variable (L)
-
-lemma bounded_formula_le_bounded_term [is_algebraic L] {n} :
+lemma bounded_formula_le_bounded_term [is_algebraic L] :
   #(bounded_formula L n) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
-calc #(bounded_formula L n) ≤ # (list (logic_symbol L)) :
-    cardinal.mk_le_of_injective (logic_symbol_of_preformula_injective)
-  ... = # (logic_symbol L) : cardinal.mk_list_eq_mk _
-  ... = _ : cardinal.mk_congr logic_symbol_equiv_bounded_term_sum_nat
-  ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : by {
-  simp only [le_refl, and_true, cardinal.mk_denumerable, cardinal.mk_sum, cardinal.lift_omega,
-    cardinal.mk_sigma, cardinal.lift_id],
-  apply le_trans (cardinal.add_le_max _ _) (max_le (max_le _ _) (le_max_right _ _)),
-  { exact le_max_left _ _ },
-  { exact le_max_right _ _ } }
-
--- lemma bounded_formula_le_bounded_term [is_algebraic L] :
---   #(bounded_formula L n) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
--- calc #(bounded_formula L n)
---         = #(W_type (formula_β L n)) :
---   cardinal.mk_congr (bounded_formula_equiv_W_type _)
---     ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
+calc #(bounded_formula L n)
+        = #(W_type (formula_β L n)) :
+  cardinal.mk_congr (bounded_formula_equiv_W_type _)
+    ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
 
 
--- lemma sentence_le_bounded_term :
---   #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
--- calc #(bounded_formula L 0) ≤ #(W_type (formula_β L 0)) : sorry
---      ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
+lemma sentence_le_bounded_term :
+  #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω :=
+calc #(bounded_formula L 0) ≤ #(W_type (formula_β L 0)) : sorry
+     ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(bounded_term L n.down))) ω : sorry
 
-lemma bounded_formula_le_functions [is_algebraic L] {n} :
-  #(bounded_formula L n) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :=
+lemma sentence_le_functions :
+  #(bounded_formula L 0) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :=
 begin
-  apply le_trans (bounded_formula_le_bounded_term L),
+  apply le_trans (sentence_le_bounded_term),
   apply max_le _ (le_max_right _ _),
   apply le_trans (cardinal.sum_le_sup _),
   simp only [cardinal.mk_denumerable],
@@ -541,6 +480,35 @@ begin
   intro i,
   apply bounded_term_le_functions,
 end
+
+variable (L)
+
+/-- Applying `∀` is an injection downwards. -/
+def bounded_formula_bd_all : bounded_formula L (n+1) → (bounded_formula L n) :=
+λ ϕ, ∀' ϕ
+
+/-- Applying `∀` n times is an injection. "Dropbox" -/
+def bounded_formula_bd_alls : Π n, bounded_formula L n → (bounded_formula L 0)
+| 0 := id
+| (n+1) := (bounded_formula_bd_alls n) ∘ bounded_formula_bd_all L n
+
+variable {L}
+
+lemma bounded_formula_bd_all_injective : function.injective (bounded_formula_bd_all L n) :=
+λ ϕ ψ, bounded_preformula.bd_all.inj
+
+lemma bounded_formula_bd_alls_injective : Π n, function.injective (bounded_formula_bd_alls L n)
+| 0 := function.injective_id
+| (n+1) := function.injective.comp (bounded_formula_bd_alls_injective n) (bounded_formula_bd_all_injective n)
+
+/- Using ∀ we can embed `bounded_formula L (n+1)` into `bounded_formula L n`,
+  hence showing they are all bounded by the function symbols
+ -/
+lemma bounded_formula_le_functions (n : ℕ) :
+  #(bounded_formula L n) ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :=
+calc #(bounded_formula L n) ≤ #(bounded_formula L 0) : cardinal.mk_le_of_injective (bounded_formula_bd_alls_injective _)
+                        ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :
+                        sentence_le_functions
 
 end cardinal
 
