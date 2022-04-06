@@ -39,7 +39,7 @@ lemma card_le_functions : #(term_model T) ≤
 calc #(term_model T)
       ≤ #(closed_term L) : card_le_closed_term T
   ... ≤ max (cardinal.sum (λ n : ulift.{u} ℕ, #(L.functions n.down))) ω :
-    cardinal.bounded_term_le_functions _
+    cardinal.bounded_preterm_le_functions _
 
 lemma card_le_cardinal {κ : cardinal.{u}} (hωκ : ω ≤ κ)
   (hκ : ∀ n : ulift.{u} ℕ, #(L.functions n.down) ≤ κ) : #(term_model T) ≤ κ :=
