@@ -357,12 +357,12 @@ def poly_map {K : Type*} [comm_semiring K] {n : ℕ} :
   poly_map_data K n → (fin n → K) → (fin n → K) :=
 λ ps as k, mv_polynomial.eval as (ps k)
 
-/-- Any injective polynomial map over an algerbaically closed field of char p is surjective -/
-axiom Ax_Groth_of_locally_finite
-  {K : Type*} [field K] [is_alg_closed K]
-  {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) {n : ℕ}
-  (ps : poly_map_data K n) (hinj : function.injective (poly_map ps)) :
-  function.surjective (poly_map ps)
+-- /-- Any injective polynomial map over an algerbaically closed field of char p is surjective -/
+-- axiom Ax_Groth_of_locally_finite
+--   {K : Type*} [field K] [is_alg_closed K]
+--   {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) {n : ℕ}
+--   (ps : poly_map_data K n) (hinj : function.injective (poly_map ps)) :
+--   function.surjective (poly_map ps)
 -- not the focus of the project so we take it as an axiom
 
 section semiring
@@ -930,7 +930,9 @@ lemma realize_surj_formula_aux {n d : ℕ}
   (ys : dvector ↥(struc_to_ring_struc.Structure A) n) (k : fin n) :
   realize_bounded_term
     (ys.append (xs.append coeffs))
-    x_⟨ k + n , inj_formula_aux4 ⟩ dvector.nil
+
+
+x_⟨ k + n , inj_formula_aux4 ⟩ dvector.nil
   = xs.nth' k :=
 begin
     simp only [realize_bounded_term, symm (fin.val_eq_coe _)],
@@ -1435,27 +1437,33 @@ begin
   },
 end
 
-lemma realize_Ax_Groth_formula_of_char_p
-  {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) (n d : ℕ) :
-  Structure K ⊨ Ax_Groth_formula n d :=
-realize_Ax_Groth_formula.mpr (Ax_Groth_of_locally_finite hprime hchar) d
+-- lemma realize_Ax_Groth_formula_of_char_p
+--   {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) (n d : ℕ) :
+--   Structure K ⊨ Ax_Groth_formula n d :=
+-- realize_Ax_Groth_formula.mpr (Ax_Groth_of_locally_finite hprime hchar) d
 
 open Fields
 
-/-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete') and the axiom-/
-lemma ACFₚ_ssatisfied_Ax_Groth_formula {p : ℕ} (hp : nat.prime p) (n : ℕ) :
-  ∀ d, (ACFₚ hp) ⊨ Ax_Groth_formula n d :=
+lemma Ax_Groth_locally_finite (p : ℕ) [hp : fact (nat.prime p)] {n} :
+  ∀ (ps : poly_map_data (algebraic_closure.of_ulift_zmod p) n),
+    function.injective (poly_map ps) → function.surjective (poly_map ps) :=
 begin
-  have h : ∀ d, (instances.algebraic_closure_of_zmod hp) ⊨ Ax_Groth_formula n d,
+  sorry
+end
+
+/-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete') and the axiom-/
+lemma ACFₚ_ssatisfied_Ax_Groth_formula {p : ℕ} [hp : fact p.prime] (n : ℕ) :
+  ∀ d, (ACFₚ hp.1) ⊨ Ax_Groth_formula n d :=
+begin
+  have h : ∀ d, (instances.algebraic_closure_of_zmod hp.1) ⊨ Ax_Groth_formula n d,
   {
     rw realize_Ax_Groth_formula,
-    apply Ax_Groth_of_locally_finite hp
-      (@algebraic_closure.of_ulift_zmod.char_p p ⟨ hp ⟩),
+    exact Ax_Groth_locally_finite p, -- locally finite version
   },
   intro d,
-  exact Lefschetz.is_complete''_ACFₚ hp
-    (instances.algebraic_closure_of_zmod hp) ⟨ 0 ⟩ (Ax_Groth_formula n d)
-    (instances.algebraic_closure_of_zmod_models_ACFₚ hp) (h d),
+  exact Lefschetz.is_complete''_ACFₚ hp.1
+    (instances.algebraic_closure_of_zmod hp.1) ⟨ 0 ⟩ (Ax_Groth_formula n d)
+    (instances.algebraic_closure_of_zmod_models_ACFₚ hp.1) (h d),
 end
 
 /-- Ax_Groth_formula is true in ACF₀, corollary of Lefschetz part 3. and char_p case -/
@@ -1464,7 +1472,8 @@ lemma ACF₀_ssatisfied_Ax_Groth_formula (n d : ℕ) :
 begin
   rw Lefschetz.characteristic_change,
   use 0,
-  intros _ _ _,
+  intros p hp _,
+  haveI : fact p.prime := ⟨ hp ⟩,
   apply ACFₚ_ssatisfied_Ax_Groth_formula,
 end
 
