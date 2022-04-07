@@ -13,12 +13,6 @@ open Rings.instances
 theorem is_complete''_ACF₀ : is_complete'' ACF₀ :=
 is_complete''_to_is_complete' is_complete'_ACF₀
 
-/-- Lefschetz part 3. Any sentence or its negation can be deduced in ACFₚ-/
-theorem is_complete'_ACFₚ {p : ℕ} (hp : nat.prime p) : is_complete' (ACFₚ hp) :=
-begin
-  sorry
-end
-
 /-- Lefcschetz part 3. Being true in a model of ACFₚ implies being true for any model of ACFₚ-/
 theorem is_complete''_ACFₚ {p : ℕ} (hp : nat.prime p) :
   is_complete'' (ACFₚ hp) :=
