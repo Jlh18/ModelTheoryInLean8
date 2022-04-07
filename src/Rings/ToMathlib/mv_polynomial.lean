@@ -54,7 +54,36 @@ lemma finsupp_coeff_sumr
   list.sumr (list.map (λ p : mv_polynomial σ A, mv_polynomial.coeff f p) ps) :=
 list.add_zero_hom_sumr (mv_polynomial.finsupp_coeff_add_zero_hom A f) ps
 
-
+lemma eval_mem {K : Type*} [comm_semiring K]
+  {σ : Type*} [decidable_eq K]
+  (p : mv_polynomial σ K) (s : subsemiring K)
+  (hs : ∀ i, p.coeff i ∈ s) (v : σ → K) (hv : ∀ i, v i ∈ s) :
+     mv_polynomial.eval v p ∈ s :=
+begin
+  classical,
+  revert hs,
+  refine mv_polynomial.induction_on''' p _ _,
+  { intros a hs,
+    simpa using hs 0 },
+  { intros a b f ha hb0 ih hs,
+    rw [map_add],
+    refine subsemiring.add_mem _ _ _,
+    { rw [eval_monomial],
+      refine subsemiring.mul_mem _ _ _,
+      { have := hs a,
+        rwa [coeff_add, coeff_monomial, if_pos rfl, not_mem_support_iff.1 ha, add_zero] at this },
+      { refine subsemiring.prod_mem _ (λ i hi, _),
+        refine subsemiring.pow_mem _ _ _,
+        exact hv _ } },
+    { refine ih (λ i, _),
+      have := hs i,
+      rw [coeff_add, coeff_monomial] at this,
+      split_ifs at this with h h,
+      { subst h,
+        rw [not_mem_support_iff.1 ha],
+        exact subsemiring.zero_mem _ },
+      { rwa zero_add at this } } }
+end
 -- variables
 --   {σ S₁ R : Type*}
 --   [comm_semiring R] [comm_semiring S₁]

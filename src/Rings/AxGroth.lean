@@ -349,20 +349,58 @@ bd_alls (n * ((monom_deg_le n d).length))
 $ inj_formula n d ⟹ surj_formula n d
 
 /-- the data of a polynomial map consists of n polynomials in n variables -/
-@[simp] def poly_map_data (K : Type*) [comm_semiring K] (n : ℕ) : Type* :=
+@[simp] def poly_map (K : Type*) [comm_semiring K] (n : ℕ) : Type* :=
 fin n → mv_polynomial (fin n) K
 
+namespace poly_map
+
+
+open mv_polynomial
+
+variables {K : Type*} [comm_semiring K] {n : ℕ}
+
 /-- a polynomial map evaluates those polynomials that it consists of -/
-def poly_map {K : Type*} [comm_semiring K] {n : ℕ} :
-  poly_map_data K n → (fin n → K) → (fin n → K) :=
+def eval :
+  poly_map K n → (fin n → K) → (fin n → K) :=
 λ ps as k, mv_polynomial.eval as (ps k)
+
+lemma eval_mem_aux [decidable_eq K] {σ : Type*}
+  (p : fin n → mv_polynomial σ K) (s : subsemiring K)
+  (hs : ∀ i, ↑((p i).support.image (λ x, coeff x (p i))) ⊆ (s : set K)) :
+  ∀ (v : σ → K) (hv : ∀ i, v i ∈ s) (i : fin n), mv_polynomial.eval v (p i) ∈ s :=
+begin
+  induction n with n ih,
+  { intros _ _ i,
+    exact i.elim0 },
+  { intros v hv i,
+    refine fin.cases _ _ i,
+    { apply mv_polynomial.eval_mem (p 0) s,
+      { intros m,
+        by_cases hm : m ∈ (p 0).support,
+        { exact hs 0 (finset.mem_image.2 ⟨m, hm, rfl⟩) },
+        { rw [not_mem_support_iff.1 hm],
+          exact subsemiring.zero_mem _ } },
+      { assumption } },
+    { intro j,
+      apply ih (λ i, p i.succ) _ _ hv,
+      intro k,
+      apply hs } }
+end
+
+lemma eval_mem [decidable_eq K]
+  (p : poly_map K n) (s : subsemiring K)
+  (hs : ∀ i, ↑((p i).support.image (λ x, coeff x (p i))) ⊆ (s : set K)) :
+  ∀ (v : fin n → K) (hv : ∀ i, v i ∈ s) (i : fin n), mv_polynomial.eval v (p i) ∈ s :=
+eval_mem_aux p s hs
+
+end poly_map
 
 -- /-- Any injective polynomial map over an algerbaically closed field of char p is surjective -/
 -- axiom Ax_Groth_of_locally_finite
 --   {K : Type*} [field K] [is_alg_closed K]
 --   {p : ℕ} (hprime : nat.prime p) (hchar : char_p K p) {n : ℕ}
---   (ps : poly_map_data K n) (hinj : function.injective (poly_map ps)) :
---   function.surjective (poly_map ps)
+--   (ps : poly_map K n) (hinj : function.injective (poly_map.eval ps)) :
+--   function.surjective (poly_map.eval ps)
 -- not the focus of the project so we take it as an axiom
 
 section semiring
@@ -371,15 +409,15 @@ variables {A : Type*} [comm_semiring A] {n : ℕ}
 
 /-- takes a polynomial map
   (preferably of total deg < d) and gives list of coeffs of each monomial -/
-@[simp] def poly_map_data.coeffs_list
-  {n : ℕ} (d : ℕ) (ps : poly_map_data A n) : list A :=
+@[simp] def poly_map.coeffs_list
+  {n : ℕ} (d : ℕ) (ps : poly_map A n) : list A :=
 list.join (list.of_fn (λ i : fin n, coeffs_list_of_mv_polynomial d (ps i)))
 
 /- Writes polynomial map into a dvector of its coefficients -/
-def poly_map_data.coeffs_dvector
-  {n : ℕ} (d : ℕ) (ps : poly_map_data A n) :
-  dvector A (poly_map_data.coeffs_list d ps).length :=
-dvector.of_list (poly_map_data.coeffs_list d ps)
+def poly_map.coeffs_dvector
+  {n : ℕ} (d : ℕ) (ps : poly_map A n) :
+  dvector A (poly_map.coeffs_list d ps).length :=
+dvector.of_list (poly_map.coeffs_list d ps)
 
 /-- the number of coefficients of mv_polynomial = number of monomials -/
 lemma coeffs_list_length_eq_monom_deg_le_length {d : ℕ}
@@ -389,12 +427,12 @@ lemma coeffs_list_length_eq_monom_deg_le_length {d : ℕ}
   (monom_deg_le n d).length := by simp
 
 /-- lemma for matching up lengths of contexts for mv_polynomials -/
-lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map_data A n) :
+lemma variable_bound_equal {n : ℕ} (d : ℕ) (ps : poly_map A n) :
   (n * (monom_deg_le n d).length)
   =
-  (poly_map_data.coeffs_list d ps).length :=
+  (poly_map.coeffs_list d ps).length :=
 begin
-  simp only [poly_map_data.coeffs_list, list.length_join],
+  simp only [poly_map.coeffs_list, list.length_join],
   rw list.sum_map_length_of_fn_const_length,
   intro i,
   apply coeffs_list_length_eq_monom_deg_le_length,
@@ -402,11 +440,11 @@ end
 
 /-- Writes polynomial map into a dvector of its coefficients
   (with a replaced variable context) -/
-def poly_map_data.coeffs_dvector' {n : ℕ} (d : ℕ)
-  (ps : poly_map_data A n) :
+def poly_map.coeffs_dvector' {n : ℕ} (d : ℕ)
+  (ps : poly_map A n) :
   dvector A (n * (monom_deg_le n d).length) :=
 dvector.cast (symm (variable_bound_equal d ps))
-  (poly_map_data.coeffs_dvector d ps)
+  (poly_map.coeffs_dvector d ps)
 
 end semiring
 
@@ -487,11 +525,11 @@ begin
   {exact disjoint_sdiff_self_right},
 end
 
-variables (ps : poly_map_data A n)
+variables (ps : poly_map A n)
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d)
   (xs ys : dvector ↥(struc_to_ring_struc.Structure A) n)
 
-lemma eval_poly_map_data_xs_aux_prod
+lemma eval_poly_map_xs_aux_prod
   {m} (f : fin n → ℕ)
   (coeffs : dvector ↥(struc_to_ring_struc.Structure A) (n * m)) :
   n.non_comm_prod
@@ -509,7 +547,7 @@ begin
   rw dvector.nth_append_small,
 end
 
-lemma eval_poly_map_data_ys_aux_prod
+lemma eval_poly_map_ys_aux_prod
   {m} (f : fin n → ℕ)
   (coeffs : dvector ↥(struc_to_ring_struc.Structure A) (n * m)) :
   n.non_comm_prod
@@ -525,7 +563,7 @@ begin
   rw ← @dvector.nth_append_small _ _ _ ys,
 end
 
-lemma poly_map_data.coeffs_dvector'_nth_aux0
+lemma poly_map.coeffs_dvector'_nth_aux0
   (j : fin n) (f : fin n → ℕ) :
   list.index_of' f (monom_deg_le_finset n d).to_list
     + ↑j * (monom_deg_le_finset n d).to_list.length
@@ -545,14 +583,14 @@ begin
   apply list.index_of'_lt_length (zero_lt_monom_deg_le_length _ _),
 end
 
-lemma poly_map_data.coeffs_dvector'_nth_aux1
-  {ps : poly_map_data A n} :
+lemma poly_map.coeffs_dvector'_nth_aux1
+  {ps : poly_map A n} :
   ∀ (i : fin n),
   ((λ (i : fin n), coeffs_list_of_mv_polynomial d (ps i)) i).length
   = (monom_deg_le n d).length :=
 λ i, coeffs_list_length_eq_monom_deg_le_length (ps i)
 
-lemma poly_map_data.coeffs_dvector'_nth_aux2
+lemma poly_map.coeffs_dvector'_nth_aux2
   (j : fin n) (f : fin n → ℕ)
   (hf : f ∈ monom_deg_le n d) :
   finsupp_of_fin_dom_emb.to_fun f
@@ -572,23 +610,23 @@ begin
   congr,
 end
 
-lemma poly_map_data.coeffs_dvector'_nth
+lemma poly_map.coeffs_dvector'_nth
   {A : Type*} [comm_ring A] {n d : ℕ}
-  {ps : poly_map_data A n} (j : fin n) (f : fin n → ℕ)
+  {ps : poly_map A n} (j : fin n) (f : fin n → ℕ)
   (hf : f ∈ monom_deg_le_finset n d) :
   (ps j).to_fun (finsupp_of_fin_dom_emb f) =
-    (poly_map_data.coeffs_dvector' d ps).nth
+    (poly_map.coeffs_dvector' d ps).nth
       (list.index_of' f (monom_deg_le_finset n d).to_list +
         ↑j * (monom_deg_le n d).length)
-      (poly_map_data.coeffs_dvector'_nth_aux0 j f) :=
+      (poly_map.coeffs_dvector'_nth_aux0 j f) :=
 begin
-  rw [poly_map_data.coeffs_dvector', dvector.nth_cast,
-    poly_map_data.coeffs_dvector, dvector.nth_of_list],
-  delta poly_map_data.coeffs_list,
+  rw [poly_map.coeffs_dvector', dvector.nth_cast,
+    poly_map.coeffs_dvector, dvector.nth_of_list],
+  delta poly_map.coeffs_list,
   unfold_coes,
   rw list.nth_le_join_of_fn_const_length
     (λ (i : fin n), coeffs_list_of_mv_polynomial d (ps i))
-    poly_map_data.coeffs_dvector'_nth_aux1
+    poly_map.coeffs_dvector'_nth_aux1
     j.2
     (index_of_monom_deg_le_lt_length _),
   have h :
@@ -605,25 +643,25 @@ begin
   apply congr_arg,
   have hf' : f ∈ (monom_deg_le_finset n d).to_list :=
   (finset.mem_to_list _).2 hf,
-  exact poly_map_data.coeffs_dvector'_nth_aux2 j f hf',
+  exact poly_map.coeffs_dvector'_nth_aux2 j f hf',
   -- {exact index_of_monom_deg_le₀_lt_length _},
 end
 
-lemma eval_poly_map_data_xs
+lemma eval_poly_map_xs
   [decidable_eq (mv_polynomial (fin n) A)]
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) (j : fin n) :
   mv_polynomial.eval (λ (i : fin n), xs.nth i i.2) (ps j)
   =
   list.sumr (list.map
     (λ (f : fin n → ℕ),
-       (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+       (ys.append (xs.append (poly_map.coeffs_dvector' d ps))).nth
          (list.index_of' f (monom_deg_le_finset n d).to_list +
             (j * (monom_deg_le_finset n d).to_list.length + n + n))
          (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
          *
          (n.non_comm_prod
            (λ (i : fin n),
-             (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+             (ys.append (xs.append (poly_map.coeffs_dvector' d ps))).nth
              (i + n) inj_formula_aux4 ^ f i))
          )
     (monom_deg_le n d))
@@ -636,7 +674,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw eval_poly_map_data_xs_aux_prod xs ys f,
+  rw eval_poly_map_xs_aux_prod xs ys f,
   congr,
   rw [mv_polynomial.coeff, dvector.nth_append_big],
   {
@@ -648,7 +686,7 @@ begin
       simp only [symm (add_assoc (list.index_of' f (monom_deg_le_finset n d).to_list
         + j * (monom_deg_le_finset n d).to_list.length) n n)],
       simp only [nat.add_sub_cancel],
-      exact poly_map_data.coeffs_dvector'_nth _ f hf,
+      exact poly_map.coeffs_dvector'_nth _ f hf,
     },
     {
       rw ← add_assoc,
@@ -663,28 +701,28 @@ begin
   },
 end
 
-lemma eval_poly_map_data_ys
+lemma eval_poly_map_ys
   [decidable_eq (mv_polynomial (fin n) ↥(struc_to_ring_struc.Structure A))]
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) (j : fin n) :
   mv_polynomial.eval (λ (i : fin n), ys.nth i i.2) (ps j)
   =
   list.sumr (list.map
     (λ (f : fin n → ℕ),
-      (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+      (ys.append (xs.append (poly_map.coeffs_dvector' d ps))).nth
         (list.index_of' f (monom_deg_le_finset n d).to_list +
            (j * (monom_deg_le_finset n d).to_list.length + n + n))
         (poly_indexed_by_monoms_aux0 n d _ _ inj_formula_aux0 f)
         *
         (n.non_comm_prod
           (λ (i : fin n),
-            (ys.append (xs.append (poly_map_data.coeffs_dvector' d ps))).nth
+            (ys.append (xs.append (poly_map.coeffs_dvector' d ps))).nth
             (i + 0) inj_formula_aux3 ^ f i))
         )
     (monom_deg_le_finset n d).to_list)
   :=
 begin
   rw mv_polynomial.eval_eq',
-  -- rw ← eval_poly_map_data_ys_aux_prod ps xs ys,
+  -- rw ← eval_poly_map_ys_aux_prod ps xs ys,
   rw mv_polynomial_sum_eq_finset_map_monom_deg_le_finset_sum (ps j) (hdeg j),
   rw finset.sum_map,
   delta monom_deg_le,
@@ -692,7 +730,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw eval_poly_map_data_ys_aux_prod xs ys f,
+  rw eval_poly_map_ys_aux_prod xs ys f,
   congr,
   rw mv_polynomial.coeff,
   rw dvector.nth_append_big,
@@ -705,7 +743,7 @@ begin
       simp only [symm (add_assoc (list.index_of' f (monom_deg_le_finset n d).to_list
         + j * (monom_deg_le_finset n d).to_list.length) n n)],
       simp only [nat.add_sub_cancel],
-      exact poly_map_data.coeffs_dvector'_nth _ f hf,
+      exact poly_map.coeffs_dvector'_nth _ f hf,
     },
     {
       rw ← add_assoc,
@@ -724,15 +762,15 @@ variable [decidable_eq A]
 
 lemma realize_inj_formula_iff_injective
   {n d : ℕ}
-  (ps : poly_map_data A n)
+  (ps : poly_map A n)
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
   @realize_bounded_formula _ (struc_to_ring_struc.Structure A)
-    _ _ (@poly_map_data.coeffs_dvector' A _ n d ps)
+    _ _ (@poly_map.coeffs_dvector' A _ n d ps)
     (inj_formula n d) dvector.nil
   ↔
-  function.injective (poly_map ps) :=
+  function.injective (poly_map.eval ps) :=
 begin
-  -- let xs0 := poly_map_data.coeffs_dvector' d ps,
+  -- let xs0 := poly_map.coeffs_dvector' d ps,
   -- open up the definition of inj_formula and what it means to realize it
   simp only [inj_formula,
       realize_bounded_formula_bd_alls',
@@ -746,7 +784,7 @@ begin
   set xs' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn xs with hxs',
   set ys' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn ys with hys',
   have hImage :  ∀ (k : fin n),
-    realize_bounded_formula (ys'.append (xs'.append (poly_map_data.coeffs_dvector' d ps)))
+    realize_bounded_formula (ys'.append (xs'.append (poly_map.coeffs_dvector' d ps)))
       (poly_indexed_by_monoms n d (↑k * (monom_deg_le n d).length + n + n) n (n * (monom_deg_le n d).length + n + n)
            inj_formula_aux0
            inj_formula_aux2 ≃
@@ -756,18 +794,18 @@ begin
       dvector.nil,
   {
     intro j,
-    simp only [poly_map] at himage,
+    simp only [poly_map.eval] at himage,
     have himagej := congr_fun himage j,
     simp only [realize_bounded_formula,
       monom_deg_le, realize_poly_indexed_by_monoms],
     convert himagej,
     {
-      convert symm (eval_poly_map_data_xs ps xs' ys' hdeg j),
+      convert symm (eval_poly_map_xs ps xs' ys' hdeg j),
       funext k,
       simp only [dvector.nth_of_fn, fin.eta],
     },
     {
-      convert symm (eval_poly_map_data_ys ps xs' ys' hdeg j),
+      convert symm (eval_poly_map_ys ps xs' ys' hdeg j),
       funext k,
       simp only [dvector.nth_of_fn, fin.eta],
     },
@@ -793,19 +831,19 @@ begin
   intro hImage, -- assume the images are all equal (expressed model theoretically)
   -- we must translate this to the images are equal
   -- (expressed algebraically / in the ring)
-  have himage : poly_map ps (λ i, dvector.nth xs i i.2)
-               = poly_map ps (λ i, dvector.nth ys i i.2),
+  have himage : poly_map.eval ps (λ i, dvector.nth xs i i.2)
+               = poly_map.eval ps (λ i, dvector.nth ys i i.2),
   {
     funext j, -- for each i < n (... the tuples at i are equal)
-    simp only [poly_map],
+    simp only [poly_map.eval],
     have hImagej := hImage j,
     simp only [realize_bounded_formula,
       monom_deg_le, realize_poly_indexed_by_monoms] at hImagej,
     convert hImagej,
-    {rw eval_poly_map_data_xs ps xs ys hdeg j, refl },
-    {rw eval_poly_map_data_ys ps xs ys hdeg j, refl },
+    {rw eval_poly_map_xs ps xs ys hdeg j, refl },
+    {rw eval_poly_map_ys ps xs ys hdeg j, refl },
   },
-  -- by injectivity of poly_map ps we have the preimages are equal (pointwise)
+  -- by injectivity of poly_map.eval ps we have the preimages are equal (pointwise)
   intro i, -- for each input (... they are equal)
   have hpreimage : dvector.nth xs i i.2 = dvector.nth ys i i.2,
   {apply congr_fun (hinj himage) i},
@@ -820,13 +858,13 @@ end
 
 lemma realize_surj_formula_iff_surjective
   {n d : ℕ}
-  (ps : poly_map_data A n)
+  (ps : poly_map A n)
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
   (@realize_bounded_formula _ (struc_to_ring_struc.Structure A)
-    _ _ (@poly_map_data.coeffs_dvector' A _ n d ps)
+    _ _ (@poly_map.coeffs_dvector' A _ n d ps)
     (surj_formula n d) dvector.nil)
   ↔
-  function.surjective (poly_map ps)
+  function.surjective (poly_map.eval ps)
   :=
 begin
   simp only [surj_formula,
@@ -842,7 +880,7 @@ begin
   funext k,
   have hysk := hys k,
   have hrw0 : realize_bounded_term
-    (ys.append ((dvector.of_fn xs).append (poly_map_data.coeffs_dvector' d ps)))
+    (ys.append ((dvector.of_fn xs).append (poly_map.coeffs_dvector' d ps)))
     x_⟨ k + n , inj_formula_aux4 ⟩ dvector.nil = xs k,
   {
     simp only [realize_bounded_term, symm (fin.val_eq_coe _)],
@@ -854,7 +892,7 @@ begin
   },
   rw hrw0 at hysk,
   simp only [monom_deg_le, realize_poly_indexed_by_monoms] at hysk,
-  have hrw1 := eval_poly_map_data_ys ps (dvector.of_fn xs) ys hdeg k,
+  have hrw1 := eval_poly_map_ys ps (dvector.of_fn xs) ys hdeg k,
   simpa only [symm (eq.trans hrw1 hysk), fin.val_eq_coe],
  },
  {
@@ -864,14 +902,14 @@ begin
    intro k,
    simp only [monom_deg_le, realize_poly_indexed_by_monoms],
    have hrw1 :=
-     symm (eval_poly_map_data_ys ps xs (dvector.of_fn ys) hdeg k),
+     symm (eval_poly_map_ys ps xs (dvector.of_fn ys) hdeg k),
    convert hrw1,
    simp only [realize_bounded_term, symm (fin.val_eq_coe _)],
    rw dvector.nth_append_big (nat.le_add_left _ _) _,
    rw dvector.nth_append_small,
    {
      have hysk := congr_fun hys k,
-     dsimp only [poly_map, dvector.nth'] at hysk, -- remove
+     dsimp only [poly_map.eval, dvector.nth'] at hysk, -- remove
      simp only [nat.add_sub_cancel,
        dvector.nth_of_fn, fin.val_eq_coe, fin.eta, hysk],
    },
@@ -1007,7 +1045,7 @@ lemma mv_polynomial_of_coeffs_eq_nth_index_of'
   coeffs.nth
     (list.index_of' f (monom_deg_le_finset n d).to_list
       + ↑k * (monom_deg_le_finset n d).to_list.length)
-      (poly_map_data.coeffs_dvector'_nth_aux0 _ _) :=
+      (poly_map.coeffs_dvector'_nth_aux0 _ _) :=
 begin
   simp only [mv_polynomial_of_coeffs],
   rw mv_polynomial.finsupp_coeff_sumr,
@@ -1069,7 +1107,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw eval_poly_map_data_ys_aux_prod xs ys f,
+  rw eval_poly_map_ys_aux_prod xs ys f,
   congr,
   rw dvector.nth_append_big,
   {
@@ -1129,7 +1167,7 @@ begin
   rw finset.sum_to_list,
   apply finset.sum_congr rfl,
   intros f hf,
-  rw eval_poly_map_data_xs_aux_prod xs ys f,
+  rw eval_poly_map_xs_aux_prod xs ys f,
   congr,
   rw dvector.nth_append_big,
   {
@@ -1224,7 +1262,7 @@ lemma injective_iff_realize_inj_formula
   {n d : ℕ} (coeffs : dvector ↥(struc_to_ring_struc.Structure A)
     (n * (monom_deg_le n d).length)) :
   function.injective
-    (poly_map (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs)))
+    (poly_map.eval (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs)))
   ↔
   realize_bounded_formula coeffs (inj_formula n d) dvector.nil
   :=
@@ -1237,21 +1275,21 @@ begin
   {
     intros hinj xs ys hImage k,
     have himage :
-    poly_map
+    poly_map.eval
       (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs))
       (λ i, dvector.nth xs i i.2)
     =
-    poly_map
+    poly_map.eval
       (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs))
       (λ i, dvector.nth ys i i.2),
    {
      funext j,
      convert hImage j,
-     { simpa only [poly_map, dvector.nth'_eq,
+     { simpa only [poly_map.eval, dvector.nth'_eq,
          eval_mv_polynomial_of_coeffs_xs0 coeffs xs ys j,
          realize_poly_indexed_by_monoms,
          monom_deg_le] },
-     { simpa only [poly_map, dvector.nth'_eq,
+     { simpa only [poly_map.eval, dvector.nth'_eq,
          eval_mv_polynomial_of_coeffs_ys0 coeffs xs ys j,
          realize_poly_indexed_by_monoms,
          monom_deg_le] },
@@ -1284,12 +1322,12 @@ begin
     {
       intro j,
       convert congr_fun himage j,
-     { simp only [poly_map, dvector.nth'_eq,
+     { simp only [poly_map.eval, dvector.nth'_eq,
          eval_mv_polynomial_of_coeffs_xs1 coeffs xs ys' j,
          realize_poly_indexed_by_monoms,
          monom_deg_le] },
      {
-       simp only [poly_map, dvector.nth'_eq,
+       simp only [poly_map.eval, dvector.nth'_eq,
          eval_mv_polynomial_of_coeffs_ys2 coeffs xs' ys j,
          realize_poly_indexed_by_monoms,
          monom_deg_le] },
@@ -1311,7 +1349,7 @@ lemma surjective_iff_realize_surj_formula
   {n d : ℕ} (coeffs : dvector ↥(struc_to_ring_struc.Structure A)
     (n * (monom_deg_le n d).length)) :
   function.surjective
-    (poly_map (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs)))
+    (poly_map.eval (λ i : fin n, mv_polynomial_of_coeffs (dvector.ith_chunk i coeffs)))
   ↔
   realize_bounded_formula coeffs (surj_formula n d) dvector.nil
   :=
@@ -1328,7 +1366,7 @@ begin
     refine ⟨ dvector.of_fn ys , _ ⟩,
     intro k,
     have hysk := congr_fun hys k,
-    simp only [poly_map] at hysk,
+    simp only [poly_map.eval] at hysk,
     rw realize_surj_formula_aux coeffs,
     convert hysk,
     rw eval_mv_polynomial_of_coeffs_ys2,
@@ -1339,7 +1377,7 @@ begin
     refine ⟨ ys.nth' , _ ⟩,
     funext k,
     have hysk := hys k,
-    simp only [poly_map],
+    simp only [poly_map.eval],
     simp only [realize_surj_formula_aux coeffs (dvector.of_fn xs) ys k,
       dvector.nth'_of_fn] at hysk,
     convert hysk,
@@ -1402,19 +1440,19 @@ open Rings.struc_to_ring_struc
 theorem realize_Ax_Groth_formula {n : ℕ} :
   (∀ d : ℕ, Structure K ⊨ Ax_Groth_formula n d)
   ↔
-  (∀ (ps : poly_map_data K n),
-    function.injective (poly_map ps) → function.surjective (poly_map ps)) :=
+  (∀ (ps : poly_map K n),
+    function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps)) :=
 begin
   split,
   {
     intros H ps hinj,
     set d := max_total_deg ps,
     specialize H d,
-    let coeffs := poly_map_data.coeffs_dvector' d ps,
+    let coeffs := poly_map.coeffs_dvector' d ps,
     simp only [realize_sentence_bd_alls, Ax_Groth_formula] at H,
     -- injective -> realize inj_formula
     have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
-      (poly_map_data.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
+      (poly_map.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
     {
       rw realize_inj_formula_iff_injective ps (total_deg_le_max_total_deg ps),
       exact hinj,
@@ -1444,22 +1482,73 @@ end
 
 open Fields
 
-lemma Ax_Groth_locally_finite (p : ℕ) [hp : fact (nat.prime p)] {n} :
-  ∀ (ps : poly_map_data (algebraic_closure.of_ulift_zmod p) n),
-    function.injective (poly_map ps) → function.surjective (poly_map ps) :=
+-- Credit to Chris Hughes
+/-- Any injective polynomial map over an algerbaically closed field of char p is surjective -/
+lemma Ax_Groth_of_locally_finite (K₀ : Type*) {K : Type*} [field K₀] [fintype K₀] [comm_ring K]
+  [algebra K₀ K] (alg : algebra.is_algebraic K₀ K)
+  (n) (ps : poly_map K n) (hinj : function.injective (poly_map.eval ps)) :
+  function.surjective (poly_map.eval ps) :=
 begin
-  sorry
+  have is_int : ∀ x : K, is_integral K₀ x,
+    from λ x, is_algebraic_iff_is_integral.1 (alg x),
+  classical,
+  intros v,
+  let s : finset K :=
+    finset.bUnion (finset.univ : finset (fin n))
+      (λ i, (ps i).support.image (λ x, mv_polynomial.coeff x (ps i)))
+    ∪ (finset.univ : finset (fin n)).image v,
+  have hs₁ : ∀ (i : fin n),
+    (finset.image (λ (x : fin n →₀ ℕ), mv_polynomial.coeff x (ps i)) (ps i).support : set K) ⊆
+      subsemiring.closure (s : set K),
+    from λ j x hx, subsemiring.subset_closure
+      (finset.mem_union_left _
+        (finset.mem_bUnion.2 ⟨j, finset.mem_univ _, hx⟩)),
+  have hv₁ : ∀ i, v i ∈ subsemiring.closure (s : set K),
+    from λ j, subsemiring.subset_closure
+        (finset.mem_union_right _
+          (finset.mem_image.2 ⟨j, finset.mem_univ _, rfl⟩)),
+  have hs : ∀ i, poly_map.eval ps v i ∈ subsemiring.closure (s : set K),
+    from poly_map.eval_mem ps _ hs₁ v hv₁,
+  letI : fintype (subsemiring.closure (s : set K)),
+  { letI := is_noetherian_adjoin_finset s (λ x _, is_int x),
+    letI := module.is_noetherian.finite K₀ (algebra.adjoin K₀ (s : set K)),
+    have alg_fintype := finite_dimensional.fintype_of_fintype
+      K₀ (algebra.adjoin K₀ (s : set K)),
+    have hsubset : subsemiring.closure (s : set K) ≤
+      (algebra.adjoin K₀ (s : set K)).to_subsemiring,
+      from subsemiring.closure_le.2
+        (galois_connection.le_u_l algebra.gc _),
+    exact (set.finite.subset ⟨alg_fintype⟩ hsubset).fintype },
+  let res : (fin n → subsemiring.closure (s : set K)) →
+      (fin n → subsemiring.closure (s : set K)) :=
+    λ x i, ⟨poly_map.eval ps (λ j, (x j)) i, poly_map.eval_mem _ _ hs₁ _ (λ j, (x j).2) _⟩,
+  have hres_inj : function.injective res,
+  { intros x y hxy,
+    funext i,
+    ext,
+    simp only [res, subtype.ext_iff, function.funext_iff] at hxy,
+    exact congr_fun (hinj (funext hxy)) i },
+  have hres_surj : function.surjective res,
+    from fintype.injective_iff_surjective.1 hres_inj,
+  cases hres_surj (λ i, ⟨v i, hv₁ i⟩) with w hw,
+  use λ i, w i,
+  simp only [res, subtype.ext_iff, function.funext_iff] at hw,
+  exact funext hw
 end
+
+lemma Ax_Groth_locally_finite (p : ℕ) [hp : fact (nat.prime p)] {n} :
+  ∀ (ps : poly_map (algebraic_closure.of_ulift_zmod.{u} p) n),
+    function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps) :=
+Ax_Groth_of_locally_finite (ulift.{u} (zmod p))
+    (algebraic_closure.is_algebraic (ulift.{u} (zmod p))) n
 
 /-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete') and the axiom-/
 lemma ACFₚ_ssatisfied_Ax_Groth_formula {p : ℕ} [hp : fact p.prime] (n : ℕ) :
   ∀ d, (ACFₚ hp.1) ⊨ Ax_Groth_formula n d :=
 begin
   have h : ∀ d, (instances.algebraic_closure_of_zmod hp.1) ⊨ Ax_Groth_formula n d,
-  {
-    rw realize_Ax_Groth_formula,
-    exact Ax_Groth_locally_finite p, -- locally finite version
-  },
+  { rw realize_Ax_Groth_formula,
+    exact Ax_Groth_locally_finite p },
   intro d,
   exact Lefschetz.is_complete''_ACFₚ hp.1
     (instances.algebraic_closure_of_zmod hp.1) ⟨ 0 ⟩ (Ax_Groth_formula n d)
@@ -1487,8 +1576,8 @@ lemma realize_Ax_Groth_formula_of_char_zero
 
 theorem Ax_Groth
   (h0 : char_zero K) {n : ℕ}
-  {ps : poly_map_data K n} (hinj : function.injective (poly_map ps)) :
-  function.surjective (poly_map ps) :=
+  {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
+  function.surjective (poly_map.eval ps) :=
 realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
   _ hinj
 
