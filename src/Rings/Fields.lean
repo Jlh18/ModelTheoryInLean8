@@ -463,31 +463,48 @@ open Rings dvector fol cardinal
 @[reducible] def comm_ring_ulift : comm_ring (ulift.{u} ℤ) := equiv.comm_ring equiv.ulift
 local attribute [instance] comm_ring_ulift
 
-def ulift.down_ring_hom : ulift.{u} ℤ →+* ℤ :=
+def ulift.down_ring_hom_int : ulift.{u} ℤ →+* ℤ :=
 { to_fun := equiv.ulift.to_fun,
   map_one' := rfl,
   map_mul' := by finish,
   map_zero' := rfl,
   map_add' := by finish }
 
-@[reducible] def algebra_ulift {A : Type u} [comm_ring A] : algebra (ulift.{u} ℤ) A :=
-ring_hom.to_algebra (ring_hom.comp (algebra_map ℤ A) ulift.down_ring_hom)
-local attribute [instance] algebra_ulift
+def ulift.down_ring_hom_zmod {p : ℕ} [fact p.prime] : ulift.{u} (zmod p) →+* zmod p :=
+{ to_fun := equiv.ulift.to_fun,
+  map_one' := rfl,
+  map_mul' := by finish,
+  map_zero' := rfl,
+  map_add' := by finish }
 
-lemma injective_alg_map {K : Type u} [field K] (hK : char_zero K) :
+@[reducible] def algebra_ulift_int {A : Type u} [comm_ring A] : algebra (ulift.{u} ℤ) A :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map ℤ A) ulift.down_ring_hom_int)
+local attribute [instance] algebra_ulift_int
+
+lemma injective_alg_map_int {K : Type u} [field K] (hK : char_zero K) :
   function.injective (algebra_map (ulift.{u} ℤ) K) :=
 function.injective.comp (@int.cast_injective _ _ _ hK) equiv.ulift.injective
+
+@[reducible] def algebra_ulift_zmod {A : Type u} [comm_ring A] {p : ℕ}
+  [fact p.prime] [char_p A p] : algebra (ulift.{u} (zmod p)) A :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map (zmod p) A) ulift.down_ring_hom_zmod)
+local attribute [instance] algebra_ulift_int
+
+lemma injective_alg_map_zmod {K : Type u} [field K] {p : ℕ} [fact p.prime]
+  [char_p K p] :
+  function.injective (@algebra_map (ulift.{u} (zmod p)) K _ _ algebra_ulift_zmod) :=
+function.injective.comp ((algebra_map (zmod p) _).injective) equiv.ulift.injective
 
 /-- Two uncountable algebraically closed fields of characteristic zero are isomorphic
 if they have the same cardinality. -/
 lemma ring_equiv_of_cardinal_eq_of_char_zero
-  {K L : Type u} (hK : field K) (hL : field L)
+  {K L : Type u} (hKf : field K) (hLf : field L)
   (hK1 : is_alg_closed K) (hL1 : is_alg_closed L)
   (hK2 : char_zero K) (hL2 : char_zero L)
   (hK : ω < #K) (hKL : #K = #L) : nonempty (K ≃+* L) :=
 begin
-  have hinjK := injective_alg_map hK2,
-  have hinjL := injective_alg_map hL2,
+  have hinjK := injective_alg_map_int hK2,
+  have hinjL := injective_alg_map_int hL2,
   have mk_ulift_int : #(ulift.{u} ℤ) = ω := by simp,
   cases exists_is_transcendence_basis (ulift.{u} ℤ)
     (show function.injective (algebra_map (ulift.{u} ℤ) K),
@@ -503,6 +520,31 @@ begin
   exact ⟨is_alg_closed.equiv_of_transcendence_basis _ _ e hs ht⟩,
 end
 
+lemma ring_equiv_of_cardinal_eq_of_char_p
+  {K L : Type u} (hKf : field K) (hLf : field L)
+  (hK1 : is_alg_closed K) (hL1 : is_alg_closed L) (p : ℕ) [fact p.prime]
+  [char_p K p] [char_p L p] (hK : ω < #K) (hKL : #K = #L) : nonempty (K ≃+* L) :=
+begin
+  cases @exists_is_transcendence_basis (ulift.{u} (zmod p)) _ _ _ algebra_ulift_zmod
+    (show function.injective (@algebra_map (ulift.{u} (zmod p)) K _ _ algebra_ulift_zmod),
+      from injective_alg_map_zmod) with s hs,
+  cases @exists_is_transcendence_basis (ulift.{u} (zmod p)) _ _ _ algebra_ulift_zmod
+    (show function.injective (@algebra_map (ulift.{u} (zmod p)) L _ _ algebra_ulift_zmod),
+      from injective_alg_map_zmod) with t ht,
+  have : #s = #t,
+  { rw [← @is_alg_closed.cardinal_eq_cardinal_transcendence_basis_of_omega_lt
+          (ulift.{u} (zmod p)) K _ _ algebra_ulift_zmod _ _ _ _ hs
+      (le_of_lt $ lt_omega_iff_fintype.2 ⟨infer_instance⟩) hK,
+        ← @is_alg_closed.cardinal_eq_cardinal_transcendence_basis_of_omega_lt
+          (ulift.{u} (zmod p)) L _ _ algebra_ulift_zmod _ _ _ _ ht
+      (le_of_lt $ lt_omega_iff_fintype.2 ⟨infer_instance⟩), hKL],
+    rwa ← hKL },
+  cases cardinal.eq.1 this with e,
+  exact ⟨@is_alg_closed.equiv_of_transcendence_basis
+   (ulift.{u} (zmod p)) L K _ _ algebra_ulift_zmod _ algebra_ulift_zmod
+     _ _ _ _ _ _ e hs ht⟩,
+end
+
 lemma categorical_ACF₀ {κ} (hκ : ω < κ) : fol.categorical κ ACF₀ :=
 begin
   intros M N hM hN hMκ hNκ,
@@ -514,6 +556,25 @@ begin
   repeat { apply_instance }, --why?
   repeat { cc },
 end
+
+lemma categorical_ACFₚ {κ} (hκ : ω < κ) {p : ℕ} (hp : nat.prime p) :
+  fol.categorical κ (ACFₚ hp) :=
+begin
+  intros M N hM hN hMκ hNκ,
+  haveI : fact (nat.prime p) := ⟨ hp ⟩,
+  haveI : fact (M ⊨ ACFₚ hp) := ⟨ hM ⟩, haveI : fact (N ⊨ ACFₚ hp) := ⟨ hN ⟩,
+  split,
+  apply equiv_of_ring_equiv,
+  apply classical.choice,
+  subst hMκ,
+  apply ring_equiv_of_cardinal_eq_of_char_p _ _ _ _ p hκ,
+  { rw hNκ },
+  { apply_instance },
+  { apply_instance },
+  { exact models_ACFₚ_char_p },
+  { exact models_ACFₚ_char_p },
+end
+
 
 def unit_equiv_ring_unaries : _root_.equiv unit ring_unaries :=
 { to_fun := λ x, match x with | unit.star := ring_unaries.neg end,
@@ -564,5 +625,16 @@ is_complete'_of_only_infinite_of_categorical
     -- (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
     (categorical_ACF₀ omega_lt_continuum)
 
-end Fields
+/-- a.k.a Lefschetz part 3. Any sentence or its negation can be deduced in ACF₀-/
+theorem is_complete'_ACFₚ {p : ℕ} (hp : nat.prime p) : is_complete' (ACFₚ hp) :=
+is_complete'_of_only_infinite_of_categorical
+    (instances.algebraic_closure_of_zmod hp)
+    (instances.algebraic_closure_of_zmod_models_ACFₚ hp) -- alg_closure (ℤ / p) is a model of ACFₚ
+    (only_infinite_subset ACF_subset_ACFₚ only_infinite_ACF) -- alg closed fields are infinite
+    -- pick the cardinal κ := 𝔠
+    card_functions_omega_le_continuum
+    omega_le_continuum
+    -- (max_le (functions_le_omega.trans $ omega_le_continuum) omega_le_continuum)
+    (categorical_ACFₚ omega_lt_continuum hp)
 
+end Fields
