@@ -1574,12 +1574,44 @@ lemma realize_Ax_Groth_formula_of_char_zero
 @ACF₀_ssatisfied_Ax_Groth_formula n d (Structure K) ⟨ 0 ⟩
     is_alg_closed_to.realize_ACF₀
 
-theorem Ax_Groth
+/-- We also get the statement for all char_p fields, not just the locally finite ones -/
+lemma realize_Ax_Groth_formula_of_char_p
+  (hchar : (ring_char K).prime) (n d : ℕ) :
+  Rings.struc_to_ring_struc.Structure K ⊨ Ax_Groth_formula n d :=
+begin
+  apply @ACFₚ_ssatisfied_Ax_Groth_formula (ring_char K) ⟨ hchar ⟩ n d (Structure K) ⟨ 0 ⟩,
+  haveI : fact (Structure K ⊨ Fields.ACF) := ⟨ is_alg_closed_to.realize_ACF ⟩,
+  rw Fields.models_ACFₚ_iff,
+  rw char_p.ring_char_of_prime_eq_zero hchar,
+  have h : ∀ n : ℕ, (n : K) = 0 ↔ (n : Structure K) = 0,
+  { intro n, induction n with n hn, repeat { simp } },
+  rw ← h,
+  { rw ring_char.spec },
+  { apply_instance },
+end
+
+private lemma Ax_Groth_char_p
+  (hchar : (ring_char K).prime) {n : ℕ}
+  {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
+  function.surjective (poly_map.eval ps) :=
+realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_p hchar _) _ hinj
+
+private lemma Ax_Groth_char_zero
   (h0 : char_zero K) {n : ℕ}
   {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
   function.surjective (poly_map.eval ps) :=
-realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _)
-  _ hinj
+realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _) _ hinj
+
+/-- The main result: injective polynomial maps on algebraically closed fields are surjective -/
+theorem Ax_Groth {n : ℕ} {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
+  function.surjective (poly_map.eval ps) :=
+begin
+  rcases char_p.char_is_prime_or_zero K (ring_char K) with hp | hp,
+  { exact Ax_Groth_char_p hp hinj },
+  { apply Ax_Groth_char_zero _ hinj,
+    rw ring_char.eq_iff at hp,
+    apply @char_p.char_p_to_char_zero _ _ hp },
+end
 
 end alg_closed_field
 end AxGroth

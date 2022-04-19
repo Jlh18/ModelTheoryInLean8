@@ -705,6 +705,9 @@ instance models_ring_theory_to_comm_ring {M : Structure ring_signature}
   [h : fact (M ⊨ ring_signature.ring_theory)] : comm_ring M :=
 models_ring_theory_to_comm_ring.comm_ring h.1
 
+lemma Structure_ring_eq_self (A : Type*) [comm_ring A] :
+  (struc_to_ring_struc.Structure A : Type*) = A := rfl
+
 lemma Structure_structure_eq_self (M : Structure ring_signature) :
   struc_to_ring_struc.Structure M = M :=
 begin
