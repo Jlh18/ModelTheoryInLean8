@@ -760,7 +760,7 @@ end
 
 variable [decidable_eq A]
 
-lemma realize_inj_formula_iff_injective
+lemma realize_inj_formula_of_ring
   {n d : ℕ}
   (ps : poly_map A n)
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
@@ -856,7 +856,7 @@ begin
     hpreimage], },
 end
 
-lemma realize_surj_formula_iff_surjective
+lemma realize_surj_formula_of_ring
   {n d : ℕ}
   (ps : poly_map A n)
   (hdeg : ∀ (i : fin n), (ps i).total_degree ≤ d) :
@@ -968,8 +968,6 @@ lemma realize_surj_formula_aux {n d : ℕ}
   (ys : dvector ↥(struc_to_ring_struc.Structure A) n) (k : fin n) :
   realize_bounded_term
     (ys.append (xs.append coeffs))
-
-
 x_⟨ k + n , inj_formula_aux4 ⟩ dvector.nil
   = xs.nth' k :=
 begin
@@ -1258,7 +1256,7 @@ begin
   rw dvector.nth'_of_fn,
 end
 
-lemma injective_iff_realize_inj_formula
+lemma realize_inj_formula_of_model
   {n d : ℕ} (coeffs : dvector ↥(struc_to_ring_struc.Structure A)
     (n * (monom_deg_le n d).length)) :
   function.injective
@@ -1345,7 +1343,7 @@ begin
   },
 end
 
-lemma surjective_iff_realize_surj_formula
+lemma realize_surj_formula_of_model
   {n d : ℕ} (coeffs : dvector ↥(struc_to_ring_struc.Structure A)
     (n * (monom_deg_le n d).length)) :
   function.surjective
@@ -1454,10 +1452,10 @@ begin
     have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
       (poly_map.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
     {
-      rw realize_inj_formula_iff_injective ps (total_deg_le_max_total_deg ps),
+      rw realize_inj_formula_of_ring ps (total_deg_le_max_total_deg ps),
       exact hinj,
     },
-  rw ← realize_surj_formula_iff_surjective ps (total_deg_le_max_total_deg ps),
+  rw ← realize_surj_formula_of_ring ps (total_deg_le_max_total_deg ps),
   -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
   exact H coeffs hInj,
   },
@@ -1468,9 +1466,9 @@ begin
     intro coeffs,
     simp only [realize_bounded_formula_imp],
     intro hinj,
-    rw ← surjective_iff_realize_surj_formula,
+    rw ← realize_surj_formula_of_model,
     apply H,
-    rw injective_iff_realize_inj_formula,
+    rw realize_inj_formula_of_model,
     exact hinj,
   },
 end
