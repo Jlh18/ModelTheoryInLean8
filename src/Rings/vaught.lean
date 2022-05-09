@@ -478,7 +478,7 @@ lemma is_complete'_of_only_infinite_of_categorical
   [is_algebraic L] {T : Theory L} (M : Structure L) (hM : M ⊨ T)
   (hinf : only_infinite T) {κ : cardinal}
   (hκ : ∀ n, #(L.functions n) ≤ κ) (hωκ : ω ≤ κ) (hcat : categorical κ T) :
-is_complete' T :=
+  is_complete' T :=
 begin
   intro ϕ,
   by_contra hbot,

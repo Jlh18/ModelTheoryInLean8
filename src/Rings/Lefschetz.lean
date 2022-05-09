@@ -11,14 +11,15 @@ open Rings.instances
 
 /-- Lefschetz part 1. Being true in a model of ACF₀ implies being true for any model of ACF₀-/
 theorem is_complete''_ACF₀ : is_complete'' ACF₀ :=
-is_complete''_to_is_complete' is_complete'_ACF₀
+by {rw ← is_complete''_iff_is_complete', exact is_complete'_ACF₀}
 
 /-- Lefcschetz part 3. Being true in a model of ACFₚ implies being true for any model of ACFₚ-/
 theorem is_complete''_ACFₚ {p : ℕ} (hp : nat.prime p) :
   is_complete'' (ACFₚ hp) :=
-is_complete''_to_is_complete' (is_complete'_ACFₚ hp)
+by {rw ← is_complete''_iff_is_complete', exact is_complete'_ACFₚ hp}
 
-/-- Lefchetz part 2. A sentence holds for ACF₀ if and only if it holds for ACFₚ for large enough p -/
+/-- Lefchetz part 2. A sentence holds for ACF₀ if and
+  only if it holds for ACFₚ for large enough p (forward direction only) -/
 theorem characteristic_change_left (ϕ : sentence ring_signature) :
 ACF₀ ⊨ ϕ → ∃ (n : ℕ), ∀ {p : ℕ} (hp : nat.prime p), n < p → ACFₚ hp ⊨ ϕ :=
 begin
@@ -88,8 +89,7 @@ begin
     intro hn,
     cases is_complete'_ACF₀ ϕ with hsatis hsatis,
     { exact hsatis },
-    {
-      have hm := characteristic_change_left (∼ ϕ) hsatis,
+    { have hm := characteristic_change_left (∼ ϕ) hsatis,
       cases hn with n hn,
       cases hm with m hm,
       obtain ⟨ p , hle , hp ⟩ := nat.exists_infinite_primes (max n m).succ,
@@ -102,9 +102,7 @@ begin
       specialize @hm p hp hmp _ ⟨ 0 ⟩ hS,
       simp only [realize_sentence_not] at hm,
       exfalso,
-      apply hm hn,
-    },
-  },
+      apply hm hn } },
 end
 
 end Lefschetz

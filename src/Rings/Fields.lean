@@ -496,7 +496,7 @@ lemma injective_alg_map_zmod {K : Type u} [field K] {p : ℕ} [fact p.prime]
 function.injective.comp ((algebra_map (zmod p) _).injective) equiv.ulift.injective
 
 /-- Two uncountable algebraically closed fields of characteristic zero are isomorphic
-if they have the same cardinality. -/
+if they have the same cardinality. -/ --credit to Chris Hughes
 lemma ring_equiv_of_cardinal_eq_of_char_zero
   {K L : Type u} (hKf : field K) (hLf : field L)
   (hK1 : is_alg_closed K) (hL1 : is_alg_closed L)
@@ -520,7 +520,7 @@ begin
   exact ⟨is_alg_closed.equiv_of_transcendence_basis _ _ e hs ht⟩,
 end
 
-lemma ring_equiv_of_cardinal_eq_of_char_p
+lemma ring_equiv_of_cardinal_eq_of_char_p -- credit to Chris Hughes
   {K L : Type u} (hKf : field K) (hLf : field L)
   (hK1 : is_alg_closed K) (hL1 : is_alg_closed L) (p : ℕ) [fact p.prime]
   [char_p K p] [char_p L p] (hK : ω < #K) (hKL : #K = #L) : nonempty (K ≃+* L) :=
@@ -545,6 +545,24 @@ begin
      _ _ _ _ _ _ e hs ht⟩,
 end
 
+/-- Two uncountable algebraically closed fields are isomorphic
+if they have the same cardinality and the same characteristic. -/
+lemma ring_equiv_of_cardinal_eq_of_char_eq
+  {K L : Type u} [hKf : field K] [hLf : field L]
+  (hKalg : is_alg_closed K) (hLalg : is_alg_closed L)
+  (p : ℕ) [char_p K p] [char_p L p]
+  (hKω : ω < #K) (hKL : #K = #L) : nonempty (K ≃+* L) :=
+begin
+  rcases char_p.char_is_prime_or_zero K p with hp | hp,
+  { haveI : fact p.prime := ⟨hp⟩,
+    exact ⟨(ring_equiv_of_cardinal_eq_of_char_p hKf hLf hKalg hLalg p hKω hKL).some⟩ },
+  { rw [hp] at *,
+    resetI,
+    letI : char_zero K := char_p.char_p_to_char_zero K,
+    letI : char_zero L := char_p.char_p_to_char_zero L,
+    exact ⟨(ring_equiv_of_cardinal_eq_of_char_zero hKf hLf hKalg hLalg _inst _inst_3 hKω hKL).some⟩ }
+end
+
 lemma categorical_ACF₀ {κ} (hκ : ω < κ) : fol.categorical κ ACF₀ :=
 begin
   intros M N hM hN hMκ hNκ,
@@ -553,7 +571,7 @@ begin
   apply equiv_of_ring_equiv,
   apply classical.choice,
   apply ring_equiv_of_cardinal_eq_of_char_zero,
-  repeat { apply_instance }, --why?
+  repeat { apply_instance },
   repeat { cc },
 end
 
@@ -567,12 +585,10 @@ begin
   apply equiv_of_ring_equiv,
   apply classical.choice,
   subst hMκ,
-  apply ring_equiv_of_cardinal_eq_of_char_p _ _ _ _ p hκ,
-  { rw hNκ },
+  refine @ring_equiv_of_cardinal_eq_of_char_eq _ _ _ _ _ _ p
+    models_ACFₚ_char_p models_ACFₚ_char_p hκ hNκ.symm,
   { apply_instance },
   { apply_instance },
-  { exact models_ACFₚ_char_p },
-  { exact models_ACFₚ_char_p },
 end
 
 

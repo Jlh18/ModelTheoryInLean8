@@ -209,40 +209,33 @@ def is_complete' (T : Theory L) : Prop :=
 def is_complete'' (T : Theory L) : Prop :=
 ∀ (M : Structure L) (hM : nonempty M) (ϕ : sentence L), M ⊨ T → M ⊨ ϕ → T ⊨ ϕ
 
-/-- Note fewer assumptions than the if and only if -/
-lemma is_complete''_to_is_complete' {T : Theory L} :
-  is_complete' T → is_complete'' T :=
-begin
-  intros H M hM ϕ hMT hMϕ,
-  cases H ϕ with hTϕ hTϕ,
-  { exact hTϕ },
-  {
-    have hbot := hTϕ hM hMT,
-    rw realize_sentence_not at hbot,
-    exfalso,
-    exact hbot hMϕ,
-  },
-end
-
 /-- When T is satisfied by some model then two notions of complete coincide -/
-lemma is_complete''_iff_is_complete' {T : Theory L} (M : Structure L)
-  (hM : nonempty M) (hMT : M ⊨ T) :
+lemma is_complete''_iff_is_complete' {T : Theory L} :
   is_complete' T ↔ is_complete'' T :=
 begin
   split,
-  { exact is_complete''_to_is_complete' },
-  {
-    intros H ϕ,
-    by_cases hMϕ : M ⊨ ϕ,
-    { left, exact H M hM ϕ hMT hMϕ },
+  { intros H M hM ϕ hMT hMϕ,
+    cases H ϕ with hTϕ hTϕ,
+    { exact hTϕ },
     {
-      right,
-      rw ← realize_sentence_not at hMϕ,
-      exact H M hM _ hMT hMϕ
-    },
-  },
+      have hbot := hTϕ hM hMT,
+      rw realize_sentence_not at hbot,
+      exfalso,
+      exact hbot hMϕ } },
+  { intros H ϕ,
+    by_cases hM : ∃ M : Structure L, nonempty M ∧ M ⊨ T,
+    {
+      rcases hM with ⟨ M , hM0 , hMT ⟩,
+      by_cases hMϕ : M ⊨ ϕ,
+      { left, exact H M hM0 ϕ hMT hMϕ },
+      { right,
+        rw ← realize_sentence_not at hMϕ,
+        exact H M hM0 _ hMT hMϕ} },
+    { left,
+      intros M hM0 hMT,
+      exfalso,
+      apply hM ⟨ M , hM0 , hMT ⟩} },
 end
-
 
 end fol
 
