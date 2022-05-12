@@ -88,12 +88,12 @@ finset.preimage fs (on_sentence Lhom.sum_inr)
 | (n+1) f _ := pempty.elim f
 
 
-/-- To make a `fol.Structure` in `fol.Language.of_constants α`
-  it suffices to give a map interpreting the constant symbols `α`-/
-protected def Structure {S : Type*} (c : α → S) : Structure (of_constants α) :=
-{ carrier := S,
-  fun_map := λ _, of_constants.fun_map c,
-  rel_map := λ n, pempty.elim }
+-- /-- To make a `fol.Structure` in `fol.Language.of_constants α`
+--   it suffices to give a map interpreting the constant symbols `α`-/
+-- protected def Structure {S : Type*} (c : α → S) : Structure (of_constants α) :=
+-- { carrier := S,
+--   fun_map := λ _, of_constants.fun_map c,
+--   rel_map := λ n, pempty.elim }
 
 variables {S : Structure L} (c : α → S)
 
@@ -169,7 +169,7 @@ variables (α : Type u)
 
 /-- Takes a pair of terms `a b : α` and makes the sentence `a ≄ b` -/
 @[simp] def distinct_constants_aux (x : α × α) : sentence (Language.of_constants α) :=
-∼ (bd_const (prod.fst x) ≃ bd_const x.snd)
+∼ (bd_const x.fst ≃ bd_const x.snd)
 
 /-- The theory that says there are `α` many distinct constants -/
 @[reducible] def distinct_constants : Theory (Language.of_constants α) :=
@@ -218,6 +218,9 @@ finset.preimage fs (distinct_constants_aux α : α × α → sentence (of_consta
 def constants_appearing_in [decidable_eq α] (fs : finset (sentence $ of_constants α)) : finset α :=
 (pairs_appearing_in fs).image prod.fst ∪ (pairs_appearing_in fs).image prod.snd
 
+/-- Take a theory and add α many constants to the language, and
+ formulas stating that distinct terms in α correspond to
+ distinct constant symbols in the theory -/
 @[reducible] def union_add_distinct_constants (T : Theory L) (α : Type u) :=
 (Theory_induced Lhom.sum_inl T : Theory $ L.sum (of_constants α)) ∪ add_distinct_constants α
 
@@ -275,6 +278,18 @@ begin
       simp only [subtype.mk_eq_mk] at hbot',
   apply hab hbot' },
 end
+
+-- some of the following lemmas should go to flypitch
+
+namespace Language
+
+lemma is_algebraic_sum {L' : Language} [is_algebraic L] [is_algebraic L'] :
+  is_algebraic (L.sum L') :=
+{ empty_relations := λ n, by {dsimp [Language.sum],
+    simp only [sum.forall, forall_pempty, and_true],
+    split, {apply _inst_1.1}, apply _inst_2.1, } }
+
+end Language
 
 instance is_algebraic_henkin_language_chain_objects [is_algebraic L] {i} :
   is_algebraic (@henkin_language_chain_objects L i) :=
@@ -450,13 +465,8 @@ begin
         { cases m,
           { simp [of_constants] },
           { simp [of_constants] } } },
-      { split, -- adding κ constant symbols to an `is_algebraic` language preserves `is_algebraic`
-        intro m,
-        dsimp [Language.sum],
-        let f := _inst_1.1,
-        simp only [sum.forall, forall_pempty, and_true],
-        exact f m },
-    },
+      -- adding κ constant symbols to an algebraic language keeps it algebraic
+      { apply Language.is_algebraic_sum } },
     -- ≥ because we added κ constants and made sure they're distinct in any model of Tκ
     { have hle : #κ.out ≤ #((term_model T2)[[henkin_language_over]]
                [[(Lhom.sum_inr : _ →ᴸ L.sum (of_constants κ.out))]]),
