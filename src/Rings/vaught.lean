@@ -228,30 +228,29 @@ lemma is_consistent_union_add_distinct_constants {T : Theory L} (α : Type u)
   {M : Structure L} (hMinf : infinite M) (hMT : M ⊨ T):
   is_consistent $ union_add_distinct_constants T α :=
 begin
-  have hM0 : nonempty M := infinite.nonempty _,
   rw compactness',
-  intros fs hfsTκ,
+  intros fs hfsTα,
   rw model_existence,
   classical,
-  obtain ⟨Tfin, of_constants_fin, hfs, hTfin, h_of_constants_fin⟩ :=
-    finset.subset_union_elim hfsTκ,
+  obtain ⟨Tfin, con_fin, hfs, hTfin, h_con_fin⟩ :=
+    finset.subset_union_elim hfsTα,
   classical,
   -- pick out constants that appear in f_of_constants
-  set κfin : finset α := constants_appearing_in (of_constants.preimage of_constants_fin)
-    with hκfin,
-  let on_κfin : κfin ↪ M := classical.choice ((cardinal.le_def κfin M).1
+  set αfin : finset α := constants_appearing_in (of_constants.preimage con_fin)
+    with hαfin,
+  let on_αfin : αfin ↪ M := classical.choice ((cardinal.le_def αfin M).1
     (le_of_lt $ cardinal.finset_lt_infinite hMinf)),
-  -- send κfin to M injectively, map the rest to a point.
+  -- send αfin to M injectively, map the rest to a point.
+  have hM0 : nonempty M := infinite.nonempty _,
   set c : α → M :=
-    λ x, dite (x ∈ κfin) (λ h, on_κfin ⟨x,h⟩) (λ _, classical.choice hM0) with hc,
-  -- have hc : ∀ a b : κ.out, a ∈ κfin → b ∈ κfin → c a ≠ c b, sorry,
+    λ x, dite (x ∈ αfin) (λ h, on_αfin ⟨x,h⟩) (λ _, classical.choice hM0) with hc,
   refine ⟨ Language.of_constants.sum_Structure c , hM0 , _ ⟩,
   rw [← hfs, finset.coe_union, all_realize_sentence_union],
   split,
   { apply all_realize_sentence_of_subset _ hTfin,
     apply Language.of_constants.sum_Structure_Theory_induced hMT },
   { intros ϕ hϕ,
-    have hϕ' := h_of_constants_fin hϕ,
+    have hϕ' := h_con_fin hϕ,
     simp only [add_distinct_constants, set.mem_diff, on_sentence,
       set.mem_image, ne.def, prod.exists, not_exists, not_and] at hϕ',
     obtain ⟨⟨ψ, ⟨⟨ a, b, ⟨ hab, abrw ⟩⟩ , ψrw⟩⟩, _ ⟩ := hϕ',
@@ -263,20 +262,20 @@ begin
       Language.of_constants.sum_Structure, Language.of_constants.fun_map,
       distinct_constants_aux] at hϕ ⊢,
     rw hc,
-    have habκfin : a ∈ κfin ∧ b ∈ κfin,
-    { rw hκfin,
+    have habαfin : a ∈ αfin ∧ b ∈ αfin,
+    { rw hαfin,
       simp only [constants_appearing_in, pairs_appearing_in, bd_const,
         of_constants.preimage, ←on_bounded_formula_not, on_bounded_formula, Lhom.sum_inr,
         on_sentence, distinct_constants_aux, finset.mem_union, finset.mem_image,
         finset.mem_preimage, on_bounded_term, exists_prop, prod.exists,
         exists_and_distrib_right, exists_eq_right],
       exact ⟨or.inl ⟨ b , hϕ ⟩, or.inr ⟨ a , hϕ ⟩⟩ },
-    simp only [dif_pos habκfin.1, dif_pos habκfin.2],
+    simp only [dif_pos habαfin.1, dif_pos habαfin.2],
     intro hbot,
-    have hbot' := (on_κfin.injective hbot),
+    have hbot' := (on_αfin.injective hbot),
     simp only [set.mem_set_of_eq] at hab,
-      simp only [subtype.mk_eq_mk] at hbot',
-  apply hab hbot' },
+    simp only [subtype.mk_eq_mk] at hbot',
+    apply hab hbot' },
 end
 
 -- some of the following lemmas should go to flypitch
