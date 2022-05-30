@@ -184,14 +184,13 @@ variable {α}
 lemma all_realize_sentence_distinct_constants (M : Structure _) (hM : M ⊨ distinct_constants α) :
   #α ≤ #M :=
 begin
+  apply @cardinal.mk_le_of_injective _ _ (λ a, M.constants a),
+  intros x y hfxy,
+  by_contra' hxy,
   rw all_realize_sentence_image at hM,
-  have hf : function.injective (λ a, M.constants a),
-  { intros x y hfxy,
-    by_cases hxy : x = y, exact hxy,
-    exfalso, apply hM ⟨x,y⟩ hxy,
-    simp only [Structure.constants] at hfxy,
-    simp [bd_const, hfxy] },
-  apply cardinal.mk_le_of_injective hf,
+  apply hM ⟨x,y⟩ hxy,
+  simp only [Structure.constants] at hfxy,
+  simp [bd_const, hfxy],
 end
 
 lemma cardinal.finset_lt_infinite {fs : finset α} {β : Type u} (h : infinite β) : # fs < # β :=
@@ -428,7 +427,7 @@ theorem has_sized_model_of_has_infinite_model [is_algebraic L] {T : Theory L} {�
   ∃ M : Structure L, nonempty M ∧ M ⊨ T ∧ #M = κ :=
 begin
   rintro ⟨ M , hM0, hMT, hMinf ⟩,
-  -- we add κ many constants to the language and ensure they're all distinct in the thoery `Tκ`
+  -- we add κ many constants to the language and ensure they're all distinct in the theory `Tκ`
   set Tκ := union_add_distinct_constants T κ.out,
   have hTκ_consis := is_consistent_union_add_distinct_constants κ.out hMinf hMT,
   -- we extend T to a complete theory with the witness property (a.k.a. it is henkin)
