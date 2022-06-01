@@ -400,7 +400,7 @@ begin
       apply hi } }
 end
 
-lemma henkin_language_card [is_algebraic L] {T : Theory L}
+lemma henkin_language_le_cardinal [is_algebraic L] {T : Theory L}
   {hconsis : is_consistent T}
   (hLκ : ∀ n, # (L.functions n) ≤ κ) (n : ℕ) :
   # ((@henkin_language _ _ hconsis).functions n) ≤ κ :=
@@ -451,9 +451,9 @@ begin
       -- Note: we use the term "bounded by" loosely
       -- `term_model` has size bounded by the terms of the language,
       -- which in turn is bounded by the function symbols in the language
-      rintro ⟨ n ⟩,
+      intro n,
       -- for an algebraic language, the henkinization is bounded by the number of function symbols
-      apply henkin_language_card hωκ,
+      apply henkin_language_le_cardinal hωκ,
       { intro m,  -- the bound on function symbols
         simp only [Language.sum, cardinal.mk_sum, cardinal.lift_id],
         apply le_trans (cardinal.add_le_max _ _),

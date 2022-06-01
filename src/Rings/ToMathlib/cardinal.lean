@@ -98,9 +98,9 @@ def preterm_symbol_equiv_fin_sum_formula_sum_nat :
   even their lengths (useful in the proof of injectivity). -/
 @[simp] def preterm_symbol_of_preterm {n} : ∀ {l},
   bounded_preterm L n l → list (preterm_symbol L)
-| _ (&k)         := [ preterm_symbol.var k , preterm_symbol.nat n , preterm_symbol.nat 0 ]
-| l (bd_func f)  := [ preterm_symbol.func f, preterm_symbol.nat n , preterm_symbol.nat l ]
-| l (bd_app t s) := [ preterm_symbol.app, preterm_symbol.nat n , preterm_symbol.nat l,
+| _ (&k)         := [ preterm_symbol.var k ]
+| l (bd_func f)  := [ preterm_symbol.func f ]
+| l (bd_app t s) := [ preterm_symbol.app,
   preterm_symbol.nat (preterm_symbol_of_preterm t).length ]
   ++ preterm_symbol_of_preterm t ++ preterm_symbol_of_preterm s
 
@@ -111,21 +111,26 @@ begin
   induction x with k _ _ _ tx sx htx hsx,
   { intro y,
     cases y,
-    { intro h, simp only [preterm_symbol_of_preterm, eq_self_iff_true, heq_iff_eq,
-      true_and, and_true] at h, subst h },
+    { intro h,
+      simp only [preterm_symbol_of_preterm, eq_self_iff_true, heq_iff_eq,
+        true_and, and_true] at h,
+      subst h },
     { intro h, cases h },
     { intro h, cases h } },
   { intro y,
     cases y,
     { intro h, cases h },
-    { intro h, simp only [preterm_symbol_of_preterm, eq_self_iff_true, heq_iff_eq,
-        true_and, and_true] at h, subst h },
+    { intro h,
+      simp only [preterm_symbol_of_preterm, eq_self_iff_true, heq_iff_eq,
+        true_and, and_true] at h,
+      subst h },
     { intro h, cases h } },
   { intro y,
     cases y with _ _ _ _ ty sy,
     { intro h, cases h },
     { intro h, cases h },
-    { intro h, simp at h,
+    { intro h, simp only [preterm_symbol_of_preterm, list.cons_append,
+      list.singleton_append, eq_self_iff_true, true_and] at h,
       obtain ⟨ ht , hs ⟩ := list.append_inj h.2 h.1,
       congr, { exact htx ht }, { exact hsx hs } } },
 end
