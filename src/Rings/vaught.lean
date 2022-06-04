@@ -356,9 +356,7 @@ begin
   rw cardinal.sum_nat,
   apply le_trans (cardinal.sum_le_sup _),
   simp only [cardinal.mk_denumerable],
-  apply le_trans (cardinal.mul_le_max _ _),
-  apply max_le _ hωκ,
-  apply max_le hωκ,
+  apply le_trans (cardinal.mul_le_max _ _) (max_le (max_le hωκ _) hωκ),
   rw cardinal.sup_le,
   intro i,
   cases i,
@@ -383,15 +381,12 @@ lemma henkin_language_chain_obj_card [is_algebraic L] {T : Theory L}
   (hLκ : ∀ n, # (L.functions n) ≤ κ) (i : ℕ) :
   ∀ (n : ℕ), # (((@henkin_language_chain L).obj i).functions n) ≤ κ :=
 begin
-  unfold henkin_language_chain,
+  simp only [henkin_language_chain, henkin_language_chain_objects],
   induction i with i hi,
-  { dsimp only [henkin_language_chain_objects],
-    apply hLκ },
-  { dsimp only [henkin_language_chain_objects] at ⊢ hi,
-    intro n,
-    induction n with n hn,
-    {
-      rw cardinal.mk_congr (@henkin_language_functions_zero (@henkin_language_chain_objects L i)),
+  { apply hLκ },
+  { intro n,
+    cases n with n,
+    { rw cardinal.mk_congr (@henkin_language_functions_zero (@henkin_language_chain_objects L i)),
       simp only [cardinal.mk_sum, cardinal.lift_id],
       apply le_trans (cardinal.add_le_max _ _),
       refine max_le (max_le (hi _) _) hωκ,
@@ -405,7 +400,6 @@ lemma henkin_language_le_cardinal [is_algebraic L] {T : Theory L}
   (hLκ : ∀ n, # (L.functions n) ≤ κ) (n : ℕ) :
   # ((@henkin_language _ _ hconsis).functions n) ≤ κ :=
 begin
-  dsimp [henkin_language, L_infty],
   apply colimit_language_le_cardinal hωκ,
   intro i,
   apply henkin_language_chain_obj_card hωκ hconsis hLκ,
