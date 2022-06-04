@@ -445,7 +445,7 @@ begin
     simp only [all_realize_sentence_union] at h,
     exact h.1 },
   -- the model (and the reduction) are size κ
-  { apply cardinal.partial_order.le_antisymm,
+  { apply le_antisymm,
     -- ≤ because of the construction of `term_model`
     { apply term_model.card_le_cardinal T2 hωκ,
       -- Note: we use the term "bounded by" loosely
