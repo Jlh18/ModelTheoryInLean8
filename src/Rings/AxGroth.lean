@@ -768,9 +768,8 @@ lemma realize_inj_formula_of_ring
     _ _ (@poly_map.coeffs_dvector' A _ n d ps)
     (inj_formula n d) dvector.nil
   ↔
-  function.injective (poly_map.eval ps) :=
+  function.injective ps.eval :=
 begin
-  -- let xs0 := poly_map.coeffs_dvector' d ps,
   -- open up the definition of inj_formula and what it means to realize it
   simp only [inj_formula,
       realize_bounded_formula_bd_alls',
@@ -779,81 +778,69 @@ begin
       realize_bounded_formula_bd_big_and],
   split,
     -- forward implication
-  {
-  intros hInj xs ys himage,
-  set xs' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn xs with hxs',
-  set ys' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn ys with hys',
-  have hImage :  ∀ (k : fin n),
-    realize_bounded_formula (ys'.append (xs'.append (poly_map.coeffs_dvector' d ps)))
-      (poly_indexed_by_monoms n d (↑k * (monom_deg_le n d).length + n + n) n (n * (monom_deg_le n d).length + n + n)
-           inj_formula_aux0
-           inj_formula_aux2 ≃
-         poly_indexed_by_monoms n d (↑k * (monom_deg_le n d).length + n + n) 0 (n * (monom_deg_le n d).length + n + n)
-           inj_formula_aux0
-           inj_formula_aux1)
-      dvector.nil,
-  {
-    intro j,
-    simp only [poly_map.eval] at himage,
-    have himagej := congr_fun himage j,
+  { intros hInj xs ys himage,
+    set xs' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn xs with hxs',
+    set ys' : dvector (struc_to_ring_struc.Structure A) n := dvector.of_fn ys with hys',
+    have hImage :  ∀ (k : fin n),
+      realize_bounded_formula (ys'.append (xs'.append (poly_map.coeffs_dvector' d ps)))
+        (poly_indexed_by_monoms n d (↑k * (monom_deg_le n d).length + n + n) n (n * (monom_deg_le n d).length + n + n)
+             inj_formula_aux0
+             inj_formula_aux2 ≃
+           poly_indexed_by_monoms n d (↑k * (monom_deg_le n d).length + n + n) 0 (n * (monom_deg_le n d).length + n + n)
+             inj_formula_aux0
+             inj_formula_aux1)
+        dvector.nil,
+    { intro j,
+      simp only [poly_map.eval] at himage,
+      have himagej := congr_fun himage j,
+      simp only [realize_bounded_formula,
+        monom_deg_le, realize_poly_indexed_by_monoms],
+      convert himagej,
+      { convert symm (eval_poly_map_xs ps xs' ys' hdeg j),
+        funext k,
+        simp only [dvector.nth_of_fn, fin.eta], },
+      { convert symm (eval_poly_map_ys ps xs' ys' hdeg j),
+        funext k,
+        simp only [dvector.nth_of_fn, fin.eta], }, },
+    funext i, -- for each input (... they are equal)
+    have hPreimage := hInj xs' ys' hImage i,
     simp only [realize_bounded_formula,
-      monom_deg_le, realize_poly_indexed_by_monoms],
-    convert himagej,
-    {
-      convert symm (eval_poly_map_xs ps xs' ys' hdeg j),
-      funext k,
-      simp only [dvector.nth_of_fn, fin.eta],
-    },
-    {
-      convert symm (eval_poly_map_ys ps xs' ys' hdeg j),
-      funext k,
-      simp only [dvector.nth_of_fn, fin.eta],
-    },
-  },
-  funext i, -- for each input (... they are equal)
-  have hPreimage := hInj xs' ys' hImage i,
-  clear hInj hImage himage,
-  simp only [realize_bounded_formula,
-    realize_bounded_term,
-    @dvector.nth_append_small _ _ _ ys' _ i i.2,
+      realize_bounded_term,
+      @dvector.nth_append_small _ _ _ ys' _ i i.2,
     dvector.nth_append_big (nat.le_add_left _ _),
     nat.add_sub_cancel,
     @dvector.nth_append_small _ _ _ xs' _ i i.2] at hPreimage,
-  convert hPreimage,
-  {rw [hxs', dvector.nth_of_fn, fin.eta] },
-  {rw [hys', dvector.nth_of_fn, fin.eta] },
-  },
+    convert hPreimage,
+    {rw [hxs', dvector.nth_of_fn, fin.eta] },
+    {rw [hys', dvector.nth_of_fn, fin.eta] }, },
   -- backward implication
-  {
-  intro hinj, -- assume injectivity
-  intros xs ys, -- n tuples in the domain
-  -- we are showing that ps xs = ps yx implies xs = ys
-  intro hImage, -- assume the images are all equal (expressed model theoretically)
-  -- we must translate this to the images are equal
-  -- (expressed algebraically / in the ring)
-  have himage : poly_map.eval ps (λ i, dvector.nth xs i i.2)
-               = poly_map.eval ps (λ i, dvector.nth ys i i.2),
-  {
-    funext j, -- for each i < n (... the tuples at i are equal)
-    simp only [poly_map.eval],
-    have hImagej := hImage j,
+  { intro hinj, -- assume injectivity
+    intros xs ys, -- n tuples in the domain
+    -- we are showing that ps xs = ps yx implies xs = ys
+    intro hImage, -- assume the images are all equal (expressed model theoretically)
+    -- we must translate this to the images are equal
+    -- (expressed algebraically / in the ring)
+    have himage : poly_map.eval ps (λ i, dvector.nth xs i i.2)
+                 = poly_map.eval ps (λ i, dvector.nth ys i i.2),
+    { funext j, -- for each i < n (... the tuples at i are equal)
+      simp only [poly_map.eval],
+      have hImagej := hImage j,
+      simp only [realize_bounded_formula,
+        monom_deg_le, realize_poly_indexed_by_monoms] at hImagej,
+      convert hImagej,
+      {rw eval_poly_map_xs ps xs ys hdeg j, refl },
+      {rw eval_poly_map_ys ps xs ys hdeg j, refl }, },
+    -- by injectivity of poly_map.eval ps we have the preimages are equal (pointwise)
+    intro i, -- for each input (... they are equal)
+    have hpreimage : dvector.nth xs i i.2 = dvector.nth ys i i.2,
+    { apply congr_fun (hinj himage) i },
     simp only [realize_bounded_formula,
-      monom_deg_le, realize_poly_indexed_by_monoms] at hImagej,
-    convert hImagej,
-    {rw eval_poly_map_xs ps xs ys hdeg j, refl },
-    {rw eval_poly_map_ys ps xs ys hdeg j, refl },
-  },
-  -- by injectivity of poly_map.eval ps we have the preimages are equal (pointwise)
-  intro i, -- for each input (... they are equal)
-  have hpreimage : dvector.nth xs i i.2 = dvector.nth ys i i.2,
-  {apply congr_fun (hinj himage) i},
-  simp only [realize_bounded_formula,
-    realize_bounded_term,
-    @dvector.nth_append_small _ _ _ ys _ i i.2,
-    dvector.nth_append_big (nat.le_add_left _ _),
-    nat.add_sub_cancel,
-    @dvector.nth_append_small _ _ _ xs _ i i.2,
-    hpreimage], },
+      realize_bounded_term,
+      @dvector.nth_append_small _ _ _ ys _ i i.2,
+      dvector.nth_append_big (nat.le_add_left _ _),
+      nat.add_sub_cancel,
+      @dvector.nth_append_small _ _ _ xs _ i i.2,
+      hpreimage], },
 end
 
 lemma realize_surj_formula_of_ring
@@ -1442,35 +1429,19 @@ theorem realize_Ax_Groth_formula {n : ℕ} :
     function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps)) :=
 begin
   split,
-  {
-    intros H ps hinj,
-    set d := max_total_deg ps,
-    specialize H d,
-    let coeffs := poly_map.coeffs_dvector' d ps,
+  { intros H ps,
+    rw ← realize_surj_formula_of_ring ps (total_deg_le_max_total_deg ps),
+    rw ← realize_inj_formula_of_ring ps (total_deg_le_max_total_deg ps),
     simp only [realize_sentence_bd_alls, Ax_Groth_formula] at H,
-    -- injective -> realize inj_formula
-    have hInj : @realize_bounded_formula _ (struc_to_ring_struc.Structure K) _ _
-      (poly_map.coeffs_dvector' d ps) (inj_formula n d) dvector.nil,
-    {
-      rw realize_inj_formula_of_ring ps (total_deg_le_max_total_deg ps),
-      exact hinj,
-    },
-  rw ← realize_surj_formula_of_ring ps (total_deg_le_max_total_deg ps),
-  -- apply realize_Ax_Groth to ps, i.e. apply hAG to its coefficients
-  exact H coeffs hInj,
-  },
-  {
-    intros H d,
-    simp only [Ax_Groth_formula],
-    simp only [realize_sentence_bd_alls],
+    apply H (max_total_deg ps), },
+  { intros H d,
+    simp only [Ax_Groth_formula, realize_sentence_bd_alls],
     intro coeffs,
-    simp only [realize_bounded_formula_imp],
+    simp only [realize_bounded_formula_imp, ← realize_surj_formula_of_model],
     intro hinj,
-    rw ← realize_surj_formula_of_model,
     apply H,
     rw realize_inj_formula_of_model,
-    exact hinj,
-  },
+    exact hinj, },
 end
 
 -- lemma realize_Ax_Groth_formula_of_char_p
@@ -1534,19 +1505,19 @@ begin
   exact funext hw
 end
 
-lemma Ax_Groth_locally_finite (p : ℕ) [hp : fact (nat.prime p)] {n} :
+lemma Ax_Groth_algebraic_closure_zmod (p : ℕ) [hp : fact (nat.prime p)] {n} :
   ∀ (ps : poly_map (algebraic_closure.of_ulift_zmod.{u} p) n),
     function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps) :=
 Ax_Groth_of_locally_finite (ulift.{u} (zmod p))
     (algebraic_closure.is_algebraic (ulift.{u} (zmod p))) n
 
-/-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete') and the axiom-/
+/-- Ax_Groth_formula is true in ACFₚ, corollary of Lefschetz part 1. (ACFₚ is_complete')-/
 lemma ACFₚ_ssatisfied_Ax_Groth_formula {p : ℕ} [hp : fact p.prime] (n : ℕ) :
   ∀ d, (ACFₚ hp.1) ⊨ Ax_Groth_formula n d :=
 begin
   have h : ∀ d, (instances.algebraic_closure_of_zmod hp.1) ⊨ Ax_Groth_formula n d,
   { rw realize_Ax_Groth_formula,
-    exact Ax_Groth_locally_finite p },
+    exact Ax_Groth_algebraic_closure_zmod p },
   intro d,
   exact Lefschetz.is_complete''_ACFₚ hp.1
     (instances.algebraic_closure_of_zmod hp.1) ⟨ 0 ⟩ (Ax_Groth_formula n d)
@@ -1588,25 +1559,21 @@ begin
   { apply_instance },
 end
 
-private lemma Ax_Groth_char_p
-  (hchar : (ring_char K).prime) {n : ℕ}
-  {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
-  function.surjective (poly_map.eval ps) :=
-realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_p hchar _) _ hinj
+private lemma Ax_Groth_char_p (hchar : (ring_char K).prime) {n : ℕ} {ps : poly_map K n} :
+  function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps) :=
+realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_p hchar _) _
 
-private lemma Ax_Groth_char_zero
-  (h0 : char_zero K) {n : ℕ}
-  {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
-  function.surjective (poly_map.eval ps) :=
-realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _) _ hinj
+private lemma Ax_Groth_char_zero (h0 : char_zero K) {n : ℕ} {ps : poly_map K n} :
+  function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps) :=
+realize_Ax_Groth_formula.mp (realize_Ax_Groth_formula_of_char_zero h0 _) _
 
 /-- The main result: injective polynomial maps on algebraically closed fields are surjective -/
-theorem Ax_Groth {n : ℕ} {ps : poly_map K n} (hinj : function.injective (poly_map.eval ps)) :
-  function.surjective (poly_map.eval ps) :=
+theorem Ax_Groth {n : ℕ} {ps : poly_map K n} :
+  function.injective (poly_map.eval ps) → function.surjective (poly_map.eval ps) :=
 begin
   rcases char_p.char_is_prime_or_zero K (ring_char K) with hp | hp,
-  { exact Ax_Groth_char_p hp hinj },
-  { apply Ax_Groth_char_zero _ hinj,
+  { exact Ax_Groth_char_p hp },
+  { apply Ax_Groth_char_zero,
     rw ring_char.eq_iff at hp,
     apply @char_p.char_p_to_char_zero _ _ hp },
 end
